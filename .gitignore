@@ -1,0 +1,11 @@
+# Vercel link/state written by `npx vercel link`
+.vercel/
+
+# Node tooling (only npx is used, but just in case)
+node_modules/
+npm-debug.log*
+
+# OS cruft
+.DS_Store
+Thumbs.db
+desktop.ini
