@@ -1,9 +1,16 @@
-# Vercel link/state written by `npx vercel link`
+# Vercel
 .vercel/
 
-# Node tooling (only npx is used, but just in case)
+# Node
 node_modules/
 npm-debug.log*
+*.log
+
+# Environment / secrets — never commit these
+.env
+.env.*
+*.token
+vcp_*.txt
 
 # OS cruft
 .DS_Store

@@ -43,6 +43,10 @@
   });
   var ALL_CLASSES = D.classes.concat(X.classes);
 
+  function paras(x) {
+    return Array.isArray(x) ? x : (typeof x === "string" && x ? [x] : []);
+  }
+
   function subsFor(clsName) {
     return ALL_SUBS.filter(function (s) { return s.cls === clsName; });
   }
@@ -942,7 +946,7 @@
       det.style.marginTop = "30px";
       det.appendChild(el("div", "eyebrow", esc(cl.name) + " — class features"));
       var pr = el("div", "prose");
-      cl.description.forEach(function (p) { pr.appendChild(el("p", null, esc(p))); });
+      paras(cl.description).forEach(function (p) { pr.appendChild(el("p", null, esc(p))); });
       det.appendChild(pr);
       det.appendChild(renderTable(cl.progression));
       cl.features.forEach(function (f) {
@@ -1010,7 +1014,7 @@
     }
 
     var intro = el("div", "prose");
-    sub.description.forEach(function (p) { intro.appendChild(el("p", null, esc(p))); });
+    paras(sub.description).forEach(function (p) { intro.appendChild(el("p", null, esc(p))); });
     s.appendChild(intro);
 
     if (sub.tables) sub.tables.forEach(function (t) { s.appendChild(renderTable(t)); });
@@ -1127,7 +1131,7 @@
       det.style.marginTop = "26px";
       det.appendChild(el("div", "eyebrow", esc(b.name) + ' <span class="page-ref">· p. ' + b.page + "</span>"));
       var pr = el("div", "prose");
-      b.description.forEach(function (p) { pr.appendChild(el("p", null, esc(p))); });
+      paras(b.description).forEach(function (p) { pr.appendChild(el("p", null, esc(p))); });
       det.appendChild(pr);
 
       Object.keys(b.traits).forEach(function (k) {
@@ -2828,7 +2832,7 @@
           '<span class="chip">' + esc(c.resource) + "</span>";
         e.appendChild(h);
         e.appendChild(el("p", null, esc(c.tagline)));
-        c.description.forEach(function (p) { e.appendChild(el("p", null, esc(p))); });
+        paras(c.description).forEach(function (p) { e.appendChild(el("p", null, esc(p))); });
         e.appendChild(renderTable(c.progression));
         c.features.forEach(function (f) {
           var box = el("div", "feature live");
@@ -2843,7 +2847,7 @@
             "<h4>" + esc(c.name) + ": " + esc(sc.name) + "</h4>" +
             '<span class="chip lvl">Level ' + sc.levelAvailable + "</span>"));
           sb.appendChild(el("p", null, esc(sc.tagline)));
-          sc.description.forEach(function (p) { sb.appendChild(el("p", null, esc(p))); });
+          paras(sc.description).forEach(function (p) { sb.appendChild(el("p", null, esc(p))); });
           sc.features.forEach(function (f) {
             var fb = el("div", "feature sub-feature");
             fb.appendChild(el("div", "feature-head",
