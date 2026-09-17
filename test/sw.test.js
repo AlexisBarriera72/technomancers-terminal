@@ -40,6 +40,38 @@ function serve(port, state) {
 
 module.exports = async function (browser) {
   const R = new Results();
+
+  /* ---- gm.js pure helpers, no server needed ---------------------------- */
+  {
+    const { appPage } = require("./lib");
+    const { page, ctx } = await appPage(browser, { url: "file:///home/user/technomancers-terminal/index.html#gm=cathedra" });
+    await page.waitForTimeout(300);
+
+    const roll = await page.evaluate(() => {
+      const G = window.TTGM;
+      if (!G.rollExpr) return { missing: true };
+      return {
+        five: G.rollExpr("5"),
+        mixed: G.rollExpr("5 + 1d4"),
+        dice: G.rollExpr("2d6+3"),
+        junk: G.rollExpr("banana"),
+        empty: G.rollExpr("")
+      };
+    });
+    R.check("item 14 — a bare constant is worth itself",
+      !roll.missing && roll.five && roll.five.total === 5 && roll.five.ok !== false,
+      JSON.stringify(roll.five));
+    R.check("item 14 — a leading constant is not dropped",
+      !roll.missing && roll.mixed && roll.mixed.total >= 6 && roll.mixed.total <= 9,
+      JSON.stringify(roll.mixed));
+    R.check("item 14 — dice still work",
+      !roll.missing && roll.dice && roll.dice.total >= 5 && roll.dice.total <= 15,
+      JSON.stringify(roll.dice));
+    R.check("item 14 — unparseable input is reported, not rolled as zero",
+      !roll.missing && roll.junk && roll.junk.ok === false, JSON.stringify(roll.junk));
+    await ctx.close();
+  }
+
   const PORT = 8824;
   const base = "http://127.0.0.1:" + PORT + "/";
   const state = { cache: "test-v1", fail: [] };

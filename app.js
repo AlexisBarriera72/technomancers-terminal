@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-17 22:33";
+  var BUILD = "2026-09-17 23:20";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -112,7 +112,11 @@
     c.arrayMap = { Dex: 15, Int: 14, Con: 13, Wis: 12, Cha: 10, Str: 8 };
     c.scores = { Str: 8, Dex: 15, Con: 13, Int: 14, Wis: 12, Cha: 10 };
     c.bg = "hacker";
+    c.sub = "rogue-saboteur";
     c.skills = ["Stealth", "Perception", "Sleight of Hand", "Deception"];
+    // Attached to the level-4 slot, not the legacy flat list — takenFeats()
+    // derives from asi, so a bare c.feats was wiped on the first level-up edit.
+    c.asi = [{ type: "feat", name: "Demolitions Expert" }];
     c.feats = ["Demolitions Expert"];
     c.cyber = [{ name: "Wired Reflexes", tier: "2" }];
     c.isExample = true;
@@ -856,12 +860,62 @@
       return b.text || (b.items || []).join(" ") || "";
     }).join(" ");
   }
+  /* What a feature costs to use.
+   *
+   * This used to scan the whole feature as one string, first match wins, with
+   * Bonus action ranked first — and its bonus-action pattern included a bare
+   * "bonus action", which matches "firearms which require a bonus action to
+   * reload". That is a description of a weapon property, not an ability the
+   * feature grants, so Demolitions Expert was filed under Bonus actions with a
+   * reaction printed underneath it. Sixty-six features mention more than one
+   * action type; four contradicted their own excerpt outright.
+   *
+   * Two changes: only grant constructions count, and each SENTENCE is judged on
+   * its own so the heading always belongs to the text shown beneath it. A
+   * feature that really does offer two things now appears under both.
+   */
+  var ACT_RULES = [
+    // "use the bonus action granted by your Cunning Action" spends one too.
+    ["Bonus action", /\bas a bonus action\b|\buse (?:a|the) bonus action\b/i],
+    ["Reaction",     /\bas a reaction\b|\buse your reaction\b|\busing your reaction\b/i],
+    ["Action",       /\bas an action\b|\btake an action\b/i],
+    ["Attack",       /\byou can attack (?:twice|three times)\b/i]
+  ];
+  function sentencesOf(t) {
+    // No lookbehind: Safari only gained it in 16.4 and a syntax error here
+    // would take the whole application down on an older iPad.
+    return (String(t || "").match(/[^.!?]+[.!?]*\s*/g) || [])
+      .filter(function (x) { return x.trim(); });
+  }
+  function classifySentence(sent) {
+    for (var i = 0; i < ACT_RULES.length; i++) {
+      if (ACT_RULES[i][1].test(sent)) return ACT_RULES[i][0];
+    }
+    return null;
+  }
+  function tidy(sent) {
+    var t = String(sent || "").replace(
+      /^(?:At|By|After|Starting at|Beginning at|When you reach|When you choose[^,]*at|Upon reaching)\s+\d+(?:st|nd|rd|th)\s+level,?\s*/i, "");
+    return t.replace(/^(?:you|your)\b/, function (m) { return m.charAt(0).toUpperCase() + m.slice(1); });
+  }
+  /* One entry per distinct action type, each carrying the sentence that
+     granted it. Never empty: a feature that grants nothing is Passive. */
+  function actionEntries(f) {
+    var seen = {}, out = [];
+    sentencesOf(blockText(f)).forEach(function (sent) {
+      var k = classifySentence(sent);
+      if (!k || seen[k]) return;
+      seen[k] = 1;
+      out.push({ type: k, gist: tidy(sent) });
+    });
+    if (!out.length) out.push({ type: "Passive", gist: gistOf(f) });
+    return out;
+  }
   function actionType(t) {
-    if (/\b(?:as a bonus action|use a bonus action|bonus action[, ])/i.test(t)) return "Bonus action";
-    if (/\b(?:use your reaction|as a reaction|using your reaction)/i.test(t)) return "Reaction";
-    if (/\b(?:as an action|take an action|action, you can)/i.test(t)) return "Action";
-    if (/\byou can attack (?:twice|three times)/i.test(t)) return "Attack";
-    return "Passive";
+    // Kept for callers that only have the text, not the feature.
+    var hit = null;
+    sentencesOf(t).some(function (sent) { return !!(hit = classifySentence(sent)); });
+    return hit || "Passive";
   }
   function usageOf(t) {
     var m = t.match(/a number of times equal to your ([A-Za-z ]+?) (?:modifier|bonus)[^.]*?per (long|short) rest/i);
@@ -947,7 +1001,7 @@
       tip: "The easiest to run at a table are Fighter, Barbarian and Chromehound — you mostly hit things and are hard to kill. Wirewalker and Puppeteer have the most moving parts." },
     { title: "What an archetype is",
       what: "An [[archetype]] is a specialisation inside your class. Two Rogues can play completely differently depending on which one they took.",
-      todo: ["If your class offers a choice, pick one. Book classes come with a single archetype already chosen for you.",
+      todo: ["Every class offers a choice of archetypes — pick the one you want to play.",
              "Read the features. Greyed-out ones are real — you just aren't high enough level yet."],
       tip: "Features unlock as you level. Drag the level slider in the panel on the right to see what arrives later." },
     { title: "Background and origin",
@@ -1022,7 +1076,8 @@
       case 0: return C.cls ? null : "Pick a class to get started.";
       case 1:
         if (!C.cls) return "Pick a class first.";
-        return mySub() ? null : "Choose one of the two archetypes.";
+        var opts = subsFor(C.cls).length;
+        return mySub() ? null : "Choose one of the " + (opts || "") + " archetypes.";
       case 2:
         if (!C.bg) return "Pick a background.";
         var g = skillGrant();
@@ -1274,8 +1329,9 @@
 
   function stepClass(s) {
     head(s, "Step 01", "Choose a class",
-      "Thirteen classes from the book, each with one cyberpunk archetype. Eight more from the " +
-      "Neon Ledger expansion, each with two archetypes and a resource of its own.");
+      D.classes.length + " classes from the book and " + X.classes.length + " more from the " +
+      "Neon Ledger expansion, which bring a resource of their own. " +
+      (D.subclasses.length + X.subclasses.length) + " archetypes between them.");
 
     s.appendChild(el("div", "eyebrow", "From the book · 13 classes"));
     var g = el("div", "grid");
@@ -2540,10 +2596,12 @@
     var buckets = { "Action": [], "Bonus action": [], "Reaction": [], "Attack": [], "Passive": [] };
     activeFeatures().forEach(function (e) {
       var t = blockText(e.f);
-      var kind = e.forceType || actionType(t);
-      if (!buckets[kind]) kind = "Passive";
-      buckets[kind].push({ name: e.f.name, src: e.src, uses: e.cost || usageOf(t),
-                           gist: gistOf(e.f), level: e.f.level });
+      var entries = e.forceType ? [{ type: e.forceType, gist: gistOf(e.f) }] : actionEntries(e.f);
+      entries.forEach(function (en) {
+        var kind = buckets[en.type] ? en.type : "Passive";
+        buckets[kind].push({ name: e.f.name, src: e.src, uses: e.cost || usageOf(t),
+                             gist: en.gist, level: e.f.level });
+      });
     });
     var order = ["Action", "Bonus action", "Reaction", "Attack", "Passive"];
     var cls = { "Action": "act", "Bonus action": "bon", "Reaction": "rea", "Attack": "act",
@@ -2802,9 +2860,11 @@
     var bk = { "Action": [], "Bonus action": [], "Reaction": [], "Attack": [], "Passive": [] };
     activeFeatures().forEach(function (e) {
       var t = blockText(e.f);
-      var kind2 = e.forceType || actionType(t);
-      if (!bk[kind2]) kind2 = "Passive";
-      bk[kind2].push({ n: e.f.name, u: e.cost || usageOf(t), g: gistOf(e.f) });
+      var entries = e.forceType ? [{ type: e.forceType, gist: gistOf(e.f) }] : actionEntries(e.f);
+      entries.forEach(function (en) {
+        var kind2 = bk[en.type] ? en.type : "Passive";
+        bk[kind2].push({ n: e.f.name, u: e.cost || usageOf(t), g: en.gist });
+      });
     });
     ["Action", "Bonus action", "Reaction", "Attack", "Passive"].forEach(function (k) {
       if (!bk[k].length) return;
@@ -2854,7 +2914,10 @@
 
   function buildClassic(root) {
     var cl = classByName[C.cls], sub = mySub(), b = bgObj(), sc = scores(), pb = profBonus(C.level);
-    var ac = armorClass(), h = humanity(), camp = campById(campSel);
+    // The character's own campaign, not whichever one is being browsed in the
+    // Campaign tab. C.campaign was written when settings were applied and then
+    // never read anywhere, so opening another campaign relabelled the printout.
+    var ac = armorClass(), h = humanity(), camp = C.campaign ? campById(C.campaign) : null;
 
     var p1 = el("div", "cs-page");
     var head = el("div", "cs-head");
@@ -3017,10 +3080,13 @@
     p2.appendChild(h2);
     var wrap = el("div", "two-col");
     activeFeatures().forEach(function (e) {
-      var t = blockText(e.f), kind = e.forceType || actionType(t), uses = e.cost || usageOf(t);
+      var t = blockText(e.f), uses = e.cost || usageOf(t);
+      var entries = e.forceType ? [{ type: e.forceType, gist: gistOf(e.f) }] : actionEntries(e.f);
+      var kind = entries.map(function (en) { return en.type; }).join(" · ");
       var d = el("div", "cs-feat");
       d.innerHTML = "<b>" + esc(e.f.name) + '</b> <span class="lv">' + esc(kind) +
-        (uses ? " · " + esc(uses) : "") + " · " + esc(e.src) + "</span><br>" + esc(gistOf(e.f));
+        (uses ? " · " + esc(uses) : "") + " · " + esc(e.src) + "</span><br>" +
+        entries.map(function (en) { return esc(en.gist); }).join("<br>");
       wrap.appendChild(d);
     });
     p2.appendChild(wrap);
@@ -3053,8 +3119,11 @@
 
       var bk = { "Action": [], "Bonus action": [], "Reaction": [], "Attack": [] };
       activeFeatures().forEach(function (e) {
-        var t = blockText(e.f), k = e.forceType || actionType(t);
-        if (bk[k]) bk[k].push({ n: e.f.name, u: e.cost || usageOf(t) });
+        var t = blockText(e.f);
+        var entries = e.forceType ? [{ type: e.forceType }] : actionEntries(e.f);
+        entries.forEach(function (en) {
+          if (bk[en.type]) bk[en.type].push({ n: e.f.name, u: e.cost || usageOf(t) });
+        });
       });
       ["Action", "Bonus action", "Reaction", "Attack"].forEach(function (k) {
         if (!bk[k].length) return;
@@ -3095,7 +3164,9 @@
     wrap.appendChild(head);
     var grid = el("div", "ac-grid");
     activeFeatures().forEach(function (e) {
-      var t = blockText(e.f), kind = e.forceType || actionType(t), uses = e.cost || usageOf(t);
+      var t = blockText(e.f), uses = e.cost || usageOf(t);
+      var kind = (e.forceType ? [e.forceType]
+        : actionEntries(e.f).map(function (en) { return en.type; })).join(" · ");
       var c = el("div", "ac-card");
       var txt = (e.f.blocks || []).map(function (bl) {
         return bl.text || (bl.items || []).join(" • ");
@@ -4062,7 +4133,8 @@
     passiveSkill: passiveSkill, initiative: initiative, initiativeNote: initiativeNote,
     saveDC: saveDC, attackBonus: attackBonus, armorClass: armorClass, maxHP: maxHP,
     allSkills: allSkills, humanity: humanity, activeFeatures: activeFeatures,
-    blockText: blockText, actionType: actionType, usageOf: usageOf, toMarkdown: toMarkdown,
+    blockText: blockText, actionType: actionType, actionEntries: actionEntries,
+    usageOf: usageOf, toMarkdown: toMarkdown,
     // character plumbing
     migrate: migrate, blank: blank, b64u: b64u, unb64u: unb64u, slimChar: slimChar,
     rosterAll: rosterAll, campAll: campAll, campById: campById, campSel: function () { return campSel; },

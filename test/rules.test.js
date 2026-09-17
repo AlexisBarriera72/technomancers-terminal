@@ -203,6 +203,106 @@ module.exports = async function (browser) {
     R.check("esc() escapes single quotes", esc.indexOf("'") < 0, esc);
   }
 
+  /* ---- item 16: a feature's action heading must match its own excerpt ---- */
+  {
+    const dem = await page.evaluate(() => {
+      const T = window.TT;
+      if (!T.actionEntries) return { missing: true };
+      const f = T.D.feats.filter(x => x.name === "Demolitions Expert")[0];
+      return { types: T.actionEntries(f).map(e => e.type),
+               gists: T.actionEntries(f).map(e => e.gist) };
+    });
+    R.check("item 16 — Demolitions Expert is a Reaction, not a Bonus action",
+      !dem.missing && dem.types.length === 1 && dem.types[0] === "Reaction",
+      JSON.stringify(dem));
+    R.check("item 16 — and its excerpt is the reaction sentence",
+      !dem.missing && /reaction to detonate/i.test(dem.gists[0] || ""),
+      JSON.stringify(dem.gists));
+
+    // "requires a bonus action to reload" describes a weapon property; it is
+    // not an ability the feature grants.
+    const loose = await page.evaluate(() =>
+      window.TT.actionType("Firearms with the blast property which require a bonus action to reload."));
+    R.eq("item 16 — a reload mention is not a granted bonus action", loose, "Passive");
+
+    // The sweep: across every feature in both books, the label must not
+    // contradict the text shown beneath it.
+    const sweep = await page.evaluate(() => {
+      const T = window.TT;
+      if (!T.actionEntries) return { total: 0, n: -1, bad: ["actionEntries not implemented"] };
+      const feats = [];
+      const eat = arr => (arr || []).forEach(x => {
+        if (x && x.blocks) feats.push(x);
+        if (x && x.features) x.features.forEach(f => f.blocks && feats.push(f));
+      });
+      eat(T.D.feats); eat(T.X.feats); eat(T.D.subclasses); eat(T.X.subclasses);
+      eat(T.X.classes); eat(T.D.cyberware); eat(T.D.augments); eat(T.D.fightingStyles);
+      const pat = {
+        "Bonus action": /\bas a bonus action\b|\buse (?:a|the) bonus action\b/i,
+        "Reaction": /\bas a reaction\b|\buse your reaction\b|\busing your reaction\b/i,
+        "Action": /\bas an action\b|\btake an action\b/i
+      };
+      const bad = [];
+      feats.forEach(f => {
+        T.actionEntries(f).forEach(e => {
+          const p = pat[e.type];
+          // The excerpt must contain the construction its heading claims.
+          if (p && !p.test(e.gist)) bad.push({ n: f.name, t: e.type, g: (e.gist || "").slice(0, 70) });
+        });
+      });
+      return { total: feats.length, bad: bad.slice(0, 6), n: bad.length };
+    });
+    R.check("item 16 — no feature's heading contradicts its excerpt",
+      sweep.n === 0, sweep.n + " of " + sweep.total + " — " + JSON.stringify(sweep.bad));
+  }
+
+  /* ---- content drift: counts must come from the data ---- */
+  {
+    const counts = await page.evaluate(() => {
+      const T = window.TT;
+      return { classes: T.D.classes.length + T.X.classes.length,
+               archetypes: T.D.subclasses.length + T.X.subclasses.length,
+               meta: (document.querySelector('meta[property="og:description"]') || {}).content || "" };
+    });
+    R.eq("real class count", counts.classes, 21);
+    R.eq("real archetype count", counts.archetypes, 105);
+    R.check("og:description states the real class count",
+      counts.meta.indexOf(counts.classes + " classes") >= 0, counts.meta);
+    R.check("og:description states the real archetype count",
+      counts.meta.indexOf(counts.archetypes + " archetypes") >= 0, counts.meta);
+  }
+
+  /* ---- content drift: the example character must be what the banner says ---- */
+  {
+    // example() is private, so drive it the way a first-time visitor does:
+    // a browser with nothing saved loads the example.
+    const fresh = await appPage(browser);
+    await fresh.page.evaluate(() => localStorage.removeItem("ttb.character.v1"));
+    await fresh.page.reload();
+    await fresh.page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+    await fresh.page.waitForTimeout(250);
+    const state = await fresh.page.evaluate(() => ({
+      isExample: !!(document.querySelector(".note b") &&
+                    /example build/i.test(document.querySelector(".note b").textContent)),
+      // Play Sheet is the output, not an input — stepDone() never marks it,
+      // so only the build steps before it are asserted.
+      incomplete: [...document.querySelectorAll(".rail .step")]
+        .slice(0, -1)
+        .filter(b => !b.classList.contains("done") && b.getAttribute("aria-current") !== "true")
+        .map(b => b.querySelector(".step-l").textContent.trim()),
+      archetype: (() => {
+        const rows = [...document.querySelectorAll(".dossier .dos-row")];
+        const r = rows.find(x => /Archetype/i.test(x.textContent));
+        return r ? r.querySelector(".v").textContent.trim() : null;
+      })()
+    }));
+    R.check("example character has an archetype",
+      state.archetype && state.archetype !== "not set", JSON.stringify(state.archetype));
+    R.check("example character has no incomplete steps",
+      state.incomplete.length === 0, JSON.stringify(state.incomplete));
+    await fresh.ctx.close();
+  }
+
   await ctx.close();
   return R;
 };

@@ -192,6 +192,154 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
+  /* ============ item 13: the turn marker must follow the combatant ======== */
+  {
+    const { page, ctx } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+    await page.waitForTimeout(300);
+
+    // Build a deterministic encounter directly in the live play slot.
+    const seed = async () => page.evaluate(() => {
+      const enc = { id: "e1", name: "T", round: 1, turnCid: null, turnIx: 0, combatants: [
+        { cid: "k1", src: "adhoc", ref: null, name: "Rook",  init: 19, ac: 12, hpMax: 20, hp: 20, tmp: 0, conds: [], dead: false, notes: "" },
+        { cid: "k2", src: "adhoc", ref: null, name: "Nyx",   init: 14, ac: 12, hpMax: 20, hp: 20, tmp: 0, conds: [], dead: false, notes: "" },
+        { cid: "k3", src: "adhoc", ref: null, name: "Gang",  init: 9,  ac: 12, hpMax: 20, hp: 20, tmp: 0, conds: [], dead: false, notes: "" }
+      ] };
+      const p = JSON.parse(localStorage.getItem("ttb.gm.play") || "{}");
+      p.enc = enc; p.mode = "table";
+      localStorage.setItem("ttb.gm.play", JSON.stringify(p));
+    });
+    const goEncounter = async () => {
+      await page.reload();
+      await page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+      await page.waitForTimeout(250);
+      await page.evaluate(() => {
+        const b = [...document.querySelectorAll(".rail .step")].find(x => /Encounter/.test(x.textContent));
+        if (b) b.click();
+      });
+      await page.waitForTimeout(250);
+    };
+    const whoseTurn = () => page.evaluate(() => {
+      const t = document.querySelector(".gm-turn");
+      return t ? t.textContent.replace(/'s turn$/, "") : null;
+    });
+    const nextTurn = async () => { await page.evaluate(() => {
+      const b = [...document.querySelectorAll(".gm-turnbar button")].find(x => /Next turn/.test(x.textContent));
+      if (b) b.click(); }); await page.waitForTimeout(250); };
+    const removeNamed = async name => { await page.evaluate(n => {
+      const row = [...document.querySelectorAll(".gm-cb")].find(r => r.querySelector(".who .n").textContent === n);
+      const b = [...row.querySelectorAll("button")].find(x => x.textContent.trim() === "Remove");
+      if (b) b.click(); }, name); await page.waitForTimeout(300); };
+
+    await seed(); await goEncounter();
+    await nextTurn();                              // Rook -> Nyx
+    R.eq("item 13 — turn advances in initiative order", await whoseTurn(), "Nyx");
+
+    await removeNamed("Rook");                     // removing ABOVE the active one
+    R.eq("item 13 — removing a combatant above keeps the same one active",
+      await whoseTurn(), "Nyx");
+
+    // adding one that rolls higher must not steal the marker either
+    await seed(); await goEncounter();
+    await nextTurn();
+    R.eq("item 13 — reseeded, Nyx active", await whoseTurn(), "Nyx");
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll(".gm-row button")].find(x => /Ad-hoc/.test(x.textContent));
+      if (b) b.click();
+    });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => {
+      // give the newcomer a high initiative so it sorts above Nyx
+      const p = JSON.parse(localStorage.getItem("ttb.gm.play"));
+      const added = p.enc.combatants[p.enc.combatants.length - 1];
+      added.init = 17; added.name = "Newcomer";
+      localStorage.setItem("ttb.gm.play", JSON.stringify(p));
+    });
+    await goEncounter();
+    R.eq("item 13 — adding a higher-initiative combatant does not move the marker",
+      await whoseTurn(), "Nyx");
+
+    // removing the ACTIVE one must hand over to the next in order
+    await removeNamed("Nyx");
+    R.eq("item 13 — removing the active one advances to the next in order",
+      await whoseTurn(), "Gang");
+    await ctx.close();
+  }
+
+  /* ============ item 17: a template must not carry temp HP =============== */
+  {
+    const { page, ctx } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+    await page.waitForTimeout(300);
+    const tmp = await page.evaluate(async () => {
+      const p = JSON.parse(localStorage.getItem("ttb.gm.play") || "{}");
+      // a template saved mid-fight, carrying a buff
+      localStorage.setItem("ttb.gm.encounters", JSON.stringify([{
+        id: "t1", name: "Saved mid-fight", created: Date.now(), round: 3, turnIx: 1,
+        combatants: [{ cid: "x1", src: "adhoc", ref: null, name: "Buffed", init: 12,
+                       ac: 12, hpMax: 30, hp: 11, tmp: 7, conds: ["Prone"], dead: false, notes: "" }]
+      }]));
+      p.enc = null; localStorage.setItem("ttb.gm.play", JSON.stringify(p));
+      return true;
+    });
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+    await page.waitForTimeout(250);
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll(".rail .step")].find(x => /Encounter/.test(x.textContent));
+      if (b) b.click();
+    });
+    await page.waitForTimeout(250);
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll(".gm-libline button")].find(x => /Run it/.test(x.textContent));
+      if (b) b.click();
+    });
+    await page.waitForTimeout(400);
+    const ran = await page.evaluate(() => {
+      const c = JSON.parse(localStorage.getItem("ttb.gm.play")).enc.combatants[0];
+      return { hp: c.hp, hpMax: c.hpMax, tmp: c.tmp, conds: c.conds, dead: c.dead };
+    });
+    R.eq("item 17 — Run it clears temp HP", ran.tmp, 0);
+    R.eq("item 17 — Run it still restores hit points", ran.hp, ran.hpMax);
+    R.eq("item 17 — Run it still clears conditions", ran.conds, []);
+    await ctx.close();
+  }
+
+  /* ============ item 15: the printed campaign follows the character ====== */
+  {
+    const { page, ctx } = await appPage(browser);
+    const printed = await page.evaluate(async () => {
+      // A character built under Cathedra, while the Campaign tab browses nothing.
+      const c = window.TT.migrate({ id: "pc1", name: "Printed", level: 3, cls: "Rogue",
+        method: "pointbuy", scores: { Str: 10, Dex: 14, Con: 12, Int: 12, Wis: 10, Cha: 10 },
+        arrayMap: {}, skills: [], bgPicks: [], asi: [], picks: {}, subChoices: {},
+        feats: [], invocations: [], infusions: [], cyber: [], augments: [], gear: [],
+        traits: {}, campaign: "cathedra" });
+      localStorage.setItem("ttb.character.v1", JSON.stringify(c));
+      localStorage.removeItem("ttb.campaign");     // nothing being browsed
+      return true;
+    });
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+    await page.waitForTimeout(300);
+    // The print buttons live on the Play Sheet step.
+    await page.evaluate(() => {
+      const b = [...document.querySelectorAll(".rail .step")]
+        .find(x => /Play Sheet/.test(x.textContent));
+      if (b) b.click();
+    });
+    await page.waitForTimeout(300);
+    const label = await page.evaluate(() => {
+      const b = [...document.querySelectorAll("button")]
+        .find(x => /^Classic sheet/i.test(x.textContent.trim()));
+      if (!b) return { err: "no classic print button" };
+      b.click();
+      const head = document.querySelector(".cs-head .meta");
+      return { text: head ? head.textContent : null };
+    });
+    R.check("item 15 — printed campaign comes from the character",
+      !label.err && /Cathedra/.test(label.text || ""), JSON.stringify(label));
+    await ctx.close();
+  }
+
   /* Initiative fix from the earlier pass must stay fixed */
   {
     const { page, ctx } = await appPage(browser);

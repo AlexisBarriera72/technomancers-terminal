@@ -490,24 +490,32 @@ window.TTGM = (function () {
     var nat = mode === "adv" ? Math.max(a, b) : mode === "dis" ? Math.min(a, b) : a;
     return { nat: nat, both: mode ? [a, b] : [a], total: nat + (bonus || 0), bonus: bonus || 0 };
   }
-  /* Parses the damage strings that already sit in the book's tables:
-     "2d6 piercing", "1d8+2", "1d8 piercing + 1d8 thunder". */
+  /* Parses the damage strings that already sit in the book's tables —
+     "2d6 piercing", "1d8+2", "1d8 piercing + 1d8 thunder" — and the ones a GM
+     types into a statblock, which is where this used to fall over: the dice
+     branch allowed an optional sign but the constant branch required one, so a
+     flat "7" was worth 0 and "5 + 1d4" silently dropped the 5.
+     `ok` is false when nothing parsed, so the caller can say so rather than
+     rolling a confident zero. */
   function rollExpr(expr) {
-    var total = 0, parts = [];
-    String(expr || "").replace(/([+-]?)\s*(\d*)d(\d+)|([+-])\s*(\d+)(?!d)/gi,
+    var total = 0, parts = [], found = 0;
+    String(expr || "").replace(/([+-]?)\s*(\d*)d(\d+)|([+-]?)\s*(\d+)(?!\s*d\d)/gi,
       function (m, sign, n, sides, lone, flat) {
         if (sides) {
           var r = roll(parseInt(n || "1", 10), parseInt(sides, 10));
           var neg = sign === "-";
           total += neg ? -r.raw : r.raw;
           parts.push((neg ? "-" : "") + (n || 1) + "d" + sides + " [" + r.dice.join(",") + "]");
+          found++;
         } else if (flat) {
           var f = parseInt(flat, 10) * (lone === "-" ? -1 : 1);
-          total += f; parts.push((f >= 0 ? "+" : "") + f);
+          total += f;
+          parts.push((parts.length && f >= 0 ? "+" : "") + f);
+          found++;
         }
         return m;
       });
-    return { total: total, detail: parts.join(" ") };
+    return { total: total, detail: parts.join(" "), ok: found > 0 };
   }
 
   /* ---------------------------------------------------------- UI helpers --
@@ -944,8 +952,10 @@ window.TTGM = (function () {
     if (enc && enc.combatants && enc.combatants.length) {
       body.appendChild(txt("div", "gm-label", "Round " + (enc.round || 1)));
       var list = el("div", "gm-mini-init");
-      ordered(enc).forEach(function (cb, i) {
-        var r2 = el("div", "gm-mini" + (i === (enc.turnIx || 0) ? " on" : "") + (cb.dead ? " out" : ""));
+      var active = turnOf(enc);
+      ordered(enc).forEach(function (cb) {
+        var r2 = el("div", "gm-mini" + (active && cb.cid === active.cid ? " on" : "") +
+          (cb.dead ? " out" : ""));
         r2.appendChild(txt("span", "i", cb.init));
         r2.appendChild(txt("span", "n", cb.name));
         r2.appendChild(txt("span", "h", cb.hp == null ? "—" : cb.hp + "/" + cb.hpMax));
@@ -1409,8 +1419,10 @@ window.TTGM = (function () {
           var rollBtn = btn("Roll", "tiny", function () {
             var hit = a.atk == null ? null : d20(a.atk);
             var dmg = a.dmg ? rollExpr(a.dmg) : null;
+            if (dmg && !dmg.ok) dmg = { total: null, detail: "couldn't read \u201c" + a.dmg + "\u201d" };
             toast((hit ? "Attack " + hit.nat + T.sgn(a.atk) + " = " + hit.total : "") +
-                  (hit && dmg ? "  ·  " : "") + (dmg ? "Damage " + dmg.total : ""));
+                  (hit && dmg ? "  ·  " : "") +
+                  (dmg ? (dmg.total === null ? dmg.detail : "Damage " + dmg.total) : ""));
           });
           r.appendChild(rollBtn);
         }
@@ -1458,10 +1470,40 @@ window.TTGM = (function () {
       return (a.name || "").localeCompare(b.name || "");
     });
   }
+
+  /* Whose turn it is used to be an index into the list ordered() returns —
+     and that list is re-sorted on every render. So removing someone above the
+     marker, adding someone who rolled higher, or even renaming a combatant
+     tied on initiative silently handed the turn to somebody else. Track the
+     combatant's own id instead. */
+  function turnOf(enc) {
+    var list = ordered(enc);
+    if (!list.length) return null;
+    var hit = list.filter(function (c) { return c.cid === enc.turnCid; })[0];
+    if (hit) return hit;
+    // An older encounter, or the active combatant is gone: fall back once.
+    var ix = typeof enc.turnIx === "number" ? Math.min(enc.turnIx, list.length - 1) : 0;
+    return list[Math.max(0, ix)] || list[0];
+  }
+  function setTurn(enc, cb) {
+    enc.turnCid = cb ? cb.cid : null;
+    delete enc.turnIx;                 // the old field is no longer authoritative
+  }
+  function stepTurn(enc, delta) {
+    var list = ordered(enc);
+    if (!list.length) { enc.turnCid = null; return; }
+    var cur = turnOf(enc);
+    var i = list.indexOf(cur);
+    if (i < 0) i = 0;
+    var next = i + delta;
+    if (next >= list.length) { next = 0; enc.round = (enc.round || 1) + 1; }
+    else if (next < 0) { next = list.length - 1; enc.round = Math.max(1, (enc.round || 1) - 1); }
+    setTurn(enc, list[next]);
+  }
   function liveEnc() {
     var p = playState();
     if (!p.enc) {
-      p.enc = { id: uid("e"), name: "Encounter", round: 1, turnIx: 0, combatants: [] };
+      p.enc = { id: uid("e"), name: "Encounter", round: 1, turnCid: null, combatants: [] };
       playWrite(p);
     }
     if (!Array.isArray(p.enc.combatants)) p.enc.combatants = [];
@@ -1469,7 +1511,7 @@ window.TTGM = (function () {
   }
   function encPatch(fn) {
     playPatch(function (p) {
-      if (!p.enc) p.enc = { id: uid("e"), name: "Encounter", round: 1, turnIx: 0, combatants: [] };
+      if (!p.enc) p.enc = { id: uid("e"), name: "Encounter", round: 1, turnCid: null, combatants: [] };
       fn(p.enc);
     });
   }
@@ -1484,7 +1526,8 @@ window.TTGM = (function () {
   function addToEncounter(n, count) {
     encPatch(function (enc) {
       for (var i = 0; i < (count || 1); i++) {
-        var hp = n.hpFormula ? rollExpr(n.hpFormula).total || n.hp : n.hp;
+        var rolledHp = n.hpFormula ? rollExpr(n.hpFormula) : null;
+        var hp = rolledHp && rolledHp.ok ? rolledHp.total : n.hp;
         enc.combatants.push({
           cid: uid("k"), src: "npc", ref: n.id, name: suffixFor(enc, n.name || "NPC"),
           init: d20(n.init || 0).total, ac: n.ac, hpMax: hp, hp: hp, tmp: 0,
@@ -1554,23 +1597,15 @@ window.TTGM = (function () {
     var ctl = el("div", "gm-turnbar");
     ctl.appendChild(txt("div", "gm-round", "Round " + enc.round));
     var list = ordered(enc);
-    var cur = list[Math.min(enc.turnIx || 0, list.length - 1)];
+    var cur = turnOf(enc);
     ctl.appendChild(txt("div", "gm-turn", cur ? cur.name + "'s turn" : ""));
     var nav = row("gm-row");
     nav.appendChild(btn("◀ Back", "", function () {
-      encPatch(function (e) {
-        var n = ordered(e).length;
-        e.turnIx = (e.turnIx || 0) - 1;
-        if (e.turnIx < 0) { e.turnIx = n - 1; e.round = Math.max(1, (e.round || 1) - 1); }
-      });
+      encPatch(function (e) { stepTurn(e, -1); });
       redraw();
     }));
     nav.appendChild(btn("Next turn ▶", "primary", function () {
-      encPatch(function (e) {
-        var n = ordered(e).length;
-        e.turnIx = (e.turnIx || 0) + 1;
-        if (e.turnIx >= n) { e.turnIx = 0; e.round = (e.round || 1) + 1; }
-      });
+      encPatch(function (e) { stepTurn(e, 1); });
       redraw();
     }));
     nav.appendChild(btn("Reroll initiative", "", function () {
@@ -1584,7 +1619,7 @@ window.TTGM = (function () {
             c.init = d20(n ? n.init : 0).total;
           }
         });
-        e.turnIx = 0;
+        setTurn(e, ordered(e)[0]);
       });
       redraw();
     }));
@@ -1593,7 +1628,7 @@ window.TTGM = (function () {
 
     /* the order */
     var rows = el("div", "gm-init");
-    list.forEach(function (cb, i) { rows.appendChild(combatantRow(cb, i === (enc.turnIx || 0))); });
+    list.forEach(function (cb) { rows.appendChild(combatantRow(cb, cur && cb.cid === cur.cid)); });
     s.appendChild(rows);
 
     var end = row("gm-row end");
@@ -1629,8 +1664,14 @@ window.TTGM = (function () {
         if (enc.combatants.length && !window.confirm("Replace the current encounter?")) return;
         // Copy into the live slot so the prepared version stays pristine.
         var copy = JSON.parse(JSON.stringify(t));
-        copy.round = 1; copy.turnIx = 0;
-        copy.combatants.forEach(function (c) { c.cid = uid("k"); c.hp = c.hpMax; c.conds = []; c.dead = false; });
+        copy.round = 1;
+        // A template can be saved mid-fight, so every per-fight field resets —
+        // temporary hit points included, which used to ride along forever.
+        copy.combatants.forEach(function (c) {
+          c.cid = uid("k"); c.hp = c.hpMax; c.tmp = 0; c.conds = []; c.dead = false;
+        });
+        copy.turnCid = (ordered(copy)[0] || {}).cid || null;
+        delete copy.turnIx;
         playPatch(function (p) { p.enc = copy; });
         redraw();
       }));
@@ -1764,8 +1805,11 @@ window.TTGM = (function () {
           var b = btn(a.name || "attack", "tiny", function () {
             var hit = a.atk == null ? null : d20(a.atk);
             var dmg = a.dmg ? rollExpr(a.dmg) : null;
+            if (dmg && !dmg.ok) dmg = { total: null, detail: "couldn't read \u201c" + a.dmg + "\u201d" };
             toast((hit ? "Attack " + hit.nat + T.sgn(a.atk) + " = " + hit.total : "") +
-                  (hit && dmg ? "  ·  " : "") + (dmg ? "Damage " + dmg.total + " (" + dmg.detail + ")" : ""));
+                  (hit && dmg ? "  ·  " : "") +
+                  (dmg ? (dmg.total === null ? dmg.detail
+                                             : "Damage " + dmg.total + " (" + dmg.detail + ")") : ""));
           });
           tools.appendChild(b);
         });
@@ -1773,8 +1817,16 @@ window.TTGM = (function () {
     }
     tools.appendChild(btn("Remove", "tiny", function () {
       encPatch(function (e) {
+        // If the one leaving is the one acting, hand the turn to the next in
+        // order first — otherwise the marker lands on whoever happens to shift
+        // into that slot.
+        var active = turnOf(e);
+        if (active && active.cid === cb.cid) stepTurn(e, 1);
         e.combatants = e.combatants.filter(function (x) { return x.cid !== cb.cid; });
-        if (e.turnIx >= e.combatants.length) e.turnIx = 0;
+        if (!e.combatants.length) e.turnCid = null;
+        else if (!e.combatants.some(function (x) { return x.cid === e.turnCid; })) {
+          setTurn(e, ordered(e)[0]);
+        }
       });
       redraw();
     }));
@@ -1876,6 +1928,8 @@ window.TTGM = (function () {
   }
 
   return {
-    boot: boot, renderStage: renderStage, renderDossier: renderDossier, lastMode: lastMode
+    boot: boot, renderStage: renderStage, renderDossier: renderDossier, lastMode: lastMode,
+    // exposed for the test suite
+    rollExpr: rollExpr, roll: roll, d20: d20, ordered: ordered, turnOf: turnOf
   };
 })();
