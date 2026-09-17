@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-17 22:27";
+  var BUILD = "2026-09-17 22:33";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -60,6 +60,10 @@
 
   function mod(n) { return Math.floor((n - 10) / 2); }
   function sgn(n) { return (n >= 0 ? "+" : "") + n; }
+  function ordinal(n) {
+    var t = n % 100, d = n % 10;
+    return n + (t >= 11 && t <= 13 ? "th" : d === 1 ? "st" : d === 2 ? "nd" : d === 3 ? "rd" : "th");
+  }
   function profBonus(lv) { return 2 + Math.floor((lv - 1) / 4); }
   function dieSize(h) { return parseInt(String(h).replace("d", ""), 10); }
 
@@ -323,19 +327,72 @@
   function droppedNote() { return lastDropped.slice(); }
 
   /* -------------------------------------------------------------- derived */
+  /* Standard array and rolled scores are both assigned through the same
+     dropdown, which writes C.arrayMap. This used to read arrayMap only for the
+     standard array, so every rolled score was decorative: the sheet kept the
+     8s underneath and the step still passed as complete. */
+  function assignsFromMap() { return C.method === "array" || C.method === "roll"; }
   function baseScores() {
-    if (C.method === "array") {
+    if (assignsFromMap()) {
       var s = { Str: 8, Dex: 8, Con: 8, Int: 8, Wis: 8, Cha: 8 };
       ABIL.forEach(function (a) { if (C.arrayMap[a]) s[a] = C.arrayMap[a]; });
       return s;
     }
     return C.scores;
   }
+  function abilitiesDone() {
+    if (!assignsFromMap()) return ABIL.every(function (a) { return C.scores[a] >= 1; });
+    return ABIL.every(function (a) { return !!C.arrayMap[a]; });
+  }
 
   /* Levelling actually changes the sheet: ASI slots and the class features that
      hand out flat ability increases both land here. */
+  /* Most classes improve at 4/8/12/16/19. Fighter and Rogue get extra ones in
+     standard 5e, and the book uses the stock chassis for its thirteen classes,
+     so they need their own rows. The eight Neon Ledger classes print
+     4/8/12/16/19 in their own progression tables, so they take the default. */
+  /* Seventeen feats raise an ability score, but that only exists as English in
+     the feat's prose, so nothing applied it. Structured here instead: `abil`
+     for the nine that name one ability, `choose` for the eight that offer a
+     pick. Kept next to the other data tables so adding a feat is a data edit. */
+  var FEAT_EFFECTS = {
+    "Icebreaker's Instinct":  { abil: "Int" },
+    "Drone Whisperer":        { abil: "Int" },
+    "Street Legend":          { abil: "Cha" },
+    "Fast Draw":              { abil: "Dex" },
+    "Rated for Trauma":       { abil: "Con" },
+    "Chem Tolerance":         { abil: "Con" },
+    "Wall Runner":            { abil: "Dex" },
+    "Grafted":                { abil: "Con" },
+    "Black Market Contacts":  { abil: "Cha" },
+    "Paramedic":              { choose: ["Con", "Int", "Wis"] },
+    "Prime Hacker":           { choose: ["Int", "Wis", "Cha"] },
+    "Clean Baseline":         { choose: ["Cha", "Wis"] },
+    "Neural Firewall":        { choose: ["Int", "Wis"] },
+    "Corporate Ghost":        { choose: ["Int", "Cha"] },
+    "Crowd Sense":            { choose: ["Cha", "Wis"] },
+    "Smartlinked":            { choose: ["Dex", "Int"] },
+    "Overclocked Metabolism": { choose: ["Con", "Dex"] }
+  };
+  function featBump(slot) {
+    if (!slot || slot.type !== "feat" || !slot.name) return null;
+    var fx = FEAT_EFFECTS[slot.name];
+    if (!fx) return null;
+    if (fx.abil) return fx.abil;
+    if (fx.choose) return fx.choose.indexOf(slot.abil) >= 0 ? slot.abil : null;
+    return null;
+  }
+
   var ASI_LEVELS = [4, 8, 12, 16, 19];
-  function asiSlotCount() { return ASI_LEVELS.filter(function (l) { return C.level >= l; }).length; }
+  var ASI_BY_CLASS = {
+    Fighter: [4, 6, 8, 12, 14, 16, 19],
+    Rogue:   [4, 8, 10, 12, 16, 19]
+  };
+  function asiLevelsFor(clsName) { return ASI_BY_CLASS[clsName] || ASI_LEVELS; }
+  function myAsiLevels() { return asiLevelsFor(C.cls); }
+  function asiSlotCount() {
+    return myAsiLevels().filter(function (l) { return C.level >= l; }).length;
+  }
   function asiSlots() {
     var n = asiSlotCount(), out = (C.asi || []).slice(0, n);
     while (out.length < n) out.push({ type: null });
@@ -364,6 +421,11 @@
     var s = Object.assign({}, baseScores());
     var bumps = classBumps();
     asiSlots().forEach(function (sl) {
+      if (sl.type === "feat") {
+        var fa = featBump(sl);
+        if (fa && s[fa] != null) s[fa] = Math.min(20, s[fa] + 1);
+        return;
+      }
       if (sl.type !== "asi") return;
       [sl.a, sl.b].forEach(function (a) {
         if (a && s[a] != null) s[a] = Math.min(20, s[a] + 1);
@@ -426,6 +488,12 @@
   function allSkills() {
     var set = {};
     bgSkills().concat(C.skills).forEach(function (s) { set[s] = 1; });
+    // Classes whose scaling picks ARE skills — the Stackborn's imprints are
+    // proficiencies granted by Muscle Memory, and used to be cosmetic.
+    var spec = SCALING[C.cls];
+    if (spec && spec.skills && C.picks && Array.isArray(C.picks[spec.key])) {
+      C.picks[spec.key].forEach(function (sk) { if (D.skills[sk]) set[sk] = 1; });
+    }
     if (C.techSwap) {
       // The book: Technology "replaces one of their other skill proficiencies".
       if (C.techReplaces && set[C.techReplaces]) delete set[C.techReplaces];
@@ -510,6 +578,27 @@
     if (!spec) return null;
     return { abil: spec[0], label: spec[1], dc: 8 + d.pb + mod(d.sc[spec[0]]) };
   }
+  /* The class tables state weapon proficiency as prose — either an explicit
+     list ("Dart gun, hunting rifle, machine pistol…") or the catch-all "Simple
+     or martial firearms per your weapon proficiencies". Nothing parsed it, so
+     every character added their proficiency bonus to every weapon they owned:
+     a Wizard with a sniper rifle got the same attack bonus as a Chromehound. */
+  function weaponProficient(cl, gun, name) {
+    if (!cl) return false;
+    var text = String((gun ? cl.firearms : cl.weapons) || "");
+    if (!text) return false;
+    if (/\bper your weapon proficiencies\b/i.test(text)) return true;
+    if (/^\s*(all|any)\b/i.test(text)) return true;
+    var lname = String(name || "").toLowerCase().trim();
+    return text.toLowerCase().split(/,|\band\b/).map(function (x) {
+      return x.trim().replace(/[.]$/, "");
+    }).some(function (entry) {
+      if (!entry) return false;
+      // "Daggers" must match "Dagger"; "Pistol" must NOT match "Machine Pistol".
+      var e = entry.replace(/s$/, "");
+      return lname === entry || lname === e || lname.replace(/s$/, "") === e;
+    });
+  }
   function attackBonus(g, d) {
     d = d || statsOf(C);
     var gun = g.key.indexOf("Firearm List|") === 0;
@@ -519,7 +608,9 @@
     // Finesse melee lets you swap Strength for Dexterity.
     var abil = gun ? "Dex" :
       (/finesse/i.test(props) && mod(d.sc.Dex) > mod(d.sc.Str)) ? "Dex" : "Str";
-    return { name: g.name, abil: abil, bonus: mod(d.sc[abil]) + d.pb,
+    var prof = weaponProficient(d.cls, gun, g.name);
+    return { name: g.name, abil: abil, proficient: prof,
+             bonus: mod(d.sc[abil]) + (prof ? d.pb : 0),
              damage: row ? row[2] : "—", props: props };
   }
 
@@ -940,8 +1031,8 @@
           " skill" + (g.n === 1 ? "" : "s") + " — " + (g.n - got) + " still to pick.";
         return null;
       case 3:
-        if (C.method === "array" || C.method === "roll") {
-          var left = 6 - Object.keys(C.arrayMap).length;
+        if (assignsFromMap()) {
+          var left = 6 - ABIL.filter(function (a) { return !!C.arrayMap[a]; }).length;
           if (left > 0) return "Assign " + left + " more score" + (left === 1 ? "" : "s") + " to abilities.";
         } else if (C.method === "pointbuy" && pbSpent() === 0) return "Spend your 27 points.";
         return null;
@@ -963,6 +1054,12 @@
           if (have < sp.allowed) return "Choose " + (sp.allowed - have) + " more " +
             sp.spec.label.toLowerCase() + ".";
         }
+        var unchosen = asiSlots().filter(function (sl) {
+          var fx2 = sl && sl.type === "feat" && sl.name ? FEAT_EFFECTS[sl.name] : null;
+          return fx2 && fx2.choose && !featBump(sl);
+        }).length;
+        if (unchosen) return "Choose the ability score " + unchosen + " feat" +
+          (unchosen === 1 ? "" : "s") + " should raise.";
         if (["Fighter", "Paladin", "Ranger"].indexOf(cl.name) >= 0 && !C.style)
           return "Choose a fighting style.";
         if (cl.name === "Stackborn" && !C.sleeve) return "Choose a sleeve package.";
@@ -1530,6 +1627,8 @@
         dec.disabled = C.scores[a] <= 8;
         inc.disabled = C.scores[a] >= 15 ||
           pbSpent() - (PB_COST[C.scores[a]] || 0) + (PB_COST[C.scores[a] + 1] || 99) > 27;
+        dec.setAttribute("aria-label", "Decrease " + ABIL_FULL[a]);
+        inc.setAttribute("aria-label", "Increase " + ABIL_FULL[a]);
         dec.onclick = function () { C.scores[a]--; delete C.isExample; save(); render(); };
         inc.onclick = function () { C.scores[a]++; delete C.isExample; save(); render(); };
         row.appendChild(dec); row.appendChild(inc);
@@ -1547,6 +1646,7 @@
       } else {
         var sel = el("select");
         sel.id = "ab-" + a;
+        sel.setAttribute("aria-label", ABIL_FULL[a] + " score");
         sel.style.cssText = "background:var(--sunk);color:var(--ink);border:1px solid var(--line);" +
           "border-radius:2px;padding:3px 5px;font-family:var(--f-mono);font-size:12px";
         var opts = ["—"].concat((pool || []).slice().sort(function (x, y) { return y - x; })
@@ -1561,7 +1661,11 @@
           var v = parseInt(sel.value, 10);
           if (!v) delete C.arrayMap[a];
           else {
-            ABIL.forEach(function (o) { if (o !== a && C.arrayMap[o] === v) delete C.arrayMap[o]; });
+            // Only bump another ability off this value when the pool does not
+            // actually contain enough copies of it. Rolled sets have duplicates.
+            var have = (pool || []).filter(function (x) { return x === v; }).length;
+            var others = ABIL.filter(function (o) { return o !== a && C.arrayMap[o] === v; });
+            while (others.length >= have && others.length) delete C.arrayMap[others.shift()];
             C.arrayMap[a] = v;
           }
           delete C.isExample; save(); render();
@@ -1706,9 +1810,10 @@
     var cl = classByName[C.cls];
     if (!cl) return needClass(s);
     head(s, "Step 06", "Level-up choices",
-      "Every level you cross hands you something. Ability score improvements arrive at 4th, " +
-      "8th, 12th, 16th and 19th — take the increase or a feat instead. Classes that learn " +
-      "things as they go pick them here too.");
+      "Every level you cross hands you something. " + cl.name + " ability score improvements " +
+      "arrive at " + myAsiLevels().map(ordinal).join(", ").replace(/, ([^,]*)$/, " and $1") +
+      " — take the increase or a feat instead. Classes that learn things as they go pick " +
+      "them here too.");
 
     /* ---- ASI / feat slots ---- */
     var slots = asiSlots();
@@ -1720,14 +1825,14 @@
       filled + " / " + slots.length + " taken</span>"));
 
     if (!slots.length) {
-      var nextAsi = ASI_LEVELS.filter(function (l) { return l > C.level; })[0];
+      var nextAsi = myAsiLevels().filter(function (l) { return l > C.level; })[0];
       sec.appendChild(el("p", "empty-state",
         "None yet — your first arrives at level " + nextAsi + ". Move the level slider in the " +
         "dossier to get there."));
     }
 
     slots.forEach(function (slot, i) {
-      var lvl = ASI_LEVELS[i];
+      var lvl = myAsiLevels()[i];
       var card = el("div", "slot");
       var hd = el("div", "slot-head");
       hd.innerHTML = '<span class="chip lvl">Level ' + lvl + "</span>";
@@ -1792,6 +1897,35 @@
           };
           eh.appendChild(clear);
           e.appendChild(eh);
+
+          var fx = FEAT_EFFECTS[picked];
+          if (fx) {
+            var pickRow = el("div", "feat-abil");
+            if (fx.abil) {
+              pickRow.appendChild(el("span", "chip on", "+1 " + ABIL_FULL[fx.abil]));
+            } else {
+              pickRow.appendChild(el("div", "feat-abil-q", "Which score does this raise?"));
+              var chips = el("div", "chips");
+              fx.choose.forEach(function (ab) {
+                var on = slot.abil === ab;
+                var cb = el("button", "chip" + (on ? " on" : ""), "+1 " + ABIL_FULL[ab]);
+                cb.setAttribute("aria-pressed", on);
+                cb.onclick = function () {
+                  var arr = asiSlots();
+                  arr[i] = { type: "feat", name: picked, abil: on ? null : ab };
+                  C.asi = arr; syncFeats(); delete C.isExample; save(); render();
+                };
+                chips.appendChild(cb);
+              });
+              pickRow.appendChild(chips);
+              if (!slot.abil) {
+                pickRow.appendChild(el("p", "origin-note",
+                  "Pick one — until you do, this feat's increase is not on your sheet."));
+              }
+            }
+            e.appendChild(pickRow);
+          }
+
           if (ft) renderBlocks(ft.blocks, e);
           wrap.appendChild(e);
         } else {
@@ -2173,6 +2307,14 @@
                    Streetdoc: ["Wis", "Medicine DC"], Firebrand: ["Cha", "Signal DC"],
                    Fixer: ["Cha", "Fixer DC"], Bioforged: ["Con", "Graft DC"] };
 
+  /* The Armor table holds two different kinds of value in one column: a base
+     formula ("14 + Dex modifier (max 2)") and an additive bonus ("+2", which is
+     the Ballistic Shield). The old parser was anchored to a leading digit, so
+     the shield parsed as null and was discarded — it added nothing at all. */
+  function parseACBonus(formula) {
+    var m = String(formula).match(/^\s*\+\s*(\d+)\s*$/);
+    return m ? parseInt(m[1], 10) : null;
+  }
   function parseAC(formula, sc) {
     var m = String(formula).match(/^(\d+)(?:\s*\+\s*Dex modifier(?:\s*\(max\s*(\d+)\))?)?/i);
     if (!m) return null;
@@ -2182,13 +2324,24 @@
     if (m[2]) dex = Math.min(dex, parseInt(m[2], 10));
     return base + dex;
   }
+  function armorRow(name) {
+    var t = tableByTitle["Armor"];
+    return t ? (t.rows.filter(function (r) { return r[0] === name; })[0] || null) : null;
+  }
   function armorClass() {
     var sc = scores(), best = { ac: 10 + mod(sc.Dex), from: "Unarmoured" };
-    var armorTbl = tableByTitle["Armor"];
+    var bonus = 0, bonusFrom = [];
     C.gear.forEach(function (g) {
-      if (g.key.indexOf("Armor|") !== 0 || !armorTbl) return;
-      var row = armorTbl.rows.filter(function (r) { return r[0] === g.name; })[0];
+      if (g.key.indexOf("Armor|") !== 0) return;
+      var row = armorRow(g.name);
       if (!row) return;
+      var add = parseACBonus(row[2]);
+      if (add != null) {
+        // A shield stacks on top of whatever you are wearing; it is not armour
+        // competing to be the best single source.
+        if (bonusFrom.indexOf(g.name) < 0) { bonus += add; bonusFrom.push(g.name); }
+        return;
+      }
       var v = parseAC(row[2], sc);
       if (v != null && v > best.ac) best = { ac: v, from: g.name };
     });
@@ -2200,6 +2353,10 @@
     if (C.cls === "Bioforged" && (C.picks && (C.picks.grafts || []).indexOf("Dermal Weave") >= 0)) {
       var v3 = 13 + mod(sc.Dex);
       if (v3 > best.ac) best = { ac: v3, from: "Dermal Weave" };
+    }
+    if (bonus) {
+      best = { ac: best.ac + bonus,
+               from: best.from + " + " + bonusFrom.join(" + ") };
     }
     return best;
   }
@@ -2257,7 +2414,7 @@
       if (sub)
         sub.features.forEach(function (f) { if (f.level === lv) gains.push(sub.name + ": " + f.name); });
       if (!cl || !isExp(cl)) {
-        if (ASI_LEVELS.indexOf(lv) >= 0) gains.push("Ability Score Improvement");
+        if (myAsiLevels().indexOf(lv) >= 0) gains.push("Ability Score Improvement");
       }
       if (cl && cl.progression) {
         var row = cl.progression.rows[lv - 1], prev = lv > 1 ? cl.progression.rows[lv - 2] : null;
@@ -2781,8 +2938,9 @@
     });
     weapons.forEach(function (g) {
       var a = attackBonus(g);
-      atk.innerHTML += '<div class="cs-line"><span>' + esc(g.name) + '</span><span class="b">' +
-        sgn(a.bonus) + " / " + esc(a.damage) + "</span></div>";
+      atk.innerHTML += '<div class="cs-line"><span>' + esc(g.name) +
+        (a.proficient ? "" : ' <span style="color:#888;font-size:6pt">not proficient</span>') +
+        '</span><span class="b">' + sgn(a.bonus) + " / " + esc(a.damage) + "</span></div>";
     });
     for (var i = weapons.length; i < 4; i++) atk.innerHTML += '<div class="cs-write"></div>';
     c2.appendChild(atk);
@@ -3486,8 +3644,7 @@
       case 0: return !!C.cls;
       case 1: return !!mySub();
       case 2: return !!C.bg && bgSkills().length >= skillGrant().fixed.length + skillGrant().n;
-      case 3: return C.method === "pointbuy" ? pbSpent() > 0 :
-        (C.method === "manual" ? true : Object.keys(C.arrayMap).length === 6);
+      case 3: return C.method === "pointbuy" ? pbSpent() > 0 : abilitiesDone();
       case 4: return C.cls ? C.skills.length === classByName[C.cls].skillCount : false;
       case 5:
         if (!C.cls) return false;
@@ -3530,7 +3687,7 @@
       if (now > was) {
         var gained = ladder().filter(function (r) { return r.level > was && r.level <= now; })
           .reduce(function (a, r) { return a.concat(r.gains); }, []);
-        if (ASI_LEVELS.some(function (l) { return l > was && l <= now; }) &&
+        if (myAsiLevels().some(function (l) { return l > was && l <= now; }) &&
             gained.indexOf("Ability Score Improvement") < 0) gained.push("Ability Score Improvement");
         if (gained.length) toast("Level " + now + " — gained " + gained.slice(0, 3).join(", ") +
           (gained.length > 3 ? " +" + (gained.length - 3) + " more" : ""));
@@ -3898,6 +4055,9 @@
     humanityMeter: humanityMeter, essenceMeter: essenceMeter,
     // the numbers
     mod: mod, sgn: sgn, profBonus: profBonus, dieSize: dieSize,
+    FEAT_EFFECTS: FEAT_EFFECTS, asiLevelsFor: asiLevelsFor, featBump: featBump,
+    weaponProficient: weaponProficient, baseScores: baseScores, droppedNote: droppedNote,
+    storageIsBroken: storageIsBroken,
     withChar: withChar, statsOf: statsOf, saveBonus: saveBonus, skillBonus: skillBonus,
     passiveSkill: passiveSkill, initiative: initiative, initiativeNote: initiativeNote,
     saveDC: saveDC, attackBonus: attackBonus, armorClass: armorClass, maxHP: maxHP,

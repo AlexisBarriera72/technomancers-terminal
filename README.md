@@ -99,6 +99,28 @@ a table underground. Add it to the home screen on a tablet and it runs as its ow
 app; on iOS that also stops Safari evicting your GM notes after a week of not
 visiting.
 
+## Tests
+
+The site itself still has no dependencies and no build step. The tests are
+dev-only — the app needs a DOM, so even the rules checks run inside a real
+browser against `window.TT`, the namespace `app.js` publishes for `gm.js`.
+
+```
+npm install
+npx playwright install chromium
+npm test            # everything
+npm test -- rules   # just the rules/validation checks
+```
+
+`npm run check` is a syntax-only pass and needs nothing installed. CI runs both
+on every push.
+
+| Suite | What it covers |
+|---|---|
+| `test/rules.test.js` | Ability scores, feats, per-class ASI levels, AC, proficiency, the import validator. |
+| `test/browser.test.js` | Injection, save failures, the GM vault export, share-link transitions, and that the app still works. |
+| `test/sw.test.js` | A failed update must not replace a working offline cache. |
+
 ## Deploying a change
 
 A push to `main` is the deploy, but **bump both version markers in the same commit**
