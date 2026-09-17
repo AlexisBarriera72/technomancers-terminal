@@ -119,6 +119,10 @@
                "Level-Ups", "Chrome & Gear", "Play Sheet"];
   var CAMPSEC = ["Overview", "House Rules", "People", "Places", "Custom Gear", "Session Log", "Hooks"];
   var campSecIx = 0;
+  var GMSEC = ["Party", "Encounter", "Rulings", "NPCs", "Clocks"];
+  var gmSecIx = 0;
+  var gmOn = false;
+  try { gmOn = localStorage.getItem("ttb.gm") === "1"; } catch (e) {}
   var CODEX = ["Subclasses", "Backgrounds", "Feats", "Fighting Styles",
                "Warlock Invocations", "Artificer Infusions", "Cyberware",
                "Augments", "Reference Tables",
@@ -127,6 +131,7 @@
   /* ------------------------------------------------------------ persistence */
   var LS = "ttb.character.v1";
   function save() {
+    if (swapDepth) return;         // borrowing someone else's sheet; never write it to our slot
     if (C && C.isShared) return;   // viewing someone else's link; leave their slot alone
     try { localStorage.setItem(LS, JSON.stringify(C)); } catch (e) {}
   }
@@ -286,6 +291,76 @@
     if (!list.length) return null;
     if (list.length === 1) return list[0];
     return subById[C.sub] && subById[C.sub].cls === C.cls ? subById[C.sub] : null;
+  }
+
+  /* ---- borrowing another character ---------------------------------------
+     Every derived function above reads the module-global C. The GM screen needs
+     them for four characters at once, so we lend C out briefly and put it back.
+     SAFE for value-returning calls and DOM builders that attach no handlers.
+     NEVER for the step renderers or the dossier: their onclick handlers fire
+     long after the swap unwinds and would edit whoever C is by then.        */
+  var swapDepth = 0;
+  function withChar(c, fn) {
+    var prev = C;
+    C = c; swapDepth++;
+    try { return fn(c); } finally { C = prev; swapDepth--; }
+  }
+  /* One swap per character per render — harvest everything, then work on the
+     plain object it returns. GM code should never touch C itself. */
+  function statsOf(c) {
+    return withChar(c, function () {
+      var cl = classByName[c.cls];
+      return { c: c, cls: cl, level: c.level, sc: scores(), pb: profBonus(c.level),
+               saves: cl ? cl.saves : [], prof: allSkills(), ac: armorClass(),
+               hp: maxHP(), hum: humanity(), ess: essence(), sub: mySub() };
+    });
+  }
+
+  /* ---- the numbers, in one place each --------------------------------------
+     These were copied inline at three or four render sites apiece and had
+     drifted apart. `d` is a statsOf snapshot; it defaults to the current
+     character so the forge and print sheets stay one-liners.                */
+  function saveBonus(a, d) {
+    d = d || statsOf(C);
+    return mod(d.sc[a]) + (d.saves.indexOf(a) >= 0 ? d.pb : 0);
+  }
+  function skillBonus(sk, d) {
+    d = d || statsOf(C);
+    var ab = D.skills[sk];
+    if (!ab) return 0;
+    return mod(d.sc[ab]) + (d.prof.indexOf(sk) >= 0 ? d.pb : 0);
+  }
+  function passiveSkill(sk, d) { return 10 + skillBonus(sk, d); }
+  function initiative(d) {
+    d = d || statsOf(C);
+    // Combat Awareness and Stage Presence are both level 1, so they apply to
+    // every Chromehound and every Firebrand there is.
+    var n = d.cls && d.cls.name;
+    return mod(d.sc.Dex) +
+      (n === "Chromehound" ? mod(d.sc.Con) : n === "Firebrand" ? mod(d.sc.Cha) : 0);
+  }
+  function initiativeNote(d) {
+    d = d || statsOf(C);
+    return d.cls && d.cls.name === "Chromehound" && d.level >= 20 ?
+      "Apex Predator: advantage" : "";
+  }
+  function saveDC(d) {
+    d = d || statsOf(C);
+    var spec = CLASS_DC[d.cls ? d.cls.name : ""];
+    if (!spec) return null;
+    return { abil: spec[0], label: spec[1], dc: 8 + d.pb + mod(d.sc[spec[0]]) };
+  }
+  function attackBonus(g, d) {
+    d = d || statsOf(C);
+    var gun = g.key.indexOf("Firearm List|") === 0;
+    var t = tableByTitle[gun ? "Firearm List" : "Melee Weapons"];
+    var row = t ? t.rows.filter(function (r) { return r[0] === g.name; })[0] : null;
+    var props = row ? row[row.length - 1] : "";
+    // Finesse melee lets you swap Strength for Dexterity.
+    var abil = gun ? "Dex" :
+      (/finesse/i.test(props) && mod(d.sc.Dex) > mod(d.sc.Str)) ? "Dex" : "Str";
+    return { name: g.name, abil: abil, bonus: mod(d.sc[abil]) + d.pb,
+             damage: row ? row[2] : "—", props: props };
   }
 
   /* ---------------------------------------------------- Humanity & Essence */
@@ -2080,11 +2155,10 @@
     var dcSpec = CLASS_DC[cl.name];
     [["AC", ac.ac, ac.from],
      ["Hit points", maxHP(), cl.hit + " hit die"],
-     ["Initiative", sgn(mod(sc.Dex) + (cl.name === "Chromehound" ? mod(sc.Con) :
-        cl.name === "Firebrand" ? mod(sc.Cha) : 0)), "d20 +"],
+     ["Initiative", sgn(initiative()), "d20 +"],
      ["Proficiency", sgn(pb), ""],
      ["Speed", "30 ft.", ""],
-     dcSpec ? [dcSpec[1], 8 + pb + mod(sc[dcSpec[0]]), dcSpec[0] + " based"] : null
+     dcSpec ? [dcSpec[1], saveDC().dc, dcSpec[0] + " based"] : null
     ].filter(Boolean).forEach(function (v) {
       var x = el("div", "vs");
       x.innerHTML = '<div class="k">' + esc(v[0]) + '</div><div class="v">' + esc(v[1]) +
@@ -2176,7 +2250,7 @@
       l.innerHTML = "<span>" + (save ? '<span class="dot"></span>' : '<span class="dot off"></span>') +
         ABIL_FULL[a] + (delta ? ' <span class="page-ref">+' + delta + " from levelling</span>" : "") +
         '</span><span class="b">' + sc[a] + " (" + sgn(mod(sc[a])) + ")" +
-        (save ? " · save " + sgn(mod(sc[a]) + pb) : "") + "</span>";
+        (save ? " · save " + sgn(saveBonus(a)) : "") + "</span>";
       g1.appendChild(l);
     });
     grid.appendChild(g1);
@@ -2187,7 +2261,7 @@
     var mine = allSkills();
     Object.keys(D.skills).sort().forEach(function (sk) {
       var p = mine.indexOf(sk) >= 0;
-      var v = mod(sc[D.skills[sk]]) + (p ? pb : 0);
+      var v = skillBonus(sk);
       var l = el("div", "skill-line" + (p ? " prof" : ""));
       l.innerHTML = "<span>" + (p ? '<span class="dot"></span>' : '<span class="dot off"></span>') +
         esc(sk) + " <span style='opacity:.5;font-size:11px'>" + D.skills[sk] +
@@ -2332,11 +2406,13 @@
     L.push("- **Hit points** " + (maxHP() || "—") + "  ");
     L.push("- **Proficiency bonus** " + sgn(pb) + "  ");
     L.push("- **Saving throws** " + (cl ? cl.saves.map(function (a) {
-      return ABIL_FULL[a] + " " + sgn(mod(sc[a]) + pb);
+      return ABIL_FULL[a] + " " + sgn(saveBonus(a));
     }).join(", ") : "—"));
-    L.push("- **Skills** " + (allSkills().join(", ") || "—"));
-    var dcs = CLASS_DC[cl ? cl.name : ""];
-    if (dcs) L.push("- **" + dcs[1] + "** " + (8 + pb + mod(sc[dcs[0]])));
+    L.push("- **Skills** " + (allSkills().map(function (sk) {
+      return sk + " " + sgn(skillBonus(sk));
+    }).join(", ") || "—"));
+    var dcs = cl ? saveDC() : null;
+    if (dcs) L.push("- **" + dcs.label + "** " + dcs.dc);
     if (cl && cl.progression) {
       var prow = classRow();
       var pools = cl.progression.headers.map(function (h, i) {
@@ -2470,7 +2546,7 @@
       var prof = cl.saves.indexOf(a) >= 0;
       sv.innerHTML += '<div class="cs-line"><span><span class="pipbox' + (prof ? " on" : "") +
         '"></span>' + ABIL_FULL[a] + '</span><span class="b">' +
-        sgn(mod(sc[a]) + (prof ? pb : 0)) + "</span></div>";
+        sgn(saveBonus(a)) + "</span></div>";
     });
     c1.appendChild(sv);
     var sk = el("div", "cs-box");
@@ -2480,8 +2556,7 @@
       var prof = mine.indexOf(s2) >= 0;
       sk.innerHTML += '<div class="cs-line"><span><span class="pipbox' + (prof ? " on" : "") +
         '"></span>' + esc(s2) + ' <span style="color:#777;font-size:6.5pt">' + D.skills[s2] +
-        '</span></span><span class="b">' + sgn(mod(sc[D.skills[s2]]) + (prof ? pb : 0)) +
-        "</span></div>";
+        '</span></span><span class="b">' + sgn(skillBonus(s2)) + "</span></div>";
     });
     c1.appendChild(sk);
     cols.appendChild(c1);
@@ -2490,11 +2565,9 @@
     var c2 = el("div");
     var stat = el("div", "cs-stat");
     var dc = CLASS_DC[cl.name];
-    [["AC", ac.ac], ["Initiative", sgn(mod(sc.Dex) + (cl.name === "Chromehound" ? mod(sc.Con) :
-      cl.name === "Firebrand" ? mod(sc.Cha) : 0))], ["Speed", "30 ft."],
+    [["AC", ac.ac], ["Initiative", sgn(initiative())], ["Speed", "30 ft."],
      ["Prof. bonus", sgn(pb)], ["Hit dice", C.level + cl.hit],
-     dc ? [dc[1], 8 + pb + mod(sc[dc[0]])] : ["Passive Perc.",
-       10 + mod(sc.Wis) + (mine.indexOf("Perception") >= 0 ? pb : 0)]
+     dc ? [dc[1], saveDC().dc] : ["Passive Perc.", passiveSkill("Perception")]
     ].forEach(function (x) {
       stat.innerHTML += '<div class="s"><div class="k">' + esc(x[0]).toUpperCase() +
         '</div><div class="v">' + esc(x[1]) + "</div></div>";
@@ -2522,16 +2595,13 @@
     atk.innerHTML = "<h4>Attacks</h4>" +
       '<div class="cs-line" style="color:#777;font-size:6.5pt;font-family:\'JetBrains Mono\',monospace">' +
       "<span>WEAPON</span><span>ATK / DAMAGE</span></div>";
-    var fl = tableByTitle["Firearm List"], ml = tableByTitle["Melee Weapons"];
     var weapons = C.gear.filter(function (g) {
       return g.key.indexOf("Firearm List|") === 0 || g.key.indexOf("Melee Weapons|") === 0;
     });
     weapons.forEach(function (g) {
-      var t = g.key.indexOf("Firearm") === 0 ? fl : ml;
-      var row = t ? t.rows.filter(function (r) { return r[0] === g.name; })[0] : null;
-      var abil = g.key.indexOf("Firearm") === 0 ? "Dex" : "Str";
+      var a = attackBonus(g);
       atk.innerHTML += '<div class="cs-line"><span>' + esc(g.name) + '</span><span class="b">' +
-        sgn(mod(sc[abil]) + pb) + " / " + esc(row ? row[2] : "—") + "</span></div>";
+        sgn(a.bonus) + " / " + esc(a.damage) + "</span></div>";
     });
     for (var i = weapons.length; i < 4; i++) atk.innerHTML += '<div class="cs-write"></div>';
     c2.appendChild(atk);
@@ -2634,9 +2704,8 @@
         '<div class="sub">Level ' + C.level + " " + esc(cl.name) +
         (sub && C.level >= sub.levelAvailable ? " · " + esc(sub.name) : "") + "</div>";
       var v = el("div", "pc-v");
-      [["AC", ac.ac], ["HP", maxHP() || "—"], ["INIT", sgn(mod(sc.Dex))], ["PROF", sgn(pb)],
-       [dc ? "DC" : "P.PER", dc ? 8 + pb + mod(sc[dc[0]]) :
-         10 + mod(sc.Wis) + (allSkills().indexOf("Perception") >= 0 ? pb : 0)]
+      [["AC", ac.ac], ["HP", maxHP() || "—"], ["INIT", sgn(initiative())], ["PROF", sgn(pb)],
+       [dc ? "DC" : "P.PER", dc ? saveDC().dc : passiveSkill("Perception")]
       ].forEach(function (x) {
         v.innerHTML += '<div><div class="k">' + esc(x[0]) + '</div><div class="val">' +
           esc(x[1]) + "</div></div>";
@@ -3200,26 +3269,33 @@
   }
 
   /* ---------------------------------------------------------------- render */
+  /* One entry per mode. A lookup rather than a ternary chain, because the old
+     chain fell through to Codex and a fourth mode would have silently set
+     codexSec on every rail click. */
+  var RAILS = {
+    forge:    { title: "Build order", list: STEPS,
+                get: function () { return step; },      set: function (i) { step = i; } },
+    codex:    { title: "Sections",    list: CODEX,
+                get: function () { return codexSec; },  set: function (i) { codexSec = i; codexQ = ""; } },
+    campaign: { title: "Campaign",    list: CAMPSEC,
+                get: function () { return campSecIx; }, set: function (i) { campSecIx = i; } },
+    table:    { title: "The table",   list: GMSEC,
+                get: function () { return gmSecIx; },   set: function (i) { gmSecIx = i; } }
+  };
   function renderRail() {
     var r = $("#rail");
+    var R = RAILS[mode] || RAILS.forge;
     r.innerHTML = "";
-    r.appendChild(el("div", "rail-title", mode === "forge" ? "Build order" :
-      (mode === "campaign" ? "Campaign" : "Sections")));
+    r.appendChild(el("div", "rail-title", R.title));
     var wrap = el("div", "steps");
-    var list = mode === "forge" ? STEPS : (mode === "campaign" ? CAMPSEC : CODEX);
-    var cur = mode === "forge" ? step : (mode === "campaign" ? campSecIx : codexSec);
-    list.forEach(function (label, i) {
+    var cur = R.get();
+    R.list.forEach(function (label, i) {
       var done = mode === "forge" && stepDone(i);
       var b = el("button", "step" + (done && i !== cur ? " done" : ""));
       b.setAttribute("aria-current", i === cur);
       b.innerHTML = '<span class="step-n">' + (done && i !== cur ? "" : (mode === "forge" ?
         String(i + 1).padStart(2, "0") : "·")) + '</span><span class="step-l">' + esc(label) + "</span>";
-      b.onclick = function () {
-        if (mode === "forge") step = i;
-        else if (mode === "campaign") campSecIx = i;
-        else { codexSec = i; codexQ = ""; }
-        render(); window.scrollTo(0, 0);
-      };
+      b.onclick = function () { R.set(i); render(); window.scrollTo(0, 0); };
       wrap.appendChild(b);
     });
     r.appendChild(wrap);
@@ -3285,7 +3361,7 @@
 
     var vit = el("div", "vitals");
     [["HP", cl ? maxHP() : "—"], ["Prof", sgn(profBonus(C.level))],
-     ["Init", sgn(mod(sc.Dex))]].forEach(function (v) {
+     ["Init", sgn(cl ? initiative() : mod(sc.Dex))]].forEach(function (v) {
       var x = el("div", "vital");
       x.innerHTML = '<div class="k">' + v[0] + '</div><div class="v">' + v[1] + "</div>";
       vit.appendChild(x);
@@ -3492,6 +3568,7 @@
   function renderStage() {
     var s = $("#stage");
     s.innerHTML = "";
+    if (mode === "table") return window.TTGM.renderStage(s, gmSecIx);
     if (mode === "campaign") return renderCampaign(s);
     if (mode === "codex") return renderCodex(s);
     if (step === 0 && !C.cls && helpMode) {
@@ -3538,9 +3615,12 @@
      stepOptions, stepGear, stepSheet][step](s);
   }
   function render() {
+    // Locking the GM tools while they're open has to eject you from them.
+    if (!gmOn && mode === "table") mode = "forge";
     renderRail();
     renderStage();
-    renderDossier();
+    if (mode === "table") window.TTGM.renderDossier($("#dossier"));
+    else renderDossier();
     var gb3 = $("#guideBtn");
     if (gb3) {
       gb3.setAttribute("aria-pressed", helpMode);
@@ -3550,10 +3630,77 @@
     $("#mForge").setAttribute("aria-pressed", mode === "forge");
     $("#mCodex").setAttribute("aria-pressed", mode === "codex");
     if ($("#mCamp")) $("#mCamp").setAttribute("aria-pressed", mode === "campaign");
+    var mt = $("#mTable");
+    if (mt) { mt.hidden = !gmOn; mt.setAttribute("aria-pressed", mode === "table"); }
   }
+
+  /* ---- GM tools: hidden until someone knows the address --------------------
+     #gm=<token> unlocks and remembers on this device; #gm=off puts it away
+     again. The token sits in a public file on a public deploy, so this is
+     obscurity, not security — the real guarantee is that nothing the GM keeps
+     ever leaves the tablet.                                                */
+  function gmUnlock(on) {
+    gmOn = !!on;
+    try {
+      if (on) localStorage.setItem("ttb.gm", "1");
+      else localStorage.removeItem("ttb.gm");
+    } catch (e) {}
+    if (!on && mode === "table") mode = "forge";
+  }
+  function gmHash() {
+    var m = (location.hash || "").match(/[#&]gm=([^&]+)/);
+    if (!m) return false;
+    var tok = decodeURIComponent(m[1]);
+    var want = (window.TTBGM && window.TTBGM.unlock) || "table";
+    if (tok === "off") gmUnlock(false);
+    else if (tok === want) { gmUnlock(true); mode = "table"; }
+    else return false;
+    // Strip only our own token; a c= share fragment alongside it must survive.
+    var rest = (location.hash || "").replace(/[#&]gm=[^&]*/, "").replace(/^[#&]+/, "");
+    try {
+      history.replaceState(null, "", location.pathname + location.search + (rest ? "#" + rest : ""));
+    } catch (e) {}
+    return true;
+  }
+
+  /* ---- what gm.js is allowed to see ---------------------------------------
+     Everything above is closed over by this IIFE, and the startup merge at the
+     top mutates the book data in place while building classByName/subById, so
+     gm.js cannot rebuild any of it correctly on its own. Hand over the already
+     merged references instead. App state is reached through accessors, never
+     as raw bindings.                                                        */
+  window.TT = {
+    // book data and lookups
+    D: D, X: X, CAMP: CAMP, classByName: classByName, subById: subById,
+    ALL_CLASSES: ALL_CLASSES, ALL_SUBS: ALL_SUBS, ALL_FEATS: ALL_FEATS,
+    tableByTitle: tableByTitle, subsFor: subsFor, paras: paras,
+    ABIL: ABIL, ABIL_FULL: ABIL_FULL, HSTATE: HSTATE, CLASS_DC: CLASS_DC,
+    // dom helpers
+    $: $, el: el, esc: esc, toast: toast, head: head, renderTable: renderTable,
+    renderBlocks: renderBlocks, collapsible: collapsible, saveAs: saveAs,
+    humanityMeter: humanityMeter, essenceMeter: essenceMeter,
+    // the numbers
+    mod: mod, sgn: sgn, profBonus: profBonus, dieSize: dieSize,
+    withChar: withChar, statsOf: statsOf, saveBonus: saveBonus, skillBonus: skillBonus,
+    passiveSkill: passiveSkill, initiative: initiative, initiativeNote: initiativeNote,
+    saveDC: saveDC, attackBonus: attackBonus, armorClass: armorClass, maxHP: maxHP,
+    allSkills: allSkills, humanity: humanity, activeFeatures: activeFeatures,
+    blockText: blockText, actionType: actionType, usageOf: usageOf, toMarkdown: toMarkdown,
+    // character plumbing
+    migrate: migrate, blank: blank, b64u: b64u, unb64u: unb64u, slimChar: slimChar,
+    rosterAll: rosterAll, campAll: campAll, campById: campById, campSel: function () { return campSel; },
+    // app state
+    getMode: function () { return mode; },
+    setMode: function (m) { mode = m; },
+    gmSec: function (v) { if (v != null) gmSecIx = v; return gmSecIx; },
+    gmLock: function () { gmUnlock(false); render(); },
+    render: render
+  };
 
   function init() {
     $("#brandMeta").textContent = D.meta.author + " · v" + D.meta.version + " · " + D.meta.pages + " pp";
+    var unlocked = gmHash();
+    if (window.TTGM && window.TTGM.boot) window.TTGM.boot(window.TT);
     var shared = readShared();
     if (shared) {
       // Keep the hash: the visitor may reload, and we must not clobber whatever
@@ -3564,9 +3711,13 @@
     } else {
       C = load() || migrate(example());
     }
+    // Reloading the tablet mid-session should land back where you were.
+    if (gmOn && !shared && !unlocked && window.TTGM && window.TTGM.lastMode &&
+        window.TTGM.lastMode() === "table") mode = "table";
     $("#mForge").onclick = function () { mode = "forge"; render(); window.scrollTo(0, 0); };
     $("#mCodex").onclick = function () { mode = "codex"; render(); window.scrollTo(0, 0); };
     if ($("#mCamp")) $("#mCamp").onclick = function () { mode = "campaign"; render(); window.scrollTo(0, 0); };
+    if ($("#mTable")) $("#mTable").onclick = function () { mode = "table"; render(); window.scrollTo(0, 0); };
     var gbtn = $("#guideBtn");
     gbtn.onclick = function () {
       helpMode = !helpMode;
@@ -3590,6 +3741,7 @@
 
     // A hash-only navigation (pasting a share link while already here) doesn't reload.
     window.addEventListener("hashchange", function () {
+      if (gmHash()) { render(); window.scrollTo(0, 0); toast(gmOn ? "GM tools unlocked" : "GM tools locked"); return; }
       var sh = readShared();
       if (!sh) return;
       C = migrate(sh); C.isShared = true;
