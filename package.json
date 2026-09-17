@@ -1,0 +1,17 @@
+{
+  "name": "technomancers-terminal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Character forge, codex and GM screen for The Technomancer's Textbook.",
+  "scripts": {
+    "test": "node test/run.js",
+    "test:rules": "node test/run.js rules",
+    "test:browser": "node test/run.js browser",
+    "test:sw": "node test/run.js sw",
+    "check": "node --check app.js && node --check gm.js && node --check sw.js && node --check campaigns.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  },
+  "comment": "The site itself has no dependencies and no build step. Playwright is dev-only: the app needs a DOM, so even the rules tests run inside a real browser against window.TT."
+}

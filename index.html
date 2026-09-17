@@ -494,6 +494,10 @@ details.item .body p,details.item .body ul{max-width:70ch}
 .gm-import textarea{width:100%;font-family:var(--f-mono);font-size:12px}
 .gm-import input{flex:1;min-width:150px}
 .gm-vault{margin-top:26px;padding-top:15px;border-top:1px solid var(--line)}
+.gm-unsaved{margin-top:10px;padding:10px 12px;border-left:3px solid var(--alert);
+  background:var(--surface);border-radius:var(--r);font-size:13px;color:var(--ink);line-height:1.5}
+.storage-alert{flex-direction:column;align-items:stretch}
+.storage-alert .btn{align-self:flex-start;margin-top:8px}
 
 /* the god's die */
 .gm-god{background:var(--sunk);border:1px solid var(--line);border-left:3px solid var(--gold);
@@ -763,15 +767,6 @@ body.previewing .print-root .sheet-block{background:#fff;margin:0 auto 22px;box-
 <script src="expansion.js"></script>
 <script src="gm.js"></script>
 <script src="app.js"></script>
-<script>
-/* Offline shell. Service workers need https (or localhost), so this quietly
-   does nothing when the page is opened straight off the disk. */
-if ("serviceWorker" in navigator && location.protocol !== "file:") {
-  window.addEventListener("load", function () {
-    navigator.serviceWorker.register("sw.js").catch(function () {});
-  });
-}
-</script>
 
 </body>
 </html>

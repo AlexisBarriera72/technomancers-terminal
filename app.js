@@ -10,8 +10,10 @@
     return n;
   };
   var esc = function (s) {
-    return String(s == null ? "" : s).replace(/[&<>"]/g, function (m) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m];
+    // Single quotes included: attributes get built by concatenation in places,
+    // and leaving ' out is the classic way an escape helper stops helping.
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (m) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m];
     });
   };
 
@@ -19,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-17 20:17";
+  var BUILD = "2026-09-17 22:27";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -91,7 +93,7 @@
       name: "", level: 3, cls: null, method: "pointbuy",
       scores: { Str: 8, Dex: 8, Con: 8, Int: 8, Wis: 8, Cha: 8 },
       rolled: null, arrayMap: {}, skills: [], bgPicks: [], techSwap: false, techReplaces: null,
-      sub: null, origin: null, cred: 0, asi: [], picks: {}, sleeve: null,
+      sub: null, origin: null, bg: null, cred: 0, asi: [], picks: {}, sleeve: null,
       subChoices: {}, style: null, feats: [], invocations: [], infusions: [],
       cyber: [], augments: [], gear: [], traits: {}
     };
@@ -134,10 +136,27 @@
 
   /* ------------------------------------------------------------ persistence */
   var LS = "ttb.character.v1";
+
+  /* Storage can fail — a full quota, a private window, blocked site data — and
+     every write here used to swallow the exception and carry on, so the app
+     cheerfully reported saves that never happened. These return whether the
+     write landed, and callers are expected to care. */
+  var storageBroken = false;
+  function lsWrite(key, value) {
+    try { localStorage.setItem(key, value); storageBroken = false; return true; }
+    catch (e) { storageBroken = true; return false; }
+  }
+  function lsRead(key) {
+    // null = absent, undefined = unreadable. Those are different, and conflating
+    // them renders a read failure as "you have no characters".
+    try { return localStorage.getItem(key); } catch (e) { return undefined; }
+  }
+  function storageIsBroken() { return storageBroken; }
+
   function save() {
-    if (swapDepth) return;         // borrowing someone else's sheet; never write it to our slot
-    if (C && C.isShared) return;   // viewing someone else's link; leave their slot alone
-    try { localStorage.setItem(LS, JSON.stringify(C)); } catch (e) {}
+    if (swapDepth) return true;       // borrowed sheet; never write it to our slot
+    if (C && C.isShared) return true; // someone else's link; leave their slot alone
+    return lsWrite(LS, JSON.stringify(C));
   }
   function load() {
     try {
@@ -146,25 +165,162 @@
     } catch (e) {}
     return null;
   }
+  /* ---- validation -------------------------------------------------------
+     Every way a character enters the app goes through here: share links, file
+     imports, roster opens and the local save. It used to check only shape —
+     "is this an array, is this an object" — and let the contents through
+     untouched, which is how markup reached the dossier and how a level of 2.5
+     or an unknown class name reached code that assumed neither could happen.
+     Validate contents, drop what cannot be trusted, and report what was
+     dropped rather than silently mangling someone's character.            */
+  var lastDropped = [];
+
+  function isPlainObj(v) { return v && typeof v === "object" && !Array.isArray(v); }
+  function intIn(v, lo, hi) {
+    var n = typeof v === "number" ? v : parseInt(v, 10);
+    return Number.isFinite(n) && Math.floor(n) === n && n >= lo && n <= hi ? n : null;
+  }
+  function strOrNull(v) { return typeof v === "string" && v ? v : null; }
+  function knownSkill(s) { return typeof s === "string" && !!D.skills[s]; }
+  function knownFeat(n) {
+    return typeof n === "string" && ALL_FEATS.some(function (f) { return f.name === n; });
+  }
+  function knownBg(id) {
+    return typeof id === "string" && D.backgrounds.some(function (b) { return b.id === id; });
+  }
+
   function migrate(c) {
     if (!c) return c;
-    // Share links and older saves can be missing fields the app assumes exist.
-    // Fill every gap from a blank character before anything touches it.
+    var drop = [];
     var base = blank();
-    Object.keys(base).forEach(function (k) {
-      if (c[k] === undefined || c[k] === null) c[k] = base[k];
-      else if (Array.isArray(base[k]) && !Array.isArray(c[k])) c[k] = base[k];
-      else if (base[k] && typeof base[k] === "object" && !Array.isArray(base[k]) &&
-               (typeof c[k] !== "object" || Array.isArray(c[k]))) c[k] = base[k];
+    var out = blank();
+    out.id = strOrNull(c.id) || out.id;
+
+    // --- scalars -------------------------------------------------------
+    out.name = typeof c.name === "string" ? c.name : "";
+    var lv = intIn(c.level, 1, 20);
+    if (lv === null && c.level !== undefined && c.level !== null) drop.push("level");
+    out.level = lv === null ? base.level : lv;
+
+    out.method = ["pointbuy", "array", "roll", "manual"].indexOf(c.method) >= 0 ? c.method : "pointbuy";
+
+    // cred is rendered into the dossier; a non-number here was the injection.
+    var cr = intIn(c.cred, 0, 10);
+    if (cr === null && c.cred !== undefined && c.cred !== null && c.cred !== 0) drop.push("cred");
+    out.cred = cr === null ? 0 : cr;
+
+    // --- identity: must name something the app actually has -------------
+    out.cls = classByName[c.cls] ? c.cls : null;
+    if (c.cls && !out.cls) drop.push("class “" + String(c.cls).slice(0, 40) + "”");
+
+    if (out.cls && subById[c.sub] && subById[c.sub].cls === out.cls) out.sub = c.sub;
+    else { out.sub = null; if (c.sub) drop.push("archetype"); }
+
+    out.bg = knownBg(c.bg) ? c.bg : null;
+    if (c.bg && !out.bg) drop.push("background");
+
+    out.origin = strOrNull(c.origin);
+    out.sleeve = strOrNull(c.sleeve);
+    out.style = strOrNull(c.style);
+    out.techSwap = c.techSwap === true;
+    out.techReplaces = knownSkill(c.techReplaces) ? c.techReplaces : null;
+
+    // --- ability scores --------------------------------------------------
+    ABIL.forEach(function (a) {
+      var v = isPlainObj(c.scores) ? intIn(c.scores[a], 1, 30) : null;
+      out.scores[a] = v === null ? 8 : v;
     });
-    ABIL.forEach(function (a) { if (typeof c.scores[a] !== "number") c.scores[a] = 8; });
-    if (!c.asi.length && (c.feats || []).length) {
-      // feats used to be an unlimited list; fold them into level-up slots
-      c.asi = c.feats.map(function (n) { return { type: "feat", name: n }; });
+    out.arrayMap = {};
+    if (isPlainObj(c.arrayMap)) {
+      ABIL.forEach(function (a) {
+        var v = intIn(c.arrayMap[a], 1, 30);
+        if (v !== null) out.arrayMap[a] = v;
+      });
     }
-    if (c.level < 1 || c.level > 20 || typeof c.level !== "number") c.level = 1;
-    return c;
+    out.rolled = Array.isArray(c.rolled)
+      ? c.rolled.map(function (n) { return intIn(n, 1, 30); }).filter(function (n) { return n !== null; })
+      : null;
+    if (out.rolled && !out.rolled.length) out.rolled = null;
+
+    // --- lists -----------------------------------------------------------
+    out.skills = (Array.isArray(c.skills) ? c.skills : []).filter(knownSkill);
+    out.bgPicks = (Array.isArray(c.bgPicks) ? c.bgPicks : []).filter(knownSkill);
+    out.augments = (Array.isArray(c.augments) ? c.augments : [])
+      .filter(function (n) { return typeof n === "string"; });
+    ["invocations", "infusions"].forEach(function (k) {
+      out[k] = (Array.isArray(c[k]) ? c[k] : []).filter(function (n) { return typeof n === "string"; });
+    });
+
+    out.cyber = (Array.isArray(c.cyber) ? c.cyber : []).filter(function (x) {
+      return isPlainObj(x) && typeof x.name === "string";
+    }).map(function (x) { return { name: x.name, tier: String(x.tier == null ? "1" : x.tier) }; });
+
+    out.gear = (Array.isArray(c.gear) ? c.gear : []).filter(function (g) {
+      return isPlainObj(g) && typeof g.key === "string" && typeof g.name === "string";
+    }).map(function (g) {
+      return { key: g.key, name: g.name, cost: typeof g.cost === "string" ? g.cost : "" };
+    });
+
+    // --- level-up slots ---------------------------------------------------
+    var rawAsi = Array.isArray(c.asi) ? c.asi : [];
+    var badSlots = 0;
+    out.asi = rawAsi.map(function (s) {
+      if (!isPlainObj(s)) { badSlots++; return { type: null }; }
+      if (s.type === "asi") {
+        return { type: "asi",
+                 a: ABIL.indexOf(s.a) >= 0 ? s.a : null,
+                 b: ABIL.indexOf(s.b) >= 0 ? s.b : null };
+      }
+      if (s.type === "feat") {
+        var slot = { type: "feat", name: knownFeat(s.name) ? s.name : null };
+        if (ABIL.indexOf(s.abil) >= 0) slot.abil = s.abil;
+        if (s.name && !slot.name) badSlots++;
+        return slot;
+      }
+      return { type: null };
+    });
+    if (badSlots) drop.push(badSlots + " level-up slot" + (badSlots === 1 ? "" : "s"));
+
+    // Feats used to be an unlimited list; fold a legacy list into slots.
+    if (!out.asi.some(function (s) { return s.type; }) && Array.isArray(c.feats) && c.feats.length) {
+      out.asi = c.feats.filter(knownFeat).map(function (n) { return { type: "feat", name: n }; });
+    }
+    out.feats = out.asi.filter(function (s) { return s.type === "feat" && s.name; })
+                       .map(function (s) { return s.name; });
+
+    // --- maps -------------------------------------------------------------
+    out.picks = {};
+    if (isPlainObj(c.picks)) {
+      Object.keys(c.picks).forEach(function (k) {
+        if (Array.isArray(c.picks[k])) {
+          out.picks[k] = c.picks[k].filter(function (v) { return typeof v === "string"; });
+        }
+      });
+    }
+    out.subChoices = {};
+    if (isPlainObj(c.subChoices)) {
+      Object.keys(c.subChoices).forEach(function (k) {
+        if (Array.isArray(c.subChoices[k])) {
+          out.subChoices[k] = c.subChoices[k].filter(function (v) { return typeof v === "string"; });
+        }
+      });
+    }
+    out.traits = {};
+    if (isPlainObj(c.traits)) {
+      Object.keys(c.traits).forEach(function (k) {
+        if (typeof c.traits[k] === "string") out.traits[k] = c.traits[k];
+      });
+    }
+
+    // --- known flags, everything else discarded --------------------------
+    if (c.isShared === true) out.isShared = true;
+    if (c.isExample === true) out.isExample = true;
+    if (typeof c.campaign === "string") out.campaign = c.campaign;
+
+    lastDropped = drop;
+    return out;
   }
+  function droppedNote() { return lastDropped.slice(); }
 
   /* -------------------------------------------------------------- derived */
   function baseScores() {
@@ -367,6 +523,15 @@
              damage: row ? row[2] : "—", props: props };
   }
 
+  /* Progression tables are indexed by level, so the level must be a whole
+     number in range before it touches one. Three sites used to clamp this
+     three different ways and none survived a fractional level. */
+  function lvlRow(cl, lv) {
+    if (!cl || !cl.progression || !cl.progression.rows) return null;
+    var n = Math.max(1, Math.min(20, Math.round(Number(lv) || 1)));
+    return cl.progression.rows[n - 1] || null;
+  }
+
   /* ---------------------------------------------------- Humanity & Essence */
   var TIER_COST = { "1": 2, "2": 5, "3": 9, "4": 14 };
   function humanity() {
@@ -374,8 +539,8 @@
     var base = sc.Cha * 5;
     var tol = 0, notes = [];
     if (cl && cl.name === "Chromehound") {
-      var row = cl.progression.rows[Math.min(C.level, 20) - 1];
-      tol += parseInt(row[row.length - 1], 10) || 0;
+      var row = lvlRow(cl, C.level);
+      tol += row ? (parseInt(row[row.length - 1], 10) || 0) : 0;
       notes.push("Chrome Tolerance +" + tol);
       if (C.level >= 20) { tol += 40; notes.push("Apex Predator +40"); }
     }
@@ -411,7 +576,8 @@
   function essence() {
     var cl = classByName[C.cls];
     if (!cl || cl.name !== "Bioforged") return null;
-    var row = cl.progression.rows[Math.min(C.level, 20) - 1];
+    var row = lvlRow(cl, C.level);
+    if (!row) return null;
     var e = parseInt(row[row.length - 1], 10);
     var st = e >= 15 ? "Baseline" : e >= 11 ? "Divergent" : e >= 6 ? "Unclassified" :
              e >= 1 ? "Post-Human" : "Speciated";
@@ -555,7 +721,7 @@
   function classRow() {
     var cl = classByName[C.cls];
     if (!cl || !cl.progression) return null;
-    return cl.progression.rows[Math.min(Math.max(C.level, 1), 20) - 1];
+    return lvlRow(cl, C.level);
   }
   function colValue(name) {
     var cl = classByName[C.cls], row = classRow();
@@ -903,6 +1069,15 @@
     var base = location.origin + location.pathname;
     return base + "#c=" + b64u(JSON.stringify(slimChar(C)));
   }
+  /* Leaving a shared view has to drop the fragment, or the next reload prefers
+     the stranger's character over whatever the user has been building since.
+     Anything else in the hash (the GM token) is left alone. */
+  function clearShareHash() {
+    var rest = (location.hash || "").replace(/[#&]c=[^&]*/, "").replace(/^[#&]+/, "");
+    try {
+      history.replaceState(null, "", location.pathname + location.search + (rest ? "#" + rest : ""));
+    } catch (e) {}
+  }
   function readShared() {
     var m = (location.hash || "").match(/[#&]c=([^&]+)/);
     if (!m) return null;
@@ -911,26 +1086,27 @@
 
   /* ---- roster: many characters, kept in this browser -------------------- */
   function rosterAll() {
-    try { return JSON.parse(localStorage.getItem("ttb.roster") || "[]"); } catch (e) { return []; }
+    var raw = lsRead("ttb.roster");
+    if (raw === undefined) return null;          // unreadable, not empty
+    try { return JSON.parse(raw || "[]"); } catch (e) { return null; }
   }
-  function rosterWrite(list) {
-    try { localStorage.setItem("ttb.roster", JSON.stringify(list)); } catch (e) {}
-  }
+  function rosterWrite(list) { return lsWrite("ttb.roster", JSON.stringify(list)); }
   function rosterPut(c) {
-    var all = rosterAll().filter(function (r) { return r.id !== c.id; });
+    var all = (rosterAll() || []).filter(function (r) { return r.id !== c.id; });
     all.push({ id: c.id, name: c.name || "Unnamed", cls: c.cls || "—", level: c.level,
                updated: Date.now(), payload: JSON.stringify(c) });
-    rosterWrite(all);
+    return rosterWrite(all);
   }
-  function rosterDrop(id) { rosterWrite(rosterAll().filter(function (r) { return r.id !== id; })); }
+  function rosterDrop(id) {
+    return rosterWrite((rosterAll() || []).filter(function (r) { return r.id !== id; }));
+  }
 
   /* ---- campaigns: seeded from campaigns.js, editable in the browser ----- */
   function campUser() {
-    try { return JSON.parse(localStorage.getItem("ttb.campaigns") || "[]"); } catch (e) { return []; }
+    var raw = lsRead("ttb.campaigns");
+    try { return JSON.parse((raw === undefined ? "[]" : raw) || "[]"); } catch (e) { return []; }
   }
-  function campUserWrite(list) {
-    try { localStorage.setItem("ttb.campaigns", JSON.stringify(list)); } catch (e) {}
-  }
+  function campUserWrite(list) { return lsWrite("ttb.campaigns", JSON.stringify(list)); }
   function campAll() {
     var mine = campUser(), ids = {};
     mine.forEach(function (c) { ids[c.id] = 1; });
@@ -945,14 +1121,15 @@
   }
   function campSave(c) {
     var mine = campUser().filter(function (x) { return x.id !== c.id; });
-    mine.push(c); campUserWrite(mine);
+    mine.push(c);
+    return campUserWrite(mine);
   }
   var campSel = null, campEditing = false;
-  try { campSel = localStorage.getItem("ttb.campaign") || null; } catch (e) {}
+  campSel = lsRead("ttb.campaign") || null;
   function setCamp(id) {
     campSel = id;
-    try { id ? localStorage.setItem("ttb.campaign", id) : localStorage.removeItem("ttb.campaign"); }
-    catch (e) {}
+    if (id) return lsWrite("ttb.campaign", id);
+    try { localStorage.removeItem("ttb.campaign"); return true; } catch (e) { return false; }
   }
 
   /* ----------------------------------------------------------------- toast */
@@ -1343,7 +1520,7 @@
       var isPri = cl && cl.primary.indexOf(a) >= 0;
       var delta = sc[a] - rawSc[a];
       var box = el("div", "ab" + (isPri ? " primary" : ""));
-      box.innerHTML = '<div class="nm">' + a + '</div><div class="sc">' + rawSc[a] +
+      box.innerHTML = '<div class="nm">' + a + '</div><div class="sc">' + esc(rawSc[a]) +
         (delta ? ' <span style="font-size:14px;color:var(--signal)">+' + delta + "</span>" : "") +
         '</div><div class="md">' + sgn(mod(sc[a])) +
         (delta ? ' <span class="page-ref">at ' + sc[a] + "</span>" : "") + "</div>";
@@ -1805,7 +1982,7 @@
     ib.appendChild(el("div", "k", "Installed · " + fmtCredits(spend())));
     var list = el("div", "list");
     C.cyber.forEach(function (x) {
-      var b = el("button", "chip on", esc(x.name) + " T" + x.tier + " ✕");
+      var b = el("button", "chip on", esc(x.name) + " T" + esc(x.tier) + " ✕");
       b.title = "Remove";
       b.onclick = function () {
         C.cyber = C.cyber.filter(function (y) { return !(y.name === x.name && y.tier === x.tier); });
@@ -2306,7 +2483,7 @@
     }
     if (C.cred) {
       var crow = el("div", "trait-line");
-      crow.innerHTML = '<span class="k">Street Cred</span>' + C.cred + " / 10";
+      crow.innerHTML = '<span class="k">Street Cred</span>' + esc(C.cred) + " / 10";
       gh.appendChild(crow);
     }
     if (C.sleeve) {
@@ -2337,7 +2514,7 @@
     g5.appendChild(el("h3", null, "Chrome & gear · " + fmtCredits(spend())));
     var ul5 = el("ul");
     C.cyber.forEach(function (x) {
-      ul5.appendChild(el("li", null, esc(x.name) + " (Tier " + x.tier + ") — " +
+      ul5.appendChild(el("li", null, esc(x.name) + " (Tier " + esc(x.tier) + ") — " +
         esc(cyberCost[x.name.toLowerCase() + "|" + x.tier] || "—")));
     });
     C.augments.forEach(function (a) {
@@ -2643,8 +2820,8 @@
     var gr = el("div", "cs-box");
     gr.innerHTML = "<h4>Chrome &amp; gear · " + esc(fmtCredits(spend())) + "</h4>";
     C.cyber.forEach(function (x) {
-      gr.innerHTML += '<div class="cs-line"><span>' + esc(x.name) + " T" + x.tier +
-        '</span><span class="b">−' + TIER_COST[x.tier] + " hum</span></div>";
+      gr.innerHTML += '<div class="cs-line"><span>' + esc(x.name) + " T" + esc(x.tier) +
+        '</span><span class="b">−' + esc(TIER_COST[x.tier] || 0) + " hum</span></div>";
     });
     C.augments.forEach(function (a) {
       gr.innerHTML += '<div class="cs-line"><span>' + esc(a) + '</span><span class="b">aug</span></div>';
@@ -2668,7 +2845,7 @@
     }
     var cr = el("div", "cs-box");
     cr.innerHTML = "<h4>Street Cred</h4>" +
-      '<div class="cs-line"><span>Standing</span><span class="b">' + (C.cred || 0) + " / 10</span></div>";
+      '<div class="cs-line"><span>Standing</span><span class="b">' + esc(C.cred || 0) + " / 10</span></div>";
     c3.appendChild(cr);
     cols.appendChild(c3);
     p1.appendChild(cols);
@@ -3450,7 +3627,7 @@
     cr.setAttribute("aria-valuetext", "Street Cred " + (C.cred || 0) + " of 10");
     cr.oninput = function () { C.cred = +cr.value; delete C.isExample; save(); render(); };
     cred.appendChild(cr);
-    cred.appendChild(el("span", "lvl-badge", (C.cred || 0)));
+    cred.appendChild(el("span", "lvl-badge", esc(C.cred || 0)));
     body.appendChild(cred);
 
     var btns = el("div", "btn-row");
@@ -3458,6 +3635,7 @@
     var fresh = el("button", "btn", "New character");
     fresh.onclick = function () {
       if (!C.isExample && !confirm("Discard the current character and start fresh?")) return;
+      clearShareHash();
       C = blank(); save(); step = 0; render();
     };
     var sv = el("button", "btn primary", "Save to roster");
@@ -3478,21 +3656,45 @@
   }
 
   /* ---------------------------------------------------------------- roster */
-  var rosterCache = [];
   function saveToRoster() {
     if (!C.name) { toast("Name your operator first"); var n = $("#charName"); if (n) n.focus(); return; }
     if (C.isShared) {
       delete C.isShared;
       C.id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      history.replaceState(null, "", location.pathname + location.search);
+      clearShareHash();
       save();
     }
-    rosterPut(C);
+    var ok = rosterPut(C);
     if (db) { try { db.doc("characters/" + C.id).set({ id: C.id, name: C.name, cls: C.cls || "—",
       level: C.level, updated: Date.now(), payload: JSON.stringify(C) }).then(function () {}, function () {}); }
       catch (e) { db = null; } }
     refreshRoster();
-    toast("Saved to this browser");
+    if (ok) toast("Saved to this browser");
+    else storageFailed("Not saved — this browser refused to store it.");
+  }
+
+  /* A failed write is not a 2-second toast. It stays until acted on, and it
+     offers the one thing that still works: getting the data out to a file. */
+  function storageFailed(msg) {
+    var host = $("#roster");
+    toast("Not saved — storage is blocked or full");
+    if (!host) return;
+    var old = $(".storage-alert");
+    if (old) old.remove();
+    var box = el("div", "note storage-alert");
+    box.style.borderLeftColor = "var(--alert)";
+    var b = el("b", null, "Not saved");
+    var sp = el("span");
+    sp.textContent = msg + " Your work is still on screen — download it now, " +
+      "then free up space or leave private browsing.";
+    box.appendChild(b); box.appendChild(sp);
+    var dl = el("button", "btn primary", "Download this character");
+    dl.onclick = function () {
+      var slug = (C.name || "character").toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      saveAs(slug + ".ttb.json", JSON.stringify(C, null, 1), "application/json");
+    };
+    box.appendChild(dl);
+    host.parentNode.insertBefore(box, host);
   }
 
   function refreshRoster() {
@@ -3500,6 +3702,15 @@
     if (!host) return;
     var list = rosterAll();
     host.innerHTML = "";
+    if (list === null) {
+      var warn = el("div", "rail-title", "Saved in this browser");
+      warn.style.marginTop = "12px";
+      host.appendChild(warn);
+      host.appendChild(el("p", "empty-state",
+        "Can't read saved characters in this browser — site data may be blocked. " +
+        "Nothing has been deleted."));
+      return;
+    }
     var t = el("div", "rail-title", "Saved in this browser · " + list.length);
     t.style.marginTop = "12px";
     host.appendChild(t);
@@ -3513,8 +3724,10 @@
           '<span class="meta">' + esc(r.cls) + " " + r.level + "</span>";
         var open = el("button", "chip", r.id === C.id ? "Open" : "Open");
         open.onclick = function () {
-          try { C = migrate(JSON.parse(r.payload)); save(); step = 7; mode = "forge"; render(); }
-          catch (e) { toast("That save is damaged"); }
+          try {
+            clearShareHash();
+            C = migrate(JSON.parse(r.payload)); save(); step = 7; mode = "forge"; render();
+          } catch (e) { toast("That save is damaged"); }
         };
         var del = el("button", "chip warn", "✕");
         del.setAttribute("aria-label", "Delete " + r.name);
@@ -3761,5 +3974,15 @@
         function () {});
     }
   }
+  /* Offline shell. Lives here rather than inline in index.html so the page can
+     ship a Content-Security-Policy with script-src 'self' and no unsafe-inline.
+     Service workers need https (or localhost), so this quietly does nothing
+     when the page is opened straight off the disk. */
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js")["catch"](function () {});
+    });
+  }
+
   init();
 })();

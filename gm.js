@@ -423,22 +423,52 @@ window.TTGM = (function () {
   var K_PARTY = "ttb.gm.party", K_NPCS = "ttb.gm.npcs",
       K_ENCS = "ttb.gm.encounters", K_PLAY = "ttb.gm.play";
 
-  function partyAll()  { var v = lsGet(K_PARTY, []); return Array.isArray(v) ? v : []; }
-  function partyWrite(l) { lsSet(K_PARTY, l); }
-  function npcAll()    { var v = lsGet(K_NPCS, []);  return Array.isArray(v) ? v : []; }
-  function npcWrite(l) { lsSet(K_NPCS, l); }
-  function encAll()    { var v = lsGet(K_ENCS, []);  return Array.isArray(v) ? v : []; }
-  function encWrite(l) { lsSet(K_ENCS, l); }
+  /* ---- canonical state ---------------------------------------------------
+     This used to read straight from localStorage every time, which meant a
+     failed write silently discarded the edit AND the "export your vault before
+     you lose it" warning was a lie: the export read storage too, so it handed
+     back the state from before the failure. Now memory is the truth, storage
+     is a mirror we try to keep in sync, and the export reads memory. */
+  var mem = { party: null, npcs: null, encs: null, play: null };
+  var unsaved = false;
 
-  function playState() {
-    var p = lsGet(K_PLAY, null);
-    if (!p || typeof p !== "object") p = {};
-    if (!Array.isArray(p.clocks)) p.clocks = [];
-    if (typeof p.scratch !== "string") p.scratch = "";
-    return p;
+  function arrOf(v) { return Array.isArray(v) ? v : []; }
+
+  function partyAll() {
+    if (mem.party === null) mem.party = arrOf(lsGet(K_PARTY, []));
+    return mem.party;
   }
-  function playWrite(p) { p.updated = Date.now(); lsSet(K_PLAY, p); }
+  function npcAll() {
+    if (mem.npcs === null) mem.npcs = arrOf(lsGet(K_NPCS, []));
+    return mem.npcs;
+  }
+  function encAll() {
+    if (mem.encs === null) mem.encs = arrOf(lsGet(K_ENCS, []));
+    return mem.encs;
+  }
+  function playState() {
+    if (mem.play === null) {
+      var p = lsGet(K_PLAY, null);
+      if (!p || typeof p !== "object") p = {};
+      if (!Array.isArray(p.clocks)) p.clocks = [];
+      if (typeof p.scratch !== "string") p.scratch = "";
+      mem.play = p;
+    }
+    return mem.play;
+  }
+
+  /* Memory first, then try to persist. The edit survives either way. */
+  function commit(slot, key, val) {
+    mem[slot] = val;
+    if (!lsSet(key, val)) { unsaved = true; return false; }
+    return true;
+  }
+  function partyWrite(l) { return commit("party", K_PARTY, l); }
+  function npcWrite(l)   { return commit("npcs",  K_NPCS,  l); }
+  function encWrite(l)   { return commit("encs",  K_ENCS,  l); }
+  function playWrite(p)  { p.updated = Date.now(); return commit("play", K_PLAY, p); }
   function playPatch(fn) { var p = playState(); fn(p); playWrite(p); return p; }
+  function hasUnsaved() { return unsaved; }
 
   function lastMode() { return playState().mode || null; }
   function rememberMode(m) { playPatch(function (p) { p.mode = m; }); }
@@ -688,7 +718,7 @@ window.TTGM = (function () {
         } catch (e) { toast("That file isn't JSON"); }
       });
     }));
-    var roster = T.rosterAll();
+    var roster = T.rosterAll() || [];
     if (roster.length) {
       ir.appendChild(btn("From this browser (" + roster.length + ")", "", function () {
         var n = 0;
@@ -885,6 +915,12 @@ window.TTGM = (function () {
     wrap.appendChild(txt("div", "gm-note", age == null
       ? "Never exported. Everything here lives in this browser only — clearing site data deletes it."
       : age === 0 ? "Exported today." : "Exported " + age + " day" + (age === 1 ? "" : "s") + " ago."));
+    if (hasUnsaved()) {
+      var bad = txt("div", "gm-unsaved",
+        "Some changes could not be saved to this browser. They are still on screen and " +
+        "will be included in an export — do that now, before you close the tab.");
+      wrap.appendChild(bad);
+    }
     s.appendChild(wrap);
   }
 

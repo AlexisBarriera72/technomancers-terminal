@@ -10,7 +10,7 @@
  *
  * Bump CACHE on every deploy that changes a file below.
  */
-var CACHE = "ttb-v4";
+var CACHE = "ttb-v5";
 var SHELL = [
   "./",
   "./index.html",
@@ -23,20 +23,42 @@ var SHELL = [
   "./icon.svg"
 ];
 
+/* Install completely or not at all.
+ *
+ * Files are fetched individually so a failure can name what went missing, but
+ * a partial shell is NOT treated as success: if anything failed we delete the
+ * half-built cache and reject, so this worker never activates and the previous
+ * complete one keeps serving. Getting this wrong is worse than having no
+ * worker — a partial cache replaces a working one and leaves the tablet with
+ * an HTML shell and no application, recoverable only with the network that
+ * this file exists to do without.
+ *
+ * `cache: "reload"` forces a real network round trip per file, so a weak
+ * connection is the expected trigger, not an edge case.
+ */
 self.addEventListener("install", function (e) {
   e.waitUntil(
     caches.open(CACHE)
-      // addAll is all-or-nothing; one 404 would leave the site with no cache at
-      // all, so each file is fetched on its own and a miss is survivable.
       .then(function (c) {
         return Promise.all(SHELL.map(function (url) {
-          return c.add(new Request(url, { cache: "reload" }))["catch"](function () {});
+          return c.add(new Request(url, { cache: "reload" }))
+            .then(function () { return null; }, function () { return url; });
         }));
       })
-      .then(function () { return self.skipWaiting(); })
+      .then(function (results) {
+        var missing = results.filter(Boolean);
+        if (missing.length) {
+          return caches["delete"](CACHE).then(function () {
+            throw new Error("incomplete shell, keeping the previous cache: " + missing.join(", "));
+          });
+        }
+        return self.skipWaiting();
+      })
   );
 });
 
+/* Only reached once an install succeeded in full, so dropping older caches
+   here is safe. */
 self.addEventListener("activate", function (e) {
   e.waitUntil(
     caches.keys()
