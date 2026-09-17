@@ -97,7 +97,21 @@ whole thing to a `.json` file. Do it after a good prep session.
 `sw.js` caches the site so it opens with no signal — which is the normal case at
 a table underground. Add it to the home screen on a tablet and it runs as its own
 app; on iOS that also stops Safari evicting your GM notes after a week of not
-visiting. Bump `CACHE` in `sw.js` when you deploy a change to the app's files.
+visiting.
+
+## Deploying a change
+
+A push to `main` is the deploy, but **bump both version markers in the same commit**
+or people keep seeing the old site:
+
+- `BUILD` in `app.js` — printed in the masthead, so you can tell at a glance which
+  version a device is actually running. That is the quickest way to answer "did my
+  change go live?"
+- `CACHE` in `sw.js` — the service worker serves its cached copy first, so without a
+  bump the first load after a deploy still shows the old version.
+
+Give Vercel a minute after the merge. A deploy that hasn't finished looks exactly
+like a change that didn't work.
 
 ## Printing
 

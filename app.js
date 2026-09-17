@@ -16,6 +16,10 @@
   };
 
   /* ------------------------------------------------------------------ data */
+  /* Bumped by hand on every deploy — there is no build step, and a commit
+     cannot contain its own hash. Shown in the masthead so "did my change go
+     live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
+  var BUILD = "2026-09-17 20:17";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -3698,7 +3702,8 @@
   };
 
   function init() {
-    $("#brandMeta").textContent = D.meta.author + " · v" + D.meta.version + " · " + D.meta.pages + " pp";
+    $("#brandMeta").textContent = D.meta.author + " · v" + D.meta.version + " · " +
+      D.meta.pages + " pp · build " + BUILD;
     var unlocked = gmHash();
     if (window.TTGM && window.TTGM.boot) window.TTGM.boot(window.TT);
     var shared = readShared();
