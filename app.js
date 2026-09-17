@@ -119,6 +119,10 @@
                "Level-Ups", "Chrome & Gear", "Play Sheet"];
   var CAMPSEC = ["Overview", "House Rules", "People", "Places", "Custom Gear", "Session Log", "Hooks"];
   var campSecIx = 0;
+  var GMSEC = ["Party", "Encounter", "Rulings", "NPCs", "Clocks"];
+  var gmSecIx = 0;
+  var gmOn = false;
+  try { gmOn = localStorage.getItem("ttb.gm") === "1"; } catch (e) {}
   var CODEX = ["Subclasses", "Backgrounds", "Feats", "Fighting Styles",
                "Warlock Invocations", "Artificer Infusions", "Cyberware",
                "Augments", "Reference Tables",
@@ -3265,26 +3269,33 @@
   }
 
   /* ---------------------------------------------------------------- render */
+  /* One entry per mode. A lookup rather than a ternary chain, because the old
+     chain fell through to Codex and a fourth mode would have silently set
+     codexSec on every rail click. */
+  var RAILS = {
+    forge:    { title: "Build order", list: STEPS,
+                get: function () { return step; },      set: function (i) { step = i; } },
+    codex:    { title: "Sections",    list: CODEX,
+                get: function () { return codexSec; },  set: function (i) { codexSec = i; codexQ = ""; } },
+    campaign: { title: "Campaign",    list: CAMPSEC,
+                get: function () { return campSecIx; }, set: function (i) { campSecIx = i; } },
+    table:    { title: "The table",   list: GMSEC,
+                get: function () { return gmSecIx; },   set: function (i) { gmSecIx = i; } }
+  };
   function renderRail() {
     var r = $("#rail");
+    var R = RAILS[mode] || RAILS.forge;
     r.innerHTML = "";
-    r.appendChild(el("div", "rail-title", mode === "forge" ? "Build order" :
-      (mode === "campaign" ? "Campaign" : "Sections")));
+    r.appendChild(el("div", "rail-title", R.title));
     var wrap = el("div", "steps");
-    var list = mode === "forge" ? STEPS : (mode === "campaign" ? CAMPSEC : CODEX);
-    var cur = mode === "forge" ? step : (mode === "campaign" ? campSecIx : codexSec);
-    list.forEach(function (label, i) {
+    var cur = R.get();
+    R.list.forEach(function (label, i) {
       var done = mode === "forge" && stepDone(i);
       var b = el("button", "step" + (done && i !== cur ? " done" : ""));
       b.setAttribute("aria-current", i === cur);
       b.innerHTML = '<span class="step-n">' + (done && i !== cur ? "" : (mode === "forge" ?
         String(i + 1).padStart(2, "0") : "·")) + '</span><span class="step-l">' + esc(label) + "</span>";
-      b.onclick = function () {
-        if (mode === "forge") step = i;
-        else if (mode === "campaign") campSecIx = i;
-        else { codexSec = i; codexQ = ""; }
-        render(); window.scrollTo(0, 0);
-      };
+      b.onclick = function () { R.set(i); render(); window.scrollTo(0, 0); };
       wrap.appendChild(b);
     });
     r.appendChild(wrap);
@@ -3557,6 +3568,7 @@
   function renderStage() {
     var s = $("#stage");
     s.innerHTML = "";
+    if (mode === "table") return window.TTGM.renderStage(s, gmSecIx);
     if (mode === "campaign") return renderCampaign(s);
     if (mode === "codex") return renderCodex(s);
     if (step === 0 && !C.cls && helpMode) {
@@ -3603,9 +3615,12 @@
      stepOptions, stepGear, stepSheet][step](s);
   }
   function render() {
+    // Locking the GM tools while they're open has to eject you from them.
+    if (!gmOn && mode === "table") mode = "forge";
     renderRail();
     renderStage();
-    renderDossier();
+    if (mode === "table") window.TTGM.renderDossier($("#dossier"));
+    else renderDossier();
     var gb3 = $("#guideBtn");
     if (gb3) {
       gb3.setAttribute("aria-pressed", helpMode);
@@ -3615,10 +3630,77 @@
     $("#mForge").setAttribute("aria-pressed", mode === "forge");
     $("#mCodex").setAttribute("aria-pressed", mode === "codex");
     if ($("#mCamp")) $("#mCamp").setAttribute("aria-pressed", mode === "campaign");
+    var mt = $("#mTable");
+    if (mt) { mt.hidden = !gmOn; mt.setAttribute("aria-pressed", mode === "table"); }
   }
+
+  /* ---- GM tools: hidden until someone knows the address --------------------
+     #gm=<token> unlocks and remembers on this device; #gm=off puts it away
+     again. The token sits in a public file on a public deploy, so this is
+     obscurity, not security — the real guarantee is that nothing the GM keeps
+     ever leaves the tablet.                                                */
+  function gmUnlock(on) {
+    gmOn = !!on;
+    try {
+      if (on) localStorage.setItem("ttb.gm", "1");
+      else localStorage.removeItem("ttb.gm");
+    } catch (e) {}
+    if (!on && mode === "table") mode = "forge";
+  }
+  function gmHash() {
+    var m = (location.hash || "").match(/[#&]gm=([^&]+)/);
+    if (!m) return false;
+    var tok = decodeURIComponent(m[1]);
+    var want = (window.TTBGM && window.TTBGM.unlock) || "table";
+    if (tok === "off") gmUnlock(false);
+    else if (tok === want) { gmUnlock(true); mode = "table"; }
+    else return false;
+    // Strip only our own token; a c= share fragment alongside it must survive.
+    var rest = (location.hash || "").replace(/[#&]gm=[^&]*/, "").replace(/^[#&]+/, "");
+    try {
+      history.replaceState(null, "", location.pathname + location.search + (rest ? "#" + rest : ""));
+    } catch (e) {}
+    return true;
+  }
+
+  /* ---- what gm.js is allowed to see ---------------------------------------
+     Everything above is closed over by this IIFE, and the startup merge at the
+     top mutates the book data in place while building classByName/subById, so
+     gm.js cannot rebuild any of it correctly on its own. Hand over the already
+     merged references instead. App state is reached through accessors, never
+     as raw bindings.                                                        */
+  window.TT = {
+    // book data and lookups
+    D: D, X: X, CAMP: CAMP, classByName: classByName, subById: subById,
+    ALL_CLASSES: ALL_CLASSES, ALL_SUBS: ALL_SUBS, ALL_FEATS: ALL_FEATS,
+    tableByTitle: tableByTitle, subsFor: subsFor, paras: paras,
+    ABIL: ABIL, ABIL_FULL: ABIL_FULL, HSTATE: HSTATE, CLASS_DC: CLASS_DC,
+    // dom helpers
+    $: $, el: el, esc: esc, toast: toast, head: head, renderTable: renderTable,
+    renderBlocks: renderBlocks, collapsible: collapsible, saveAs: saveAs,
+    humanityMeter: humanityMeter, essenceMeter: essenceMeter,
+    // the numbers
+    mod: mod, sgn: sgn, profBonus: profBonus, dieSize: dieSize,
+    withChar: withChar, statsOf: statsOf, saveBonus: saveBonus, skillBonus: skillBonus,
+    passiveSkill: passiveSkill, initiative: initiative, initiativeNote: initiativeNote,
+    saveDC: saveDC, attackBonus: attackBonus, armorClass: armorClass, maxHP: maxHP,
+    allSkills: allSkills, humanity: humanity, activeFeatures: activeFeatures,
+    blockText: blockText, actionType: actionType, usageOf: usageOf, toMarkdown: toMarkdown,
+    // character plumbing
+    migrate: migrate, blank: blank, b64u: b64u, unb64u: unb64u, slimChar: slimChar,
+    rosterAll: rosterAll, campAll: campAll, campById: campById, campSel: function () { return campSel; },
+    // app state
+    getMode: function () { return mode; },
+    setMode: function (m) { mode = m; },
+    gmSec: function (v) { if (v != null) gmSecIx = v; return gmSecIx; },
+    gmLock: function () { gmUnlock(false); render(); },
+    render: render
+  };
 
   function init() {
     $("#brandMeta").textContent = D.meta.author + " · v" + D.meta.version + " · " + D.meta.pages + " pp";
+    var unlocked = gmHash();
+    if (window.TTGM && window.TTGM.boot) window.TTGM.boot(window.TT);
     var shared = readShared();
     if (shared) {
       // Keep the hash: the visitor may reload, and we must not clobber whatever
@@ -3629,9 +3711,13 @@
     } else {
       C = load() || migrate(example());
     }
+    // Reloading the tablet mid-session should land back where you were.
+    if (gmOn && !shared && !unlocked && window.TTGM && window.TTGM.lastMode &&
+        window.TTGM.lastMode() === "table") mode = "table";
     $("#mForge").onclick = function () { mode = "forge"; render(); window.scrollTo(0, 0); };
     $("#mCodex").onclick = function () { mode = "codex"; render(); window.scrollTo(0, 0); };
     if ($("#mCamp")) $("#mCamp").onclick = function () { mode = "campaign"; render(); window.scrollTo(0, 0); };
+    if ($("#mTable")) $("#mTable").onclick = function () { mode = "table"; render(); window.scrollTo(0, 0); };
     var gbtn = $("#guideBtn");
     gbtn.onclick = function () {
       helpMode = !helpMode;
@@ -3655,6 +3741,7 @@
 
     // A hash-only navigation (pasting a share link while already here) doesn't reload.
     window.addEventListener("hashchange", function () {
+      if (gmHash()) { render(); window.scrollTo(0, 0); toast(gmOn ? "GM tools unlocked" : "GM tools locked"); return; }
       var sh = readShared();
       if (!sh) return;
       C = migrate(sh); C.isShared = true;

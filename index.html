@@ -9,6 +9,9 @@
 <meta property="og:description" content="Cyberpunk 5e character builder — 21 classes, 29 archetypes, a live Humanity track and printable sheets.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%BE%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <style>
 :root{color-scheme:light dark}
 html,body{margin:0}
@@ -464,6 +467,176 @@ details.item .body p,details.item .body ul{max-width:70ch}
   letter-spacing:.06em;text-transform:uppercase;padding:9px 18px;border-radius:var(--r);
   box-shadow:var(--shadow)}
 
+/* ============================== GM: the table ==============================
+   Scoped to .gm so nothing here reflows the player-facing screens. Sized for a
+   tablet held in landscape: 44px minimum on anything you tap mid-fight. */
+.gm{touch-action:manipulation}
+.gm .chip{padding:9px 13px;font-size:12px;min-height:34px}
+.gm .chip.tier{background:var(--sunk)}
+.gm .btn{padding:11px 17px;font-size:13px;min-height:42px}
+.gm .btn.tiny{padding:6px 10px;font-size:11px;min-height:32px}
+.gm input,.gm select,.gm textarea{font-size:15px;padding:9px 10px;min-height:40px}
+.gm textarea{min-height:64px;line-height:1.45}
+.gm-row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:11px 0}
+.gm-row.end{margin-top:15px;padding-top:13px;border-top:1px solid var(--line-soft)}
+.gm-row.tight{margin:7px 0}
+.gm-label{font-family:var(--f-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);margin:15px 0 7px}
+.gm-note{font-size:12.5px;color:var(--ink-faint);line-height:1.5}
+.gm-strip{margin:15px 0}
+.gm-chips{display:flex;gap:7px;flex-wrap:wrap}
+.gm-chips.tight{gap:5px}
+.gm-stamp{font-family:var(--f-mono);font-size:10px;letter-spacing:.05em;color:var(--ink-faint);
+  margin-top:11px;padding-top:9px;border-top:1px solid var(--line-soft)}
+
+/* import + vault */
+.gm-import{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:15px 0}
+.gm-import textarea{width:100%;font-family:var(--f-mono);font-size:12px}
+.gm-import input{flex:1;min-width:150px}
+.gm-vault{margin-top:26px;padding-top:15px;border-top:1px solid var(--line)}
+
+/* the god's die */
+.gm-god{background:var(--sunk);border:1px solid var(--line);border-left:3px solid var(--gold);
+  border-radius:var(--r);padding:14px;margin:15px 0;display:flex;gap:13px;align-items:center;flex-wrap:wrap}
+.gm-god-out{display:flex;gap:11px;align-items:center;margin-left:auto}
+.gm-god-die{font-family:var(--f-display);font-size:30px;font-weight:700;color:var(--ink-dim);line-height:1}
+.gm-god-die.hit{color:var(--gold)}
+.gm-god-says{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--ink-dim)}
+
+/* party cards */
+.gm-party{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:13px;margin-top:15px;
+  align-items:start}
+.gm-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.gm-card-head{margin-bottom:11px}
+.gm-name{font-family:var(--f-display);font-size:18px;font-weight:600}
+.gm-sub{font-family:var(--f-mono);font-size:11px;letter-spacing:.05em;color:var(--ink-dim);margin-top:2px}
+.gm-vitals{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px}
+.gm-v{background:var(--sunk);border-radius:var(--r);padding:7px 8px;text-align:center}
+.gm-v .k{font-family:var(--f-mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+.gm-v .val{font-family:var(--f-display);font-size:19px;font-weight:700;line-height:1.2}
+.gm-v .n{font-size:9.5px;color:var(--ink-faint);line-height:1.2;overflow-wrap:anywhere}
+.gm-saverow{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.gm-save{background:var(--sunk);border-radius:var(--r);padding:6px 3px;text-align:center;opacity:.55}
+.gm-save.prof{opacity:1;box-shadow:inset 0 0 0 1px var(--accent-deep)}
+.gm-save .k{display:block;font-family:var(--f-mono);font-size:9px;letter-spacing:.06em;color:var(--ink-faint)}
+.gm-save .val{display:block;font-family:var(--f-display);font-size:14px;font-weight:700}
+.gm-effect{font-size:12.5px;color:var(--ink-dim);line-height:1.5;margin-top:6px}
+.gm-sheet{background:var(--sunk);border-radius:var(--r);padding:12px;margin-top:11px;font-family:var(--f-mono);
+  font-size:11px;line-height:1.5;white-space:pre-wrap;max-height:340px;overflow:auto}
+
+/* tables */
+.gm-tbl{width:100%;border-collapse:collapse;margin:9px 0;font-size:13.5px}
+.gm-tbl th{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-faint);text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}
+.gm-tbl td{padding:7px 8px;border-bottom:1px solid var(--line-soft)}
+.gm-tbl td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gm-tbl tr.prof td{color:var(--ink)}
+.gm-tbl td.good{color:var(--signal)} .gm-tbl td.mid{color:var(--gold)} .gm-tbl td.bad{color:var(--alert)}
+
+/* ruling desk */
+.gm-picker,.gm-catalog{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px;margin:15px 0}
+.gm-say{font-family:var(--f-display);font-size:16px;color:var(--accent);margin:9px 0;line-height:1.4}
+.gm-ruling summary{gap:7px;flex-wrap:wrap}
+.gm-ruling-q{font-family:var(--f-body);font-size:15px;flex:1;min-width:190px}
+.gm-ruling-body{padding:3px 2px 6px}
+.gm-alt{margin:9px 0}
+.gm-alt-line{display:flex;gap:11px;justify-content:space-between;padding:5px 0;
+  border-bottom:1px solid var(--line-soft);font-size:13.5px}
+.gm-alt-line .d{font-family:var(--f-mono);font-size:12px;color:var(--gold);white-space:nowrap}
+.gm-fail{margin:9px 0;padding:9px 11px;background:var(--surface);border-left:2px solid var(--alert);
+  border-radius:var(--r)}
+.gm-fail .k{display:block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--alert);margin-bottom:3px}
+.gm-fail .v{font-size:13.5px;line-height:1.5}
+.gm-roll-out{display:flex;flex-direction:column;gap:2px}
+.gm-roll-line{font-family:var(--f-mono);font-size:12.5px}
+.gm-roll-line.good{color:var(--signal)} .gm-roll-line.bad{color:var(--ink-faint)}
+
+/* NPCs */
+.gm-npc summary{gap:7px;flex-wrap:wrap}
+.gm-npc-name{font-family:var(--f-display);font-size:16px;font-weight:600;flex:1;min-width:130px}
+.gm-npc.mook summary{opacity:.85}
+.gm-npc-body{padding:3px 2px 6px}
+.gm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:9px;margin:9px 0}
+.gm-field{display:flex;flex-direction:column;gap:3px}
+.gm-field label{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-faint)}
+.gm-field input,.gm-field textarea{width:100%}
+.gm-abrow{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.gm-ab{background:var(--sunk);border-radius:var(--r);padding:7px 5px;text-align:center}
+.gm-ab .k{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.09em;color:var(--ink-faint)}
+.gm-ab .m{font-family:var(--f-display);font-size:14px;font-weight:700;color:var(--accent)}
+.gm-ab input{width:100%;text-align:center;padding:5px 2px;min-height:34px}
+.gm-action{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.gm-action input{flex:1;min-width:92px}
+
+/* encounter */
+.gm-turnbar{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 14px;margin:13px 0;display:flex;gap:13px;align-items:center;flex-wrap:wrap}
+.gm-round{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.gm-turn{font-family:var(--f-display);font-size:19px;font-weight:600}
+.gm-turnbar .gm-row{margin:0;margin-left:auto}
+.gm-init{display:flex;flex-direction:column;gap:9px}
+.gm-cb{background:var(--surface);border:1px solid var(--line);border-left:3px solid transparent;
+  border-radius:var(--r);padding:12px 14px}
+.gm-cb.on{border-left-color:var(--accent);background:var(--raised)}
+.gm-cb.out{opacity:.5}
+.gm-cb-head{display:flex;gap:12px;align-items:center}
+.gm-cb .init{font-family:var(--f-display);font-size:23px;font-weight:700;color:var(--accent);
+  min-width:38px;text-align:center}
+.gm-cb .who{flex:1}
+.gm-cb .who .n{font-family:var(--f-display);font-size:16px;font-weight:600}
+.gm-cb .who .m{font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;color:var(--ink-faint)}
+.gm-cb-state{font-family:var(--f-mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--alert)}
+.gm-hp{margin-top:10px}
+.gm-hpbar{height:11px;background:var(--sunk);border-radius:6px;overflow:hidden}
+.gm-hpfill{height:100%;transition:width .12s linear;background:var(--signal)}
+.gm-hpfill.hurt{background:var(--gold)} .gm-hpfill.bad{background:var(--alert)}
+.gm-hpnum{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;margin-top:5px}
+.gm-pad{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px;align-items:center}
+.gm-pad input{width:72px;min-height:44px;text-align:center}
+.hpbtn{min-width:48px;min-height:44px;border-radius:var(--r);border:1px solid var(--line);
+  background:var(--sunk);color:var(--ink);font-family:var(--f-mono);font-size:13px;cursor:pointer;
+  -webkit-user-select:none;user-select:none}
+.hpbtn:hover{border-color:var(--accent)}
+.hpbtn.dmg{color:var(--alert)} .hpbtn.heal{color:var(--signal)}
+.gm-cond{margin-top:9px}
+.gm-condsel{min-height:34px;font-size:12px;padding:5px 8px}
+.gm-libline{display:flex;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line-soft)}
+.gm-libline .n{flex:1;font-size:14px}
+.gm-libline .c{font-family:var(--f-mono);font-size:11px;color:var(--ink-faint)}
+
+/* clocks */
+.gm-clocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:13px;margin-top:15px}
+.gm-clock{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:13px;
+  display:flex;flex-direction:column;gap:9px}
+.gm-clock.full{border-color:var(--alert)}
+.gm-clock-name{font-family:var(--f-display);font-size:15px;font-weight:600;background:transparent;
+  border:0;border-bottom:1px solid var(--line-soft);padding:5px 0;min-height:34px}
+.gm-segs{display:flex;gap:5px;flex-wrap:wrap}
+.gm-seg{width:38px;height:38px;border-radius:50%;border:2px solid var(--line);background:var(--sunk);
+  cursor:pointer;-webkit-user-select:none;user-select:none}
+.gm-seg.on{background:var(--alert);border-color:var(--alert)}
+.gm-clock-count{font-family:var(--f-mono);font-size:11px;letter-spacing:.09em;color:var(--ink-faint)}
+.gm-scratch{width:100%;min-height:170px;font-family:var(--f-mono);font-size:12.5px}
+
+/* right-hand panel in GM mode */
+.dos-body.gm .gm-mini-init{display:flex;flex-direction:column;gap:3px;margin-bottom:11px}
+.dos-body.gm .gm-mini{display:flex;gap:8px;align-items:baseline;font-size:12.5px;padding:4px 6px;
+  border-radius:var(--r)}
+.dos-body.gm .gm-mini.on{background:var(--accent-soft)}
+.dos-body.gm .gm-mini.out{opacity:.45}
+.dos-body.gm .gm-mini .i{font-family:var(--f-mono);color:var(--accent);min-width:20px}
+.dos-body.gm .gm-mini .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dos-body.gm .gm-mini .h{font-family:var(--f-mono);font-size:11px;color:var(--ink-faint)}
+
+@media (max-width:760px){
+  .gm-saverow,.gm-abrow{grid-template-columns:repeat(3,1fr)}
+  .gm-party,.gm-clocks{grid-template-columns:1fr}
+}
+
 /* ============================ printable layouts ============================ */
 .print-root{display:none}
 body.previewing .shell{display:none}
@@ -569,6 +742,7 @@ body.previewing .print-root .sheet-block{background:#fff;margin:0 auto 22px;box-
         <button id="mForge" aria-pressed="true">Forge</button>
         <button id="mCodex" aria-pressed="false">Codex</button>
         <button id="mCamp" aria-pressed="false">Campaign</button>
+        <button id="mTable" aria-pressed="false" hidden>Table</button>
       </div>
       <button class="icon-btn" id="guideBtn" title="Beginner guide" aria-label="Toggle beginner guide" aria-pressed="true">?</button>
       <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">◐</button>
@@ -587,7 +761,17 @@ body.previewing .print-root .sheet-block{background:#fff;margin:0 auto 22px;box-
 <script src="campaigns.js"></script>
 <script src="data.js"></script>
 <script src="expansion.js"></script>
+<script src="gm.js"></script>
 <script src="app.js"></script>
+<script>
+/* Offline shell. Service workers need https (or localhost), so this quietly
+   does nothing when the page is opened straight off the disk. */
+if ("serviceWorker" in navigator && location.protocol !== "file:") {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  });
+}
+</script>
 
 </body>
 </html>
