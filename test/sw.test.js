@@ -43,8 +43,10 @@ module.exports = async function (browser) {
 
   /* ---- gm.js pure helpers, no server needed ---------------------------- */
   {
-    const { appPage } = require("./lib");
-    const { page, ctx } = await appPage(browser, { url: "file:///home/user/technomancers-terminal/index.html#gm=cathedra" });
+    // FILE_URL is derived from __dirname. An absolute path written by hand is
+    // right on exactly one machine and wrong on every CI runner.
+    const { appPage, FILE_URL } = require("./lib");
+    const { page, ctx } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
     await page.waitForTimeout(300);
 
     const roll = await page.evaluate(() => {
