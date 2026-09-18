@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-18 10:40";
+  var BUILD = "2026-09-18 15:05";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -1095,8 +1095,15 @@
   function sentencesOf(t) {
     // No lookbehind: Safari only gained it in 16.4 and a syntax error here
     // would take the whole application down on an older iPad.
-    return (String(t || "").match(/[^.!?]+[.!?]*\s*/g) || [])
-      .filter(function (x) { return x.trim(); });
+    //
+    // A full stop between two digits is a decimal point or a thousands
+    // separator, not the end of a sentence. English writes 5,000₵ and never
+    // hit this; Spanish writes 5.000₵ and hits it constantly, which cut the
+    // action cards' sentences in half mid-number.
+    var s = String(t || "").replace(/(\d)\.(\d)/g, "$1\u0001$2");
+    return (s.match(/[^.!?]+[.!?]*\s*/g) || [])
+      .filter(function (x) { return x.trim(); })
+      .map(function (x) { return x.replace(/\u0001/g, "."); });
   }
   function classifySentence(sent) {
     for (var i = 0; i < ACT_RULES.length; i++) {
@@ -1104,20 +1111,56 @@
     }
     return null;
   }
+  /* "At 3rd level, you can..." reads badly on a card that already says which
+     level unlocked it, so the lead comes off. Both languages get a list of
+     their own openers rather than one loose pattern, because a permissive one
+     would eat "un conjuro de nivel 5 o inferior" out of the middle of a
+     sentence that never had a lead at all. */
+  var LEAD_EN = /^(?:At|By|After|Starting at|Beginning at|When you reach|When you choose[^,]*at|Upon reaching)\s+\d+(?:st|nd|rd|th)\s+level,?\s*/i;
+  var LEAD_ES = /^(?:En el nivel|A partir del nivel|Empezando en el nivel|Al llegar al nivel|Al alcanzar el nivel|Para el nivel|Cuando eliges est[eao] [a-záéíóúñ]+ en el nivel|A partir del momento en que[^,]*nivel)\s*\d+\s*,?\s*/i;
   function tidy(sent) {
-    var t = String(sent || "").replace(
-      /^(?:At|By|After|Starting at|Beginning at|When you reach|When you choose[^,]*at|Upon reaching)\s+\d+(?:st|nd|rd|th)\s+level,?\s*/i, "");
+    var s = String(sent || "");
+    var t = s.replace(LEAD_EN, "").replace(LEAD_ES, "");
+    if (t !== s) t = t.charAt(0).toUpperCase() + t.slice(1);
     return t.replace(/^(?:you|your)\b/, function (m) { return m.charAt(0).toUpperCase() + m.slice(1); });
   }
+  /* Sentence-level English to Spanish, for the cards that quote one sentence
+     out of a feature.
+     The book is keyed by whole blocks, so a sentence sliced out of a block is
+     never a key and T() would hand it straight back in English. Translating
+     the block and splitting both sides pairs them up. A block whose two
+     languages did not split into the same number of sentences contributes
+     nothing, and its sentences stay English — the wrong sentence in Spanish
+     would be a worse answer than the right one in English. */
+  function sentenceEs(f) {
+    var map = {};
+    if (LANG !== "es") return map;
+    (f.blocks || []).forEach(function (b) {
+      // A list is stored, and translated, one item at a time. Joining the
+      // items first would build a string the book has no key for.
+      (b.text ? [b.text] : (b.items || [])).forEach(function (en) {
+        if (!en) return;
+        var es = T(en);
+        if (es === en) return;
+        var a = sentencesOf(en), c = sentencesOf(es);
+        if (a.length !== c.length) return;
+        a.forEach(function (s, i) { map[s.trim()] = c[i].trim(); });
+      });
+    });
+    return map;
+  }
   /* One entry per distinct action type, each carrying the sentence that
-     granted it. Never empty: a feature that grants nothing is Passive. */
+     granted it. Never empty: a feature that grants nothing is Passive.
+     Classification always reads the English: the rules that decide what a
+     feature costs are regexes over its own prose, and they must not be handed
+     a translation. Only the sentence shown on the card is swapped. */
   function actionEntries(f) {
-    var seen = {}, out = [];
+    var seen = {}, out = [], es = sentenceEs(f);
     sentencesOf(blockText(f)).forEach(function (sent) {
       var k = classifySentence(sent);
       if (!k || seen[k]) return;
       seen[k] = 1;
-      out.push({ type: k, gist: tidy(sent) });
+      out.push({ type: k, gist: tidy(es[sent.trim()] || sent) });
     });
     if (!out.length) out.push({ type: "Passive", gist: gistOf(f) });
     return out;
@@ -1138,8 +1181,21 @@
     return null;
   }
   function gistOf(f) {
-    var t = blockText(f).replace(/^(?:At|By|After|Starting at|Beginning at|When you reach|When you choose[^,]*at|Upon reaching)\s+\d+(?:st|nd|rd|th)\s+level,?\s*/i, "");
-    t = t.replace(/^(?:you|your)\b/, function (m) { return m.charAt(0).toUpperCase() + m.slice(1); });
+    var t = blockText(f).replace(/^\s+/, "");
+    // Only the opening sentence is shown, so the first block that carries any
+    // prose is enough to translate, and it is a whole string the book has a
+    // key for. It is not always blocks[0]: a feature that opens with a table
+    // contributes an empty string there.
+    if (LANG === "es") {
+      var en = "";
+      (f.blocks || []).some(function (b) {
+        en = b.text || (b.items || [])[0] || "";
+        return !!en;
+      });
+      var es = en ? T(en) : en;
+      if (es && es !== en) t = es;
+    }
+    t = tidy(t);
     var end = t.search(/[.!?](?:\s|$)/);
     return end > 0 ? t.slice(0, end + 1) : t.slice(0, 180);
   }

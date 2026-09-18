@@ -281,6 +281,14 @@ module.exports = async function (browser) {
    * names, so if translation ever stopped being a render-time overlay, it would
    * show up here as a number that moved. */
   {
+    // The rules text is a lazy script, fetched on the first switch to Spanish.
+    // Wait for it before comparing: with only the interface strings loaded,
+    // this would be checking that untranslated prose changes nothing, which is
+    // exactly the case that was never in doubt.
+    await page.evaluate(() => window.TT.setLang("es"));
+    await page.waitForFunction(() => window.TTES && window.TTES.book, null, { timeout: 15000 });
+    await page.evaluate(() => window.TT.setLang("en"));
+    R.check("the rules text loads on demand", true, "");
     const parity = await page.evaluate(() => {
       const T = window.TT;
       const cases = [
@@ -326,6 +334,45 @@ module.exports = async function (browser) {
     R.check("switching back restores English",
       parity.back === "Forge", JSON.stringify(parity.back));
     R.eq("every derived number is identical in Spanish", parity.es, parity.en);
+  }
+
+  /* ---- the action cards quote a sentence, and it has to be translated ----
+     The card shows one sentence lifted out of a feature's prose. The book is
+     keyed by whole blocks, so a sliced sentence is not a key, and for a while
+     every one of these came out English on an otherwise Spanish page. */
+  {
+    const g = await page.evaluate(() => {
+      const T = window.TT;
+      const feats = [];
+      T.ALL_CLASSES.forEach(c => (c.features || []).forEach(f => feats.push(f)));
+      T.ALL_SUBS.forEach(s => (s.features || []).forEach(f => feats.push(f)));
+      function gists() {
+        const out = [];
+        feats.forEach(f => { try { T.actionEntries(f).forEach(e => out.push(e)); } catch (e) {} });
+        return out;
+      }
+      T.setLang("en");
+      const en = gists();
+      T.setLang("es");
+      const es = gists();
+      T.setLang("en");
+      const english = /\b(the|you|your|and|with|that|from|can|when|their)\b/i;
+      return {
+        n: es.length,
+        sameTypes: en.length === es.length && en.every((e, i) => e.type === es[i].type),
+        changed: es.filter((e, i) => e.gist !== en[i].gist).length,
+        stillEnglish: es.filter(e => e.gist && english.test(e.gist)).length,
+        sample: es.filter(e => e.gist && english.test(e.gist)).map(e => e.gist.slice(0, 70))
+      };
+    });
+    R.check("the classifier reads the same prose in either language", g.sameTypes, "types differ");
+    R.check("nearly every action card is translated",
+      g.n > 500 && g.changed > g.n * 0.9, g.changed + " of " + g.n);
+    // The leftovers are sentences that straddle a block boundary — an intro
+    // ending in a colon glued to the first list item — which no single book
+    // entry covers. They fall back to English rather than to a wrong pairing.
+    R.check("and the handful that are not is still a handful",
+      g.stillEnglish <= 6, g.stillEnglish + " left: " + JSON.stringify(g.sample));
   }
 
   /* ---- the lookup itself ---- */
