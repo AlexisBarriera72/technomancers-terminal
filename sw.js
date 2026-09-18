@@ -10,7 +10,7 @@
  *
  * Bump CACHE on every deploy that changes a file below.
  */
-var CACHE = "ttb-v11";
+var CACHE = "ttb-v12";
 var SHELL = [
   "./",
   "./index.html",
