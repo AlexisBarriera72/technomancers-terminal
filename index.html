@@ -264,6 +264,8 @@ tr.group td{background:var(--sunk);font-family:var(--f-display);font-size:12px;
   display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
 .note b{color:var(--gold);font-family:var(--f-display);letter-spacing:.06em;text-transform:uppercase;
   font-size:12px}
+.lang-note{margin:0 16px 0;border-left-color:var(--signal)}
+.lang-note span{display:block}
 .search{width:100%;background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);
   padding:9px 12px;color:var(--ink);font-family:var(--f-mono);font-size:13px;margin-bottom:16px}
 .search::placeholder{color:var(--ink-faint)}
@@ -752,6 +754,7 @@ body.previewing .print-root .sheet-block{background:#fff;margin:0 auto 22px;box-
         <button id="mCamp" aria-pressed="false">Campaign</button>
         <button id="mTable" aria-pressed="false" hidden>Table</button>
       </div>
+      <button class="icon-btn" id="langBtn" data-nolang title="Cambiar a español" aria-label="Cambiar a español" aria-pressed="false">ES</button>
       <button class="icon-btn" id="guideBtn" title="Beginner guide" aria-label="Toggle beginner guide" aria-pressed="true">?</button>
       <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">◐</button>
     </div>
@@ -770,6 +773,7 @@ body.previewing .print-root .sheet-block{background:#fff;margin:0 auto 22px;box-
 <script src="data.js"></script>
 <script src="expansion.js"></script>
 <script src="srd.js"></script>
+<script src="es-ui.js"></script>
 <script src="gm.js"></script>
 <script src="app.js"></script>
 

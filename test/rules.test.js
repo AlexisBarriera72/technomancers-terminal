@@ -274,6 +274,92 @@ module.exports = async function (browser) {
       counts.meta.indexOf(counts.archetypes + " archetypes") >= 0, counts.meta);
   }
 
+  /* ---- Spanish must not reach the rules engine ----------------------------
+   *
+   * This is the check the whole design exists to make passable. The mechanics
+   * are inferred from English prose and characters are stored keyed on English
+   * names, so if translation ever stopped being a render-time overlay, it would
+   * show up here as a number that moved. */
+  {
+    const parity = await page.evaluate(() => {
+      const T = window.TT;
+      const cases = [
+        { id: "a", name: "A", level: 8, cls: "Rogue", sub: "rogue-saboteur", bg: "hacker",
+          method: "pointbuy", scores: { Str: 10, Dex: 16, Con: 14, Int: 14, Wis: 12, Cha: 8 },
+          skills: ["Stealth", "Perception"], gear: [{ name: "Combat Vest", cost: "1,000₵" }],
+          asi: [{ type: "feat", name: "Fast Draw" }] },
+        { id: "b", name: "B", level: 12, cls: "Chromehound", method: "pointbuy",
+          scores: { Str: 16, Dex: 14, Con: 16, Int: 8, Wis: 12, Cha: 10 },
+          cyber: [{ name: "Wired Reflexes", tier: "Tier 2" }] },
+        { id: "c", name: "C", level: 5, cls: "Sorcerer", sub: "sorcerer-wild-magic",
+          method: "pointbuy", scores: { Str: 8, Dex: 14, Con: 14, Int: 10, Wis: 12, Cha: 16 } }
+      ];
+      function snapshot() {
+        return cases.map(raw => {
+          const c = T.migrate(JSON.parse(JSON.stringify(raw)));
+          const d = T.statsOf(c);
+          // activeFeatures() and allSkills() read the current character, so
+          // borrow it the way the application does.
+          return T.withChar(c, () => ({
+            sc: d.sc, ac: d.ac, hp: d.hp, pb: d.pb,
+            hum: d.hum ? d.hum.pct : null,
+            skills: T.allSkills().slice().sort(),
+            saves: ["Str", "Dex", "Con", "Int", "Wis", "Cha"].map(a => T.saveBonus(a, d)),
+            init: T.initiative(d),
+            // the action-economy classifier, which reads the feature's own prose
+            acts: T.activeFeatures().map(f => T.actionEntries(f).map(e => e.type).join("/"))
+          }));
+        });
+      }
+      const en = snapshot();
+      T.setLang("es");
+      const esLang = T.getLang();
+      const es = snapshot();
+      // and the DOM really did change, so this is not passing by doing nothing
+      const masthead = (document.querySelector("#mForge") || {}).textContent;
+      T.setLang("en");
+      return { en: en, es: es, lang: esLang, masthead: masthead,
+               back: (document.querySelector("#mForge") || {}).textContent };
+    });
+    R.check("switching to Spanish actually changed the interface",
+      parity.lang === "es" && parity.masthead === "Forja", JSON.stringify(parity.masthead));
+    R.check("switching back restores English",
+      parity.back === "Forge", JSON.stringify(parity.back));
+    R.eq("every derived number is identical in Spanish", parity.es, parity.en);
+  }
+
+  /* ---- the lookup itself ---- */
+  {
+    const t = await page.evaluate(() => {
+      const T = window.TT;
+      T.setLang("es");
+      const out = {
+        exact: T.T("Choose a class"),
+        // digits are placeholders, so one entry covers the whole family
+        numeric: T.T("Step 04"),
+        interpolated: T.T("{0} items".replace("{0}", "7")),
+        // a pattern passes the proper noun through untouched…
+        properNoun: T.T("Add Sniper Rifle"),
+        // …but translates a capture we do have a word for
+        capture: T.T("Say: “Roll Stealth.”"),
+        // a miss falls back to English rather than to a blank
+        miss: T.T("A sentence that is deliberately not in the table."),
+        hasBook: T.esHasBook()
+      };
+      T.setLang("en");
+      out.offIsIdentity = T.T("Choose a class");
+      return out;
+    });
+    R.eq("an exact key translates", t.exact, "Elige una clase");
+    R.eq("digits are placeholders, not part of the key", t.numeric, "Paso 04");
+    R.eq("an interpolated count keeps its number", t.interpolated, "7 objetos");
+    R.eq("a pattern leaves the proper noun in English", t.properNoun, "Añadir Sniper Rifle");
+    R.eq("a pattern still translates what it can", t.capture, "Di: «Tira Sigilo»."); 
+    R.eq("a missing key falls back to English",
+      t.miss, "A sentence that is deliberately not in the table.");
+    R.eq("English is a pass-through", t.offIsIdentity, "Choose a class");
+  }
+
   /* ---- SRD source and the Wild Magic archetype ---- */
   {
     const wm = await page.evaluate(() => {

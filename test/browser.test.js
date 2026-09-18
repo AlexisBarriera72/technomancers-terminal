@@ -340,6 +340,114 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
+  /* ===================== Spanish is a display layer only ================== */
+  {
+    const { page, ctx, errors } = await appPage(browser);
+    // build a character in English, then switch
+    await page.evaluate(() => {
+      const T = window.TT;
+      const c = T.blank();
+      c.name = "Nyx"; c.cls = "Rogue"; c.sub = "rogue-saboteur"; c.bg = "hacker";
+      c.level = 8; c.skills = ["Stealth", "Perception"];
+      c.scores = { Str: 10, Dex: 16, Con: 14, Int: 14, Wis: 12, Cha: 8 };
+      localStorage.setItem("ttb.character.v1", JSON.stringify(c));
+    });
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+    await page.waitForTimeout(250);
+
+    const before = await page.evaluate(() => ({
+      stored: localStorage.getItem("ttb.character.v1"),
+      modes: [...document.querySelectorAll(".modes button")].map(b => b.textContent)
+    }));
+
+    await page.evaluate(() => document.querySelector("#langBtn").click());
+    await page.waitForTimeout(400);
+
+    const after = await page.evaluate(() => ({
+      modes: [...document.querySelectorAll(".modes button")].map(b => b.textContent),
+      rail: [...document.querySelectorAll(".rail .step")].map(b => b.textContent.trim()),
+      note: !!document.querySelector(".lang-note"),
+      btn: document.querySelector("#langBtn").textContent,
+      html: document.documentElement.getAttribute("lang"),
+      pref: localStorage.getItem("ttb.lang"),
+      // the character must be byte-identical: language is not part of a sheet
+      stored: localStorage.getItem("ttb.character.v1"),
+      // nothing may leak an empty node
+      empties: [...document.querySelectorAll("#stage *, .rail *")]
+        .filter(e => e.children.length === 0 && /^\s*(undefined|null)\s*$/.test(e.textContent)).length
+    }));
+    R.check("the language button switches the interface to Spanish",
+      after.modes[0] === "Forja" && after.modes[1] === "Códice", JSON.stringify(after.modes));
+    R.check("the step rail is translated too",
+      after.rail.some(t => /Arquetipo/.test(t)) && after.rail.some(t => /Caracter/.test(t)),
+      JSON.stringify(after.rail));
+    R.check("a machine-translation notice is shown", after.note === true);
+    R.check("the button now offers English back", after.btn === "EN", after.btn);
+    R.eq("the document language attribute follows", after.html, "es");
+    R.eq("the preference is persisted", after.pref, "es");
+    R.eq("switching language does not touch the saved character", after.stored, before.stored);
+    R.eq("no undefined leaks into the page", after.empties, 0);
+    R.check("switching language raises no errors", errors.length === 0, errors.join(" | "));
+
+    // and it survives a reload
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+    await page.waitForTimeout(300);
+    const reloaded = await page.evaluate(() =>
+      [...document.querySelectorAll(".modes button")].map(b => b.textContent));
+    R.check("the preference survives a reload", reloaded[0] === "Forja", JSON.stringify(reloaded));
+
+    // switching back restores English exactly, including the static masthead
+    await page.evaluate(() => document.querySelector("#langBtn").click());
+    await page.waitForTimeout(300);
+    const back = await page.evaluate(() => ({
+      modes: [...document.querySelectorAll(".modes button")].map(b => b.textContent),
+      note: !!document.querySelector(".lang-note"),
+      html: document.documentElement.getAttribute("lang")
+    }));
+    R.eq("switching back restores the English masthead", back.modes, before.modes);
+    R.check("the notice goes away with it", back.note === false);
+    R.eq("and the document language with it", back.html, "en");
+    await ctx.close();
+  }
+
+  /* A share link must mean the same thing in either language */
+  {
+    const a = await appPage(browser);
+    await a.page.evaluate(() => {
+      const T = window.TT;
+      const c = T.blank();
+      c.name = "Nyx"; c.cls = "Rogue"; c.sub = "rogue-saboteur"; c.bg = "hacker";
+      c.level = 8; c.skills = ["Stealth", "Perception"];
+      localStorage.setItem("ttb.character.v1", JSON.stringify(c));
+      localStorage.setItem("ttb.lang", "es");
+    });
+    await a.page.reload();
+    await a.page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+    await a.page.waitForTimeout(300);
+    const code = await a.page.evaluate(() =>
+      window.TT.b64u(JSON.stringify(window.TT.slimChar(window.TT.migrate(
+        JSON.parse(localStorage.getItem("ttb.character.v1")))))));
+    await a.ctx.close();
+
+    // opened by somebody running the site in English
+    const b2 = await appPage(browser, { url: FILE_URL + "#c=" + code });
+    await b2.page.waitForTimeout(400);
+    const got = await b2.page.evaluate(() => {
+      const c = window.TT.migrate(JSON.parse(atob(location.hash.slice(3).replace(/-/g, "+").replace(/_/g, "/"))));
+      const d = window.TT.statsOf(c);
+      return { cls: c.cls, sub: c.sub, skills: c.skills.slice().sort(), ac: d.ac.ac, hp: d.hp };
+    });
+    R.eq("a sheet built in Spanish carries the English class key",
+      [got.cls, got.sub], ["Rogue", "rogue-saboteur"]);
+    R.eq("and the English skill keys", got.skills, ["Perception", "Stealth"]);
+    R.check("and the numbers still compute from them",
+      typeof got.ac === "number" && got.ac > 0 && typeof got.hp === "number" && got.hp > 0,
+      JSON.stringify(got));
+    await b2.ctx.close();
+  }
+
   /* Initiative fix from the earlier pass must stay fixed */
   {
     const { page, ctx } = await appPage(browser);

@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-18 05:40";
+  var BUILD = "2026-09-18 07:10";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -184,6 +184,188 @@
     try { return localStorage.getItem(key); } catch (e) { return undefined; }
   }
   function storageIsBroken() { return storageBroken; }
+
+  /* ------------------------------------------------------------------ i18n */
+  /* Spanish is a display layer over a finished English DOM, and nothing else.
+   *
+   * It has to be. This application infers mechanics from English prose:
+   * ACT_RULES reads a feature's own text to decide what it costs to use,
+   * parseACBonus reads the armour table, weaponProficient reads a class's
+   * weapon line. Characters then store class, archetype, skill and feat NAMES
+   * as the very strings those lookups are keyed on. Translating the data in
+   * place would not merely risk a mistranslated rule — it would mislabel the
+   * action economy, drop armour bonuses, and fail every saved character at the
+   * next validate.
+   *
+   * So nothing here touches window.TTB, TTBX or TTSRD. render() builds the page
+   * in English exactly as it always did, and applyLang() then rewrites the text
+   * nodes it produced. The table is keyed by the English text itself, so a miss
+   * simply leaves English on screen — which is the direction we want to fail in.
+   * Change an English source string and it stops matching and reverts to
+   * English, rather than showing a translation of something it no longer says.
+   *
+   * The original English is kept per node, so switching back is exact and
+   * re-running is idempotent (we always translate from the original, never from
+   * a previous translation).
+   */
+  var LANG_KEY = "ttb.lang";
+  var LANG = "en";
+  var ES = {};
+  var esBook = "idle";          // idle | loading | ready | failed
+  var ORIG_TEXT = new WeakMap();
+  var ORIG_ATTR = new WeakMap();
+  var I18N_ATTRS = ["title", "aria-label", "placeholder", "alt"];
+
+  var ES_PAT = [];
+  function esRebuild() {
+    ES = {};
+    ES_PAT = [];
+    var src = window.TTES;
+    if (!src) return;
+    [src.ui, src.book].forEach(function (d) {
+      if (d) Object.keys(d).forEach(function (k) { ES[k] = d[k]; });
+    });
+    /* Patterns exist for strings the application generates from the data, where
+       enumerating them would mean re-listing every gear item and going stale the
+       moment one is added. {*} matches a run and is passed through untranslated,
+       which is what we want: the thing being named is a proper noun. */
+    (src.patterns || []).forEach(function (pair) {
+      var parts = String(pair[0]).split("{*}");
+      if (parts.length < 2) return;
+      var rx = parts.map(function (x) {
+        return x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      }).join("([\\s\\S]+?)");
+      ES_PAT.push({ re: new RegExp("^" + rx + "$"), out: String(pair[1]) });
+    });
+  }
+  function esHasBook() {
+    return !!(window.TTES && window.TTES.book &&
+              Object.keys(window.TTES.book).length);
+  }
+
+  /* Runs of digits become {0}, {1}… so one entry covers "Step 01" through
+     "Step 06", and so a translator can move a number where Spanish wants it. */
+  function numKey(str) {
+    var nums = [];
+    var key = str.replace(/\d+/g, function (m) {
+      nums.push(m);
+      return "{" + (nums.length - 1) + "}";
+    });
+    return { key: key, nums: nums };
+  }
+  function T(str) {
+    if (LANG !== "es" || str == null) return str;
+    var s = String(str);
+    if (ES[s]) return ES[s];
+    if (!/\d/.test(s)) return byPattern(s);
+    var n = numKey(s);
+    var hit = ES[n.key];
+    if (hit) {
+      return hit.replace(/\{(\d+)\}/g, function (m, i) {
+        return n.nums[+i] == null ? m : n.nums[+i];
+      });
+    }
+    return byPattern(s);
+  }
+  /* The captured run is put back through T() rather than passed through raw.
+     A proper noun misses the table and survives unchanged, which is what we
+     want for "Add Sniper Rifle"; a word we do translate — a skill inside
+     "Say: “Roll Stealth.”", a step name inside "Go to Abilities" — comes back
+     in Spanish instead of leaving half the sentence behind. */
+  function byPattern(s) {
+    for (var i = 0; i < ES_PAT.length; i++) {
+      var m = ES_PAT[i].re.exec(s);
+      if (!m) continue;
+      var k = 1;
+      return ES_PAT[i].out.replace(/\{\*\}/g, function () {
+        var v = m[k++];
+        return v == null ? "" : T(v);
+      });
+    }
+    return s;
+  }
+
+  /* Keep surrounding whitespace: markup is indented in index.html and the
+     spacing between inline chips is load-bearing. */
+  function translateRun(raw) {
+    var m = /^(\s*)([\s\S]*?)(\s*)$/.exec(raw);
+    if (!m || !m[2]) return raw;
+    var out = T(m[2]);
+    return out === m[2] ? raw : m[1] + out + m[3];
+  }
+
+  function applyLang(root) {
+    root = root || document.body;
+    if (!root || !document.createTreeWalker) return;
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    var texts = [], n;
+    while ((n = w.nextNode())) {
+      var pn = n.parentNode && n.parentNode.nodeName;
+      if (pn === "SCRIPT" || pn === "STYLE" || pn === "TEXTAREA") continue;
+      if (!/[A-Za-z]/.test(n.nodeValue)) continue;
+      if (noLang(n.parentNode)) continue;
+      texts.push(n);
+    }
+    texts.forEach(function (t) {
+      var src = ORIG_TEXT.has(t) ? ORIG_TEXT.get(t) : t.nodeValue;
+      var out = LANG === "es" ? translateRun(src) : src;
+      if (out === t.nodeValue) return;
+      if (!ORIG_TEXT.has(t)) ORIG_TEXT.set(t, t.nodeValue);
+      t.nodeValue = out;
+    });
+
+    if (!root.querySelectorAll) return;
+    var sel = I18N_ATTRS.map(function (a) { return "[" + a + "]"; }).join(",");
+    var els = root.querySelectorAll(sel);
+    for (var i = 0; i < els.length; i++) {
+      if (!noLang(els[i])) applyLangAttrs(els[i]);
+    }
+    if (root === document.body) applyLangAttrs(document.documentElement);
+  }
+  /* Opt-out for anything whose text is managed directly rather than rendered —
+     the language button relabels itself, so letting the restore path have it
+     too would put the two in a fight. */
+  function noLang(node) {
+    if (!node) return false;
+    var e = node.nodeType === 1 ? node : node.parentElement;
+    return !!(e && e.closest && e.closest("[data-nolang]"));
+  }
+  function applyLangAttrs(e) {
+    var keep = ORIG_ATTR.get(e);
+    I18N_ATTRS.forEach(function (a) {
+      if (!e.hasAttribute || !e.hasAttribute(a)) return;
+      var src = keep && keep[a] != null ? keep[a] : e.getAttribute(a);
+      var out = LANG === "es" ? T(src) : src;
+      if (out === e.getAttribute(a)) return;
+      if (!keep) { keep = {}; ORIG_ATTR.set(e, keep); }
+      if (keep[a] == null) keep[a] = e.getAttribute(a);
+      e.setAttribute(a, out);
+    });
+  }
+
+  /* The book text is the large half — it is fetched only when somebody actually
+     asks for Spanish, and the service worker keeps it from then on. Until it
+     lands the interface is Spanish and the rules are English, which is the
+     fallback working rather than an error. */
+  function loadEsBook() {
+    if (esBook === "ready" || esBook === "loading") return;
+    esBook = "loading";
+    var s = document.createElement("script");
+    s.src = "es-book.js";
+    s.onload = function () { esBook = "ready"; esRebuild(); render(); };
+    s.onerror = function () {
+      esBook = "failed";
+      toast("No se pudieron cargar las reglas en español — se muestran en inglés.");
+    };
+    document.head.appendChild(s);
+  }
+  function setLang(next) {
+    LANG = next === "es" ? "es" : "en";
+    lsWrite(LANG_KEY, LANG);
+    document.documentElement.setAttribute("lang", LANG === "es" ? "es" : "en");
+    if (LANG === "es") loadEsBook();
+    render();
+  }
 
   function save() {
     if (swapDepth) return true;       // borrowed sheet; never write it to our slot
@@ -989,6 +1171,14 @@
 
   function withTerms(text) {
     // [[term]] and [[term|shown words]] become tappable definitions
+    //
+    // Translated here, before the split, rather than left to applyLang(). A
+    // dotted term cuts its sentence into three text nodes, and three fragments
+    // ("A", "skill", "is something you roll for…") cannot be translated
+    // separately without getting the grammar wrong. The Spanish keeps the
+    // English term as the glossary key — [[skill|habilidad]] — because
+    // GLOSSARY is keyed on it.
+    text = T(text);
     var frag = document.createDocumentFragment();
     var re = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, last = 0, m;
     while ((m = re.exec(text))) {
@@ -996,7 +1186,7 @@
       var key = m[1].toLowerCase(), shown = m[2] || m[1];
       var btn = el("button", "term", esc(shown));
       btn.type = "button";
-      btn.setAttribute("aria-label", "What does " + shown + " mean?");
+      btn.setAttribute("aria-label", T("What does {0} mean?").replace("{0}", shown));
       (function (k, b) {
         b.onclick = function () {
           var block = b;
@@ -1005,7 +1195,7 @@
           var existing = block.parentNode &&
             block.parentNode.querySelector('.term-def[data-k="' + k + '"]');
           if (existing) { existing.remove(); return; }
-          var d = el("div", "term-def", "<b>" + esc(k) + "</b>" + esc(GLOSSARY[k] || ""));
+          var d = el("div", "term-def", "<b>" + esc(T(k)) + "</b>" + esc(T(GLOSSARY[k] || "")));
           d.setAttribute("data-k", k);
           if (block.parentNode) block.parentNode.insertBefore(d, block.nextSibling);
         };
@@ -1314,6 +1504,7 @@
     var old = $(".toast"); if (old) old.remove();
     var t = el("div", "toast", esc(msg));
     document.body.appendChild(t);
+    applyLang(t);
     clearTimeout(toastT);
     toastT = setTimeout(function () { t.remove(); }, 2200);
   }
@@ -2254,7 +2445,7 @@
     expandAll.onclick = function () {
       var open = !$("details.item[open]");
       document.querySelectorAll("details.item").forEach(function (d) { d.open = open; });
-      expandAll.textContent = open ? "Collapse all" : "Expand all";
+      expandAll.textContent = T(open ? "Collapse all" : "Expand all");
     };
     fb.appendChild(expandAll);
     s.appendChild(fb);
@@ -3226,6 +3417,7 @@
     root.innerHTML = "";
     ({ classic: buildClassic, pocket: buildPocket, cards: buildCards, full: buildFull }[kind] ||
       buildClassic)(root);
+    applyLang(root);
   }
   function openPreview(kind) {
     printKind = kind;
@@ -4105,6 +4297,46 @@
     if ($("#mCamp")) $("#mCamp").setAttribute("aria-pressed", mode === "campaign");
     var mt = $("#mTable");
     if (mt) { mt.hidden = !gmOn; mt.setAttribute("aria-pressed", mode === "table"); }
+    var lb = $("#langBtn");
+    if (lb) {
+      lb.textContent = LANG === "es" ? "EN" : "ES";
+      lb.setAttribute("aria-pressed", LANG === "es");
+      lb.setAttribute("title", LANG === "es" ? "Switch to English" : "Cambiar a español");
+      lb.setAttribute("aria-label", lb.getAttribute("title"));
+    }
+    langNote();
+    // Last, and over the whole document: the GM tools, the dossier and the
+    // masthead are all built by different code paths and none of them should
+    // have to know this feature exists.
+    applyLang();
+  }
+
+  /* Say plainly what the Spanish is and is not.
+   *
+   * The rules text is machine translated and a mistranslated "ventaja" or a
+   * dropped "no" changes how a rule works, so nobody should mistake it for a
+   * checked translation. The English is one tap away, and the proper nouns are
+   * left in English on purpose because saved characters are keyed on them —
+   * both of which are worth saying rather than leaving people to work out. */
+  function langNote() {
+    var old = $(".lang-note");
+    if (old) old.remove();
+    if (LANG !== "es") return;
+    var n = el("div", "note lang-note");
+    n.setAttribute("data-nolang", "");
+    n.innerHTML =
+      "<b>Traducción automática</b>" +
+      "<span>El texto de las reglas está traducido por máquina; el inglés es la versión " +
+      "de referencia. Pulsa <b>EN</b> arriba para ver el original.</span>" +
+      "<span>Los nombres de clases, arquetipos, dotes y equipo se quedan en inglés a " +
+      "propósito: tu personaje se guarda con esos nombres y la hoja calcula a partir de " +
+      "ellos.</span>" +
+      (esBook === "ready" ? "" :
+        "<span>" + (esBook === "failed"
+          ? "No se pudieron cargar las reglas en español; se muestran en inglés."
+          : "Las reglas se están cargando y mientras tanto se muestran en inglés.") + "</span>");
+    var ws = $(".workspace");
+    if (ws && ws.parentNode) ws.parentNode.insertBefore(n, ws);
   }
 
   /* ---- GM tools: hidden until someone knows the address --------------------
@@ -4148,6 +4380,8 @@
     ALL_CLASSES: ALL_CLASSES, ALL_SUBS: ALL_SUBS, ALL_FEATS: ALL_FEATS,
     tableByTitle: tableByTitle, subsFor: subsFor, paras: paras,
     sourceName: sourceName, isBook: isBook,
+    T: T, applyLang: applyLang, setLang: setLang,
+    getLang: function () { return LANG; }, esHasBook: esHasBook,
     ABIL: ABIL, ABIL_FULL: ABIL_FULL, HSTATE: HSTATE, CLASS_DC: CLASS_DC,
     // dom helpers
     $: $, el: el, esc: esc, toast: toast, head: head, renderTable: renderTable,
@@ -4178,6 +4412,12 @@
   function init() {
     $("#brandMeta").textContent = D.meta.author + " · v" + D.meta.version + " · " +
       D.meta.pages + " pp · build " + BUILD;
+    // Before anything renders, so the first paint is already in the right
+    // language rather than flashing English first.
+    LANG = lsRead(LANG_KEY) === "es" ? "es" : "en";
+    document.documentElement.setAttribute("lang", LANG);
+    esRebuild();
+    if (LANG === "es") loadEsBook();
     var unlocked = gmHash();
     if (window.TTGM && window.TTGM.boot) window.TTGM.boot(window.TT);
     var shared = readShared();
@@ -4204,6 +4444,9 @@
       render();
       toast(helpMode ? "Beginner guide on" : "Beginner guide off");
     };
+    if ($("#langBtn")) {
+      $("#langBtn").onclick = function () { setLang(LANG === "es" ? "en" : "es"); };
+    }
     $("#themeBtn").onclick = function () {
       var r = document.documentElement;
       var cur = r.getAttribute("data-theme");

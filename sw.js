@@ -10,7 +10,7 @@
  *
  * Bump CACHE on every deploy that changes a file below.
  */
-var CACHE = "ttb-v8";
+var CACHE = "ttb-v9";
 var SHELL = [
   "./",
   "./index.html",
@@ -18,6 +18,7 @@ var SHELL = [
   "./data.js",
   "./expansion.js",
   "./srd.js",
+  "./es-ui.js",
   "./gm.js",
   "./app.js",
   "./manifest.json",

@@ -32,13 +32,67 @@ with `npx serve .`.
 | `data.js` | `window.TTB` — everything extracted from the Textbook. |
 | `expansion.js` | `window.TTBX` — the Neon Ledger expansion. |
 | `srd.js` | `window.TTSRD` — SRD 5.1 material, currently the Wild Magic Sorcerer. |
+| `es-ui.js` | `window.TTES.ui` — Spanish for the application's own text. Always loaded. |
+| `es-book.js` | `window.TTES.book` — Spanish for the rules text. Fetched on demand. |
 | `campaigns.js` | `window.TTBC` — your campaigns. **This is the one you edit.** |
 | `sw.js` | Service worker, so the site opens with no signal. |
+
+`es-ui.js` is in the service worker's `SHELL`, so the interface works in Spanish
+offline. `es-book.js` is not — it is the large half, fetched on first use and cached
+by the worker's ordinary fetch handler from then on.
 
 `vercel.json` sets cache headers. `manifest.json` and `icon.svg` make it installable.
 
 `app.js` hands `gm.js` a namespace (`window.TT`) at startup — the book lookups, the
 DOM helpers and the derived-stat functions. Everything else in `app.js` stays private.
+
+## Spanish
+
+The **ES** button in the masthead switches the whole interface to Spanish. It is
+entirely client-side: a preference in `localStorage`, no request, no server, and
+nothing about it in the character or the share link. A sheet built in Spanish opens
+identically for somebody running the site in English.
+
+**Spanish is a display layer over a finished English DOM, and it has to stay one.**
+The application infers mechanics from English prose — `ACT_RULES` decides what a
+feature costs to use by reading its own text, `parseACBonus()` reads the armour
+table, `weaponProficient()` reads a class's weapon line — and characters store
+class, archetype, skill and feat **names** as the keys those lookups use. So
+`render()` builds the page in English exactly as it always did, and `applyLang()`
+then rewrites the text nodes it produced. Nothing touches `window.TTB`, `TTBX` or
+`TTSRD`.
+
+That is why **proper nouns stay English**: class, archetype, feat, background and
+gear names. Translating them would break saved sheets and shared links. The on-screen
+notice says so rather than leaving people to work it out.
+
+### How the table works
+
+Keys are the English text exactly as it reaches the screen, so a key that stops
+matching falls back to English — a source string you edit loses its Spanish instead
+of keeping a translation of something it no longer says.
+
+- Runs of digits are written `{0}`, `{1}`… so one entry covers `Step 01` through
+  `Step 08`, and a translator can move a number where Spanish wants it.
+- `window.TTES.patterns` handles text built from the data (`Add {*}` →
+  `Añadir {*}`). `{*}` matches a run; the capture goes back through the table, so a
+  gear name passes through untouched while a skill name inside it is translated.
+- Guide sentences carrying `[[term]]` glossary markup are translated **whole**, in
+  `withTerms()`, before the split — three fragments cannot be translated separately
+  without getting the grammar wrong. The Spanish keeps the English glossary key:
+  `[[skill|habilidad]]`.
+
+### Adding translations
+
+`node tools/extract-strings.js` drives the real application through every screen and
+writes `tools/strings.json` — every string that actually reaches the DOM, split into
+`ui` (the application's own) and `book` (text that exists in a data file). Translate
+into the matching file. Anything missing renders in English, so partial coverage is
+safe to ship.
+
+**The rules text is machine translated**, and the interface says so. The English is
+the reference and the **EN** button shows it. Nothing in `es-book.js` is ever read by
+the rules engine.
 
 ## Adding or changing a campaign
 
