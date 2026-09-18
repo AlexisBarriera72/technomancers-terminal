@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-18 07:10";
+  var BUILD = "2026-09-18 08:05";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -888,16 +888,21 @@
   /* ------------------------------------------------- feature rendering bits */
   function leadify(text) {
     // The book opens many entries with a bolded run-in term: "Belt Feed. If this…"
-    return esc(text).replace(/^([A-Z][A-Za-z0-9'’\- ]{1,44}\.)(\s)/,
+    //
+    // Translated before the run-in is wrapped, not after. The wrap cuts the
+    // paragraph into two text nodes, and "Belt Feed." on its own is not a
+    // translatable unit — doing it here means the key is the book's sentence
+    // exactly as data.js holds it.
+    return esc(T(text)).replace(/^([A-ZÁÉÍÓÚÑ][A-Za-z0-9à-ÿ'’\- ]{1,44}\.)(\s)/,
       '<span class="lead">$1</span>$2');
   }
   function renderTable(t) {
     var w = el("div", "tbl-wrap" + (t.headers && t.headers.length > 3 ? " wide" : ""));
     var tb = el("table");
-    if (t.title) tb.appendChild(el("caption", null, esc(t.title)));
+    if (t.title) tb.appendChild(el("caption", null, esc(T(t.title))));
     if (t.headers && t.headers.some(function (h) { return h; })) {
       var tr = el("tr");
-      t.headers.forEach(function (h) { tr.appendChild(el("th", null, esc(h))); });
+      t.headers.forEach(function (h) { tr.appendChild(el("th", null, esc(T(h)))); });
       var th = el("thead"); th.appendChild(tr); tb.appendChild(th);
     }
     var body = el("tbody");
@@ -905,7 +910,7 @@
       var filled = r.filter(function (c) { return c !== ""; }).length;
       var tr = el("tr", filled === 1 ? "group" : null);
       r.forEach(function (c, i) {
-        var td = el("td", null, esc(c));
+        var td = el("td", null, esc(T(c)));
         if (filled === 1 && i === 0) td.colSpan = r.length;
         if (filled === 1 && i > 0) return;
         tr.appendChild(td);
@@ -2536,7 +2541,7 @@
       var tb = el("table");
       var tr = el("tr");
       tr.appendChild(el("th", null, ""));
-      t.headers.forEach(function (h) { tr.appendChild(el("th", null, esc(h))); });
+      t.headers.forEach(function (h) { tr.appendChild(el("th", null, esc(T(h)))); });
       var th = el("thead"); th.appendChild(tr); tb.appendChild(th);
       var body = el("tbody");
       rows.forEach(function (r) {
