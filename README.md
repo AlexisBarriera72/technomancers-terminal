@@ -81,6 +81,15 @@ of keeping a translation of something it no longer says.
   `withTerms()`, before the split — three fragments cannot be translated separately
   without getting the grammar wrong. The Spanish keeps the English glossary key:
   `[[skill|habilidad]]`.
+- The action cards quote **one sentence** out of a feature's prose, and the book is
+  keyed by whole blocks, so a sliced sentence is never a key. `sentenceEs()`
+  translates the block and pairs the two languages' sentences by position. A block
+  whose two languages split into different numbers of sentences contributes nothing
+  and its sentences stay English: the wrong sentence in Spanish is a worse answer
+  than the right one in English. Four cards out of 642 are in that state, all of
+  them sentences that straddle a block boundary.
+- Spanish writes thousands as `5.000₵`, so `sentencesOf()` does not treat a full
+  stop between two digits as the end of a sentence.
 
 ### Adding translations
 
@@ -89,6 +98,11 @@ writes `tools/strings.json` — every string that actually reaches the DOM, spli
 `ui` (the application's own) and `book` (text that exists in a data file). Translate
 into the matching file. Anything missing renders in English, so partial coverage is
 safe to ship.
+
+`node tools/book-coverage.js` reports what is left, per group, straight from the
+data files; `node tools/book-coverage.js <group>` lists it. Every sentence of rules
+text is translated. What it still counts as missing is **names** — classes,
+archetypes, features, feats, gear — which stay English on purpose.
 
 **The rules text is machine translated**, and the interface says so. The English is
 the reference and the **EN** button shows it. Nothing in `es-book.js` is ever read by
