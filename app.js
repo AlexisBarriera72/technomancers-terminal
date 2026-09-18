@@ -21,13 +21,14 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-17 23:20";
+  var BUILD = "2026-09-18 05:40";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
   var PB_COST = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
   var ARRAY = [15, 14, 13, 12, 10, 8];
   var X = window.TTBX || { classes: [], subclasses: [], feats: [], systems: [], origins: null };
+  var SRD = window.TTSRD || { meta: null, subclasses: [] };
   var tableByTitle = {};
   D.tables.forEach(function (t) { tableByTitle[t.title] = t; });
 
@@ -35,8 +36,9 @@
   var subById = {};
   D.subclasses.forEach(function (s) { s.origin = "book"; subById[s.id] = s; });
   X.subclasses.forEach(function (s) { subById[s.id] = s; });
+  SRD.subclasses.forEach(function (s) { s.origin = "srd"; subById[s.id] = s; });
 
-  var ALL_SUBS = D.subclasses.concat(X.subclasses);
+  var ALL_SUBS = D.subclasses.concat(X.subclasses, SRD.subclasses);
   var ALL_FEATS = D.feats.concat(X.feats.map(function (f) {
     return Object.assign({ origin: "expansion" }, f);
   }));
@@ -57,6 +59,28 @@
     return ALL_SUBS.filter(function (s) { return s.cls === clsName; });
   }
   function isExp(o) { return o && o.origin === "expansion"; }
+
+  /* Where a class, archetype or feat came from.
+   *
+   * This used to be an isExp() ternary written out at fifteen render sites, each
+   * with the two labels inline, which is why adding a third source is the reason
+   * this function exists. Anything without an origin is from the book. */
+  var SOURCES = { expansion: "Neon Ledger", srd: "SRD", book: "Book" };
+  function isBook(o) { return !o || !o.origin || o.origin === "book"; }
+  function sourceName(o) { return SOURCES[(o && o.origin) || "book"] || "Book"; }
+  /* The SRD is CC-BY, and the licence asks for this in so many words. It is
+     rendered wherever SRD material is listed rather than buried in a footer. */
+  function srdNotice(host) {
+    if (!SRD.meta || !SRD.subclasses.length) return;
+    var n = el("div", "note srd-note");
+    n.innerHTML = '<b>SRD</b> — ' + esc(SRD.meta.note) + "<br><small>" +
+      esc(SRD.meta.notice) + "</small>";
+    host.appendChild(n);
+  }
+  function sourceChip(o, cls, style) {
+    return '<span class="chip ' + (cls || "tier") + '"' +
+      (style ? ' style="' + style + '"' : "") + ">" + esc(sourceName(o)) + "</span>";
+  }
 
   function mod(n) { return Math.floor((n - 10) / 2); }
   function sgn(n) { return (n >= 0 ? "+" : "") + n; }
@@ -1302,7 +1326,7 @@
     var sub = subs.length === 1 ? subs[0] : null;
     b.innerHTML =
       "<h3>" + esc(c.name) +
-      (isExp(c) ? ' <span class="chip tier" style="vertical-align:middle">Neon Ledger</span>' : "") +
+      (isBook(c) ? "" : " " + sourceChip(c, "tier", "vertical-align:middle")) +
       "</h3>" +
       '<div class="sub">' +
       (sub ? esc(sub.name) + " · unlocks at level " + sub.levelAvailable
@@ -1331,7 +1355,7 @@
     head(s, "Step 01", "Choose a class",
       D.classes.length + " classes from the book and " + X.classes.length + " more from the " +
       "Neon Ledger expansion, which bring a resource of their own. " +
-      (D.subclasses.length + X.subclasses.length) + " archetypes between them.");
+      ALL_SUBS.length + " archetypes between them.");
 
     s.appendChild(el("div", "eyebrow", "From the book · 13 classes"));
     var g = el("div", "grid");
@@ -1411,7 +1435,7 @@
       '<span class="chip lvl">' + esc(cl.name) + " · level " + sub.levelAvailable + "</span>" +
       '<span class="chip">' + esc(sub.tagline) + "</span>" +
       (sub.page ? '<span class="page-ref">Book p. ' + sub.page + "</span>"
-                : '<span class="chip tier">Neon Ledger</span>');
+                : sourceChip(sub));
     s.appendChild(meta);
 
     if (C.level < sub.levelAvailable) {
@@ -1944,7 +1968,7 @@
           e.style.cssText = "padding-top:0;border-bottom:none";
           var eh = el("div", "entry-head");
           eh.innerHTML = "<h4>" + esc(picked) + "</h4>" +
-            (ft && isExp(ft) ? '<span class="chip tier">Neon Ledger</span>' : "") +
+            (ft && !isBook(ft) ? sourceChip(ft) : "") +
             (ft && ft.prerequisite ? '<span class="chip warn">Prereq: ' + esc(ft.prerequisite) + "</span>" : "");
           var clear = el("button", "chip", "Change");
           clear.onclick = function () {
@@ -2012,7 +2036,7 @@
             var row = el("div", "feat-row" + (already ? " taken" : ""));
             var top = el("div", "do-top");
             top.innerHTML = "<b>" + esc(f.name) + "</b>" +
-              (isExp(f) ? '<span class="tag">Neon Ledger</span>' : '<span class="tag">Book</span>') +
+              '<span class="tag">' + esc(sourceName(f)) + "</span>" +
               (f.prerequisite ? '<span class="tag use">Needs: ' + esc(f.prerequisite) + "</span>" : "");
             var take = el("button", "chip", already ? "Taken" : "Take");
             if (already) { take.disabled = true; take.style.opacity = ".35"; }
@@ -2838,7 +2862,7 @@
     }
     if (sub) {
       L.push("## Archetype — " + sub.name +
-        (sub.page ? " (p. " + sub.page + ")" : " (Neon Ledger)"));
+        (sub.page ? " (p. " + sub.page + ")" : " (" + sourceName(sub) + ")"));
       sub.features.filter(function (f) { return C.level >= f.level; }).forEach(function (f) {
         L.push("- " + f.name + " *(level " + f.level + ")*");
       });
@@ -2895,9 +2919,12 @@
       L.push("");
     }
     L.push("---");
+    var srcs = [];
+    if (isExp(cl) || C.origin || C.cred) srcs.push("the " + X.meta.title + " expansion");
+    if (sub && sub.origin === "srd" && SRD.meta) srcs.push(SRD.meta.title);
     L.push("Built from *" + D.meta.title + "* by " + D.meta.author + ", version " +
-      D.meta.version + (isExp(cl) || C.origin || C.cred ? ", with the " + X.meta.title +
-      " expansion" : "") + ".");
+      D.meta.version + (srcs.length ? ", with " + srcs.join(" and ") : "") + ".");
+    if (sub && sub.origin === "srd" && SRD.meta) L.push("", SRD.meta.notice);
     return L.join("\n");
   }
 
@@ -3305,7 +3332,7 @@
       codexEntries(X.classes).forEach(function (c) {
         var e = el("div", "entry");
         var h = el("div", "entry-head");
-        h.innerHTML = "<h4>" + esc(c.name) + '</h4><span class="chip tier">Neon Ledger</span>' +
+        h.innerHTML = "<h4>" + esc(c.name) + "</h4>" + sourceChip(c) +
           '<span class="chip lvl">Hit ' + esc(c.hit) + "</span>" +
           '<span class="chip">' + c.saves.join("/") + " saves</span>" +
           '<span class="chip">' + esc(c.resource) + "</span>";
@@ -3381,7 +3408,7 @@
         h.innerHTML = "<h4>" + esc(sub.cls) + ": " + esc(sub.name) + '</h4>' +
           '<span class="chip lvl">Level ' + sub.levelAvailable + "</span>" +
           (sub.page ? '<span class="page-ref">p. ' + sub.page + "</span>"
-                    : '<span class="chip tier">Neon Ledger</span>');
+                    : sourceChip(sub));
         e.appendChild(h);
         e.appendChild(el("p", null, esc(sub.tagline)));
         var ul = el("ul");
@@ -3397,6 +3424,7 @@
         e.appendChild(go);
         s.appendChild(e);
       });
+      srdNotice(s);
     } else if (sec === "Backgrounds") {
       codexEntries(D.backgrounds).forEach(function (b) {
         var e = el("div", "entry");
@@ -3426,7 +3454,7 @@
         var e = el("div", "entry");
         var h = el("div", "entry-head");
         h.innerHTML = "<h4>" + esc(it.name) + "</h4>" +
-          (isExp(it) ? '<span class="chip tier">Neon Ledger</span>' : "") +
+          (isBook(it) ? "" : sourceChip(it)) +
           (it.tier ? '<span class="chip tier">' + esc(it.tier) + "</span>" : "") +
           (it.prerequisite ? '<span class="chip warn">Prereq: ' + esc(it.prerequisite) + "</span>" : "") +
           (it.item ? '<span class="chip tier">Item: ' + esc(it.item) + "</span>" : "");
@@ -4116,9 +4144,10 @@
      as raw bindings.                                                        */
   window.TT = {
     // book data and lookups
-    D: D, X: X, CAMP: CAMP, classByName: classByName, subById: subById,
+    D: D, X: X, SRD: SRD, CAMP: CAMP, classByName: classByName, subById: subById,
     ALL_CLASSES: ALL_CLASSES, ALL_SUBS: ALL_SUBS, ALL_FEATS: ALL_FEATS,
     tableByTitle: tableByTitle, subsFor: subsFor, paras: paras,
+    sourceName: sourceName, isBook: isBook,
     ABIL: ABIL, ABIL_FULL: ABIL_FULL, HSTATE: HSTATE, CLASS_DC: CLASS_DC,
     // dom helpers
     $: $, el: el, esc: esc, toast: toast, head: head, renderTable: renderTable,

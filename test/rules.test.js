@@ -261,15 +261,73 @@ module.exports = async function (browser) {
     const counts = await page.evaluate(() => {
       const T = window.TT;
       return { classes: T.D.classes.length + T.X.classes.length,
-               archetypes: T.D.subclasses.length + T.X.subclasses.length,
+               // ALL_SUBS, not two of the three sources — the count drifted once
+               // already because it was written out by hand.
+               archetypes: T.ALL_SUBS.length,
                meta: (document.querySelector('meta[property="og:description"]') || {}).content || "" };
     });
     R.eq("real class count", counts.classes, 21);
-    R.eq("real archetype count", counts.archetypes, 105);
+    R.eq("real archetype count", counts.archetypes, 106);
     R.check("og:description states the real class count",
       counts.meta.indexOf(counts.classes + " classes") >= 0, counts.meta);
     R.check("og:description states the real archetype count",
       counts.meta.indexOf(counts.archetypes + " archetypes") >= 0, counts.meta);
+  }
+
+  /* ---- SRD source and the Wild Magic archetype ---- */
+  {
+    const wm = await page.evaluate(() => {
+      const T = window.TT;
+      const sub = T.subById["sorcerer-wild-magic"];
+      if (!sub) return { missing: true };
+      const surge = (sub.features[0].blocks || []).filter(b => b.type === "table")[0];
+      const featText = f => (f.blocks || []).map(b => b.text || "").join(" ");
+      return {
+        cls: sub.cls,
+        origin: sub.origin,
+        label: T.sourceName(sub),
+        levelAvailable: sub.levelAvailable,
+        sorcererSubs: T.subsFor("Sorcerer").length,
+        levels: sub.features.map(f => f.level),
+        names: sub.features.map(f => f.name),
+        surgeRows: surge ? surge.rows.length : 0,
+        surgeFirst: surge ? surge.rows[0][0] : null,
+        surgeLast: surge ? surge.rows[surge.rows.length - 1][0] : null,
+        // Bend Luck is the one feature that costs something to use; the
+        // classifier reads it out of the prose, so a reflavoured rule sentence
+        // would show up right here.
+        bendLuck: T.actionEntries(sub.features.filter(f => f.name === "Bend Luck")[0])
+                   .map(e => e.type),
+        // mechanics must be the SRD's, unchanged
+        bendText: featText(sub.features.filter(f => f.name === "Bend Luck")[0]),
+        surgeText: featText(sub.features[0]),
+        bombard: featText(sub.features.filter(f => f.name === "Spell Bombardment")[0]),
+        labels: ["book", "expansion", "srd"].map(o => T.sourceName({ origin: o })),
+        notice: (T.SRD.meta || {}).notice || ""
+      };
+    });
+    R.check("Wild Magic is registered as a Sorcerer archetype",
+      !wm.missing && wm.cls === "Sorcerer" && wm.levelAvailable === 1, JSON.stringify(wm));
+    R.eq("Sorcerer now offers six archetypes", wm.sorcererSubs, 6);
+    R.eq("Wild Magic feature levels match the SRD", wm.levels, [1, 1, 6, 14, 18]);
+    R.eq("Wild Magic feature names match the SRD", wm.names,
+      ["Wild Magic Surge", "Tides of Chaos", "Bend Luck", "Controlled Chaos", "Spell Bombardment"]);
+    R.eq("the surge table has all 50 rows", wm.surgeRows, 50);
+    R.check("the surge table spans 01 to 00",
+      wm.surgeFirst === "01\u201302" && wm.surgeLast === "99\u201300",
+      JSON.stringify([wm.surgeFirst, wm.surgeLast]));
+    R.eq("Bend Luck is classified as a reaction", wm.bendLuck, ["Reaction"]);
+    R.check("Bend Luck keeps the SRD's cost and die",
+      /spend 2 sorcery points to roll 1d4/.test(wm.bendText), wm.bendText.slice(0, 120));
+    R.check("Wild Magic Surge keeps the SRD's trigger",
+      /roll a d20 immediately after you cast a sorcerer spell of 1st level or higher/.test(wm.surgeText) &&
+      /If you roll a 1, roll on the Wild Magic Surge table/.test(wm.surgeText), wm.surgeText.slice(0, 160));
+    R.check("Spell Bombardment keeps its once-per-turn limit",
+      /only once per turn/.test(wm.bombard), wm.bombard.slice(0, 160));
+    R.eq("each source has its own label", wm.labels, ["Book", "Neon Ledger", "SRD"]);
+    R.check("the SRD attribution the licence requires is present",
+      wm.notice.indexOf("System Reference Document 5.1") >= 0 &&
+      wm.notice.indexOf("Creative Commons Attribution 4.0") >= 0, wm.notice.slice(0, 80));
   }
 
   /* ---- content drift: the example character must be what the banner says ---- */

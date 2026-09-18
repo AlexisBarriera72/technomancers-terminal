@@ -31,6 +31,7 @@ with `npx serve .`.
 | `gm.js` | The GM tools — `window.TTBGM` (rulings, conditions, NPC templates) and `window.TTGM` (the code). |
 | `data.js` | `window.TTB` — everything extracted from the Textbook. |
 | `expansion.js` | `window.TTBX` — the Neon Ledger expansion. |
+| `srd.js` | `window.TTSRD` — SRD 5.1 material, currently the Wild Magic Sorcerer. |
 | `campaigns.js` | `window.TTBC` — your campaigns. **This is the one you edit.** |
 | `sw.js` | Service worker, so the site opens with no signal. |
 
@@ -150,3 +151,21 @@ Four layouts, all from the Play step:
 feat and equipment text in `data.js` is reproduced from it. The Neon Ledger
 expansion in `expansion.js`, the campaign material in `campaigns.js` and the
 application itself are original.
+
+`srd.js` carries SRD 5.1 material — the Wild Magic Sorcerer at present. Its
+mechanics are the SRD's, unchanged: same triggers, same dice, same durations, so a
+table using the printed rules and a table using this site are playing the same game.
+Only the surrounding description is written for Cathedra, and that split is load
+bearing rather than stylistic — `actionEntries()` in `app.js` infers a feature's
+action cost by reading its own prose, so rewriting a rule sentence for flavour would
+quietly change what the sheet prints.
+
+Each source shows its own chip — Book, Neon Ledger or SRD — from `sourceName()` in
+`app.js`. Add a fourth by giving its records an `origin` and adding one line to
+`SOURCES`.
+
+> This work includes material taken from the System Reference Document 5.1
+> ("SRD 5.1") by Wizards of the Coast LLC, available at
+> https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is
+> licensed under the Creative Commons Attribution 4.0 International License,
+> available at https://creativecommons.org/licenses/by/4.0/legalcode.
