@@ -494,6 +494,145 @@ module.exports = async function (browser) {
     await fresh.ctx.close();
   }
 
+  /* ---- party synergies: the only thing in the app that reads more than one
+     character at once, so nothing else covers it ---- */
+  {
+    const syn = await page.evaluate(() => {
+      const G = window.TTGM;
+      const s = n => G.synergiesFor(n);
+      return {
+        bothNeeded: s(["Ranger", "Fighter"]).pairs.map(p => p.id),
+        bothPresent: s(["Ranger", "Rogue", "Cleric"]).pairs.map(p => p.id),
+        // a second copy of one half is still only one half
+        twoRangers: s(["Ranger", "Ranger"]).pairs.map(p => p.id),
+        // Bard is Face+Support, Cleric is Support: three distinct, not four
+        secondTags: s(["Bard", "Cleric"]).roles,
+        empty: s([]).roles.length,
+        three: s(["Fighter", "Bard", "Wizard"]).tier.name,           // Muscle Face Support Arcane = 4
+        one: s(["Fighter"]).tier.name,
+        full: s(["Fighter", "Bard", "Artificer", "Wizard", "Rogue", "Cleric"]).tier.name,
+        fullMissing: s(["Fighter", "Bard", "Artificer", "Wizard", "Rogue", "Cleric"]).missing,
+        // roles come back in the book's order, not the order the party joined
+        order: s(["Cleric", "Fighter"]).roles
+      };
+    });
+    R.eq("a named pair needs both halves", syn.bothNeeded, []);
+    R.eq("both halves present, the pair fires", syn.bothPresent, ["ambush-team"]);
+    R.eq("two of the same class is not a pair", syn.twoRangers, []);
+    R.eq("a class with two roles contributes both", syn.secondTags, ["Face", "Support"]);
+    R.eq("no party, no roles", syn.empty, 0);
+    R.eq("one class covers one role", syn.one, "Specialist Crew");
+    R.eq("four roles is balanced", syn.three, "Balanced Crew");
+    R.eq("all six roles", syn.full, "Full Spectrum Crew");
+    R.eq("and nothing missing", syn.fullMissing, []);
+    R.eq("roles come back in canonical order", syn.order, ["Muscle", "Support"]);
+  }
+
+  /* ---- the one synergy that is a number ---- */
+  {
+    const amb = await page.evaluate(() => {
+      const G = window.TTGM;
+      const party = names => names.map(n => ({ c: { cls: n } }));
+      return {
+        lone: G.ambushTeamBonus("Ranger", party(["Ranger", "Fighter"])),
+        ranger: G.ambushTeamBonus("Ranger", party(["Ranger", "Rogue"])),
+        rogue: G.ambushTeamBonus("Rogue", party(["Ranger", "Rogue", "Fighter"])),
+        // the bonus belongs to the pair, not to everyone standing near them
+        bystander: G.ambushTeamBonus("Fighter", party(["Ranger", "Rogue", "Fighter"])),
+        nobody: G.ambushTeamBonus("Wizard", party(["Wizard"]))
+      };
+    });
+    R.eq("a Ranger with no Rogue gets nothing", amb.lone, 0);
+    R.eq("Ranger of a real pair gets +1", amb.ranger, 1);
+    R.eq("Rogue of a real pair gets +1", amb.rogue, 1);
+    R.eq("a bystander gets nothing from someone else's pair", amb.bystander, 0);
+    R.eq("a class outside the pair gets nothing", amb.nobody, 0);
+  }
+
+  /* ---- Street Cred: the expansion's table, finally attached to something ---- */
+  {
+    const rep = await page.evaluate(() => {
+      const G = window.TTGM;
+      const mods = [], tiers = [];
+      for (let r = 0; r <= 10; r++) { mods.push(G.repState(r).mod); tiers.push(G.repState(r).tier); }
+      return {
+        mods, tiers,
+        // out of range must not fall off the table
+        low: G.repState(-4).tier, high: G.repState(99).tier,
+        clampUp: G.repSet(99), clampDown: G.repSet(-5), round: G.repSet(3)
+      };
+    });
+    R.eq("every point of Cred has a modifier", rep.mods, [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
+    R.eq("the bands are the expansion's", rep.tiers,
+      ["Nobody", "Known face", "Known face", "Somebody", "Somebody",
+       "Name", "Name", "Legend", "Legend", "Myth", "Myth"]);
+    R.eq("below the table is still the bottom band", rep.low, "Nobody");
+    R.eq("above the table is still the top band", rep.high, "Myth");
+    R.eq("setting above 10 clamps", rep.clampUp, 10);
+    R.eq("setting below 0 clamps", rep.clampDown, 0);
+    R.eq("setting in range is kept", rep.round, 3);
+  }
+
+  /* ---- and it reaches the number the Ruling Desk actually shows ---- */
+  {
+    const cha = await page.evaluate(() => {
+      const T = window.TT, G = window.TTGM;
+      const c = T.migrate({ name: "R", level: 5, cls: "Bard", method: "pointbuy",
+        scores: { Str: 8, Dex: 12, Con: 12, Int: 10, Wis: 10, Cha: 16 },
+        skills: ["Persuasion", "Athletics"] });
+      const d = T.statsOf(c);
+      const at = rep => { G.repSet(rep); return {
+        cha: G.repSkillBonus("Persuasion", d), str: G.repSkillBonus("Athletics", d) }; };
+      const base = { cha: T.skillBonus("Persuasion", d), str: T.skillBonus("Athletics", d) };
+      const zero = at(0), five = at(5);
+      G.repSet(0);
+      return { base, zero, five };
+    });
+    R.eq("at no reputation a Charisma check is unchanged", cha.zero.cha, cha.base.cha);
+    R.eq("at Cred 5 a Charisma check gains the band's +3", cha.five.cha, cha.base.cha + 3);
+    R.eq("a Strength check never moves", cha.five.str, cha.base.str);
+    R.eq("and it did not move at zero either", cha.zero.str, cha.base.str);
+  }
+
+  /* ---- the reaction roll: one question asked at three moments ---- */
+  {
+    const rx = await page.evaluate(() => {
+      const G = window.TTGM;
+      const n = t => G.reactionBand(t).name;
+      G.repSet(0);
+      const rolls = [];
+      for (let i = 0; i < 40; i++) { const r = G.npcReaction(0); rolls.push(r); }
+      return {
+        bounds: [n(-3), n(5), n(6), n(10), n(11), n(15), n(16), n(20), n(21), n(99)],
+        // every roll must land in a band and carry the reputation it used
+        allBanded: rolls.every(r => r.band && r.band.name),
+        natInRange: rolls.every(r => r.roll.nat >= 1 && r.roll.nat <= 20),
+        totalMatches: rolls.every(r => r.roll.total === r.roll.nat + r.roll.bonus)
+      };
+    });
+    R.eq("the reaction bands run bottom to top without a gap", rx.bounds,
+      ["Hostile", "Hostile", "Wary", "Wary", "Neutral", "Neutral",
+       "Friendly", "Friendly", "Ally", "Ally"]);
+    R.check("every reaction roll lands in a band", rx.allBanded, "");
+    R.check("every reaction roll is a real d20", rx.natInRange, "");
+    R.check("the total is the die plus the modifier", rx.totalMatches, "");
+  }
+
+  /* ---- reputation moves the reaction roll, which is the whole point ---- */
+  {
+    const swing = await page.evaluate(() => {
+      const G = window.TTGM;
+      G.repSet(0); const low = G.npcReaction(0).rep;
+      G.repSet(9); const high = G.npcReaction(0).rep;
+      const withSit = G.npcReaction(4).roll.bonus;
+      G.repSet(0);
+      return { low, high, withSit };
+    });
+    R.eq("at the bottom the roll gets nothing", swing.low, 0);
+    R.eq("at Myth the roll carries +5", swing.high, 5);
+    R.eq("a situational modifier stacks on top", swing.withSit, 9);
+  }
+
   await ctx.close();
   return R;
 };

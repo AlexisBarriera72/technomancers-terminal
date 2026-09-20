@@ -604,6 +604,7 @@ window.TTGM = (function () {
       if (!p || typeof p !== "object") p = {};
       if (!Array.isArray(p.clocks)) p.clocks = [];
       if (typeof p.scratch !== "string") p.scratch = "";
+      if (typeof p.rep !== "number" || p.rep < 0 || p.rep > 10) p.rep = 0;
       mem.play = p;
     }
     return mem.play;
@@ -742,6 +743,96 @@ window.TTGM = (function () {
       return c ? { rec: rec, c: c, d: T.statsOf(c) } : null;
     }).filter(Boolean);
   }
+
+  /* ------------------------------------------------------- party synergies --
+     app.js computes one character at a time — statsOf() takes a single `c` and
+     has no way to know who else is at the table. That is correct for a player's
+     own sheet, which genuinely does not know. Everything below therefore lives
+     here, where partyChars() has already put the whole party in one array.
+
+     Takes plain class-name strings so it can be tested without building
+     characters.                                                             */
+  function synergiesFor(classNames) {
+    var names = (classNames || []).filter(Boolean);
+    var pairs = G.synergyPairs.filter(function (s) {
+      return names.indexOf(s.pair[0]) >= 0 && names.indexOf(s.pair[1]) >= 0;
+    });
+    var roles = [];
+    names.forEach(function (n) {
+      (G.classRoles[n] || []).forEach(function (r) {
+        if (roles.indexOf(r) < 0) roles.push(r);
+      });
+    });
+    // keep them in the canonical order rather than the order the party joined
+    roles = G.roles.filter(function (r) { return roles.indexOf(r) >= 0; });
+    var missing = G.roles.filter(function (r) { return roles.indexOf(r) < 0; });
+    var tier = null;
+    for (var i = 0; i < G.crewTiers.length; i++) {
+      if (roles.length <= G.crewTiers[i].max) { tier = G.crewTiers[i]; break; }
+    }
+    return { pairs: pairs, roles: roles, missing: missing, tier: tier };
+  }
+
+  /* The one synergy that is a number rather than a line to read. Both halves
+     have to be present, and the bonus belongs to the pair — a Fighter standing
+     next to them gets nothing. Same shape as app.js's initiative(), which
+     already hardcodes Chromehound and Firebrand for the same reason: it is a
+     single known case, not a rule that wants a parser. */
+  function ambushTeamBonus(cls, party) {
+    if (cls !== "Ranger" && cls !== "Rogue") return 0;
+    var names = (party || []).map(function (p) { return p.c.cls; });
+    return names.indexOf("Ranger") >= 0 && names.indexOf("Rogue") >= 0 ? 1 : 0;
+  }
+  /* One place both the encounter builder and the reroll button go through, so
+     they cannot drift apart. */
+  function combatInitiative(p, party) {
+    return T.initiative(p.d) + ambushTeamBonus(p.c.cls, party);
+  }
+
+  /* --------------------------------------------------------- Street Cred --
+     One number for the whole table, kept beside the clocks. It is the GM's to
+     move: there is no quest log to infer it from, and inferring it would be
+     worse than asking.                                                      */
+  function repGet() { return playState().rep || 0; }
+  function repSet(n) {
+    var v = Math.max(0, Math.min(10, Math.round(+n || 0)));
+    playPatch(function (p) { p.rep = v; });
+    return v;
+  }
+  function repState(rep) {
+    var r = Math.max(0, Math.min(10, +rep || 0));
+    var band = G.repBands.filter(function (b) { return r >= b.min && r <= b.max; })[0];
+    return band ? { rep: r, tier: band.tier, mod: band.mod, tone: band.tone,
+                    buys: band.buys, digging: band.digging, combat: band.combat }
+                : { rep: r, tier: "Nobody", mod: 0, tone: "alert", buys: "", digging: "", combat: "" };
+  }
+  function repMod() { return repState(repGet()).mod; }
+
+  /* The expansion's Street Cred rule, finally applied: "a bonus you can add to
+     a Charisma check made against someone who has heard of you." Only the
+     party's own checks — a passive score shown for reference is not a roll
+     anybody is making. */
+  function repSkillBonus(sk, d) {
+    var base = T.skillBonus(sk, d);
+    return T.D.skills[sk] === "Cha" ? base + repMod() : base;
+  }
+
+  /* --------------------------------------------------------- NPC reaction --
+     Does this turn into a fight, does anyone step in once it is one, and will
+     this person help at all — one roll, because they are the same question
+     asked at three different moments. */
+  function reactionBand(total) {
+    for (var i = 0; i < G.reactionBands.length; i++) {
+      var b = G.reactionBands[i];
+      if (b.max === null || total <= b.max) return b;
+    }
+    return G.reactionBands[G.reactionBands.length - 1];
+  }
+  function npcReaction(situational, mode) {
+    var r = d20(repMod() + (+situational || 0), mode);
+    return { roll: r, band: reactionBand(r.total), rep: repMod() };
+  }
+
   /* Accepts a full share URL, a bare #c=... fragment, or the raw base64.
      A paste has no URL-bar length limit, so nothing is capped here. */
   function parseShare(input) {
@@ -2082,6 +2173,9 @@ window.TTGM = (function () {
   return {
     boot: boot, renderStage: renderStage, renderDossier: renderDossier, lastMode: lastMode,
     // exposed for the test suite
-    rollExpr: rollExpr, roll: roll, d20: d20, ordered: ordered, turnOf: turnOf
+    rollExpr: rollExpr, roll: roll, d20: d20, ordered: ordered, turnOf: turnOf,
+    synergiesFor: synergiesFor, ambushTeamBonus: ambushTeamBonus,
+    repGet: repGet, repSet: repSet, repState: repState, repMod: repMod,
+    repSkillBonus: repSkillBonus, reactionBand: reactionBand, npcReaction: npcReaction
   };
 })();
