@@ -1009,6 +1009,7 @@ window.TTGM = (function () {
       } else {
         godOut.appendChild(txt("div", "gm-god-says", "Not this time."));
       }
+      if (T.applyLang) T.applyLang(godOut);
     }));
     god.appendChild(txt("span", "gm-note", "d20 at the start of the session. On a 20 the god notices one character."));
     god.appendChild(godOut);
@@ -1039,8 +1040,13 @@ window.TTGM = (function () {
     var r = repState(rep);
     var box = el("div", "meter");
     var head = el("div", "meter-head");
-    head.innerHTML = "<span>Street Cred</span><b class='tone-" + r.tone + "'>" +
-      r.rep + " / 10 · " + esc(r.tier) + "</b>";
+    head.appendChild(txt("span", null, "Street Cred"));
+    // the band name is its own node: glued to the number it would be a new
+    // key for every point on the track, and the book already translates it
+    var b = el("b", "tone-" + r.tone);
+    b.appendChild(txt("span", null, r.rep + " / 10 · "));
+    b.appendChild(txt("span", null, r.tier));
+    head.appendChild(b);
     box.appendChild(head);
     var bar = el("div", "meter-bar");
     var fill = el("div", "meter-fill bg-" + r.tone);
@@ -1067,12 +1073,21 @@ window.TTGM = (function () {
       ctl.appendChild(btn("+1", "tiny", function () { repSet(repGet() + 1); paint(); refreshDossier(); }));
       wrap.appendChild(ctl);
 
-      wrap.appendChild(txt("div", "meter-note", "+" + r.mod +
-        " to Charisma checks against anyone who has heard of them. " + r.buys));
-      wrap.appendChild(txt("div", "meter-note", "Looking into things · " + r.digging));
-      wrap.appendChild(txt("div", "meter-note", "When it turns ugly · " + r.combat));
+      // Each half is its own text node rather than one built string, so the
+      // Spanish table can translate the label and the band line separately —
+      // a concatenation would need one key per band per line.
+      function note(label, body) {
+        var d = el("div", "meter-note");
+        d.appendChild(txt("span", "gm-label", label));
+        d.appendChild(txt("span", null, " " + body));
+        wrap.appendChild(d);
+      }
+      note(T.sgn(r.mod) + " to Charisma checks", r.buys);
+      note("Looking into things", r.digging);
+      note("When it turns ugly", r.combat);
       wrap.appendChild(txt("div", "gm-note",
         "Yours to move. A point for a job the street saw, one back for folding in public."));
+      if (T.applyLang) T.applyLang(wrap);
     }
     paint();
     return wrap;
@@ -1081,9 +1096,12 @@ window.TTGM = (function () {
   function repBadge() {
     var r = repState(repGet());
     var b = txt("div", "gm-rep-badge", "");
-    b.innerHTML = "<span class='gm-label'>Street Cred</span> <b class='tone-" + r.tone + "'>" +
-      r.rep + " · " + esc(r.tier) + "</b> <span class='gm-note'>" +
-      T.sgn(r.mod) + " to Charisma checks</span>";
+    b.appendChild(txt("span", "gm-label", "Street Cred"));
+    var v = el("b", "tone-" + r.tone);
+    v.appendChild(txt("span", null, r.rep + " · "));
+    v.appendChild(txt("span", null, r.tier));
+    b.appendChild(v);
+    b.appendChild(txt("span", "gm-note", T.sgn(r.mod) + " to Charisma checks"));
     return b;
   }
 
@@ -1118,7 +1136,8 @@ window.TTGM = (function () {
     // not a fault, and alert is what Humanity uses for actually losing people.
     cov.appendChild(txt("b", "tone-" + (syn.roles.length >= 6 ? "signal" : "gold"),
       syn.tier ? syn.tier.name : ""));
-    cov.appendChild(txt("span", "gm-note", syn.tier ? " — " + syn.tier.gist : ""));
+    cov.appendChild(txt("span", "gm-note", " — "));
+    cov.appendChild(txt("span", "gm-note", syn.tier ? syn.tier.gist : ""));
     wrap.appendChild(cov);
     var chips = el("div", "gm-chips tight");
     syn.roles.forEach(function (r) { chips.appendChild(txt("span", "chip", r)); });
@@ -1171,6 +1190,9 @@ window.TTGM = (function () {
       line.appendChild(txt("b", "tone-" + r.band.tone, r.band.name));
       out.appendChild(line);
       out.appendChild(txt("div", "gm-say", r.band.gist));
+      // built after render(), so applyLang() has already been and gone — the
+      // same thing toast() does with the text it creates on the fly
+      if (T.applyLang) T.applyLang(out);
     }));
     wrap.appendChild(out);
 
@@ -1178,9 +1200,13 @@ window.TTGM = (function () {
       var b = repMod() + sit;
       // 16 is the bottom of Friendly, the first band that actually helps them
       var o = odds(16, b);
-      pre.textContent = "d20 " + T.sgn(b) + " (Cred " + T.sgn(repMod()) +
-        (sit ? ", situation " + T.sgn(sit) : "") + ") · " +
-        o.pct + "% chance of Friendly or better";
+      pre.innerHTML = "";
+      pre.appendChild(txt("span", null, "d20 " + T.sgn(b) + " · "));
+      pre.appendChild(txt("span", null, o.pct + "% chance of Friendly or better"));
+      pre.appendChild(txt("span", null, "  ·  "));
+      pre.appendChild(txt("span", null, sit ? "Cred " + T.sgn(repMod()) + ", situation " + T.sgn(sit)
+                                           : "Cred " + T.sgn(repMod())));
+      if (T.applyLang) T.applyLang(pre);
     }
     paint();
     return wrap;
@@ -1291,7 +1317,12 @@ window.TTGM = (function () {
     sk.appendChild(txt("div", "gm-label", "Proficient"));
     var skc = el("div", "gm-chips tight");
     d.prof.slice().sort().forEach(function (name) {
-      skc.appendChild(txt("span", "chip", name + " " + T.sgn(repSkillBonus(name, d))));
+      // skill and number as separate nodes: glued together the Spanish table
+      // would need one key per skill per bonus
+      var chip = el("span", "chip");
+      chip.appendChild(txt("span", null, name));
+      chip.appendChild(txt("span", null, " " + T.sgn(repSkillBonus(name, d))));
+      skc.appendChild(chip);
     });
     if (!d.prof.length) skc.appendChild(txt("span", "gm-note", "none recorded"));
     sk.appendChild(skc);

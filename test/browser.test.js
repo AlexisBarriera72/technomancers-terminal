@@ -595,6 +595,72 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
+  /* the GM's new screens have to speak Spanish too — they are built by gm.js
+     after render(), which is exactly where applyLang() is easy to forget */
+  {
+    const { page, ctx } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => {
+      const T = window.TT;
+      const mk = (name, cls, level) => {
+        const c = T.blank();
+        c.id = "id-" + name; c.name = name; c.cls = cls; c.level = level;
+        c.scores = { Str: 12, Dex: 15, Con: 14, Int: 11, Wis: 13, Cha: 14 };
+        c.skills = ["Stealth", "Persuasion"];
+        return { id: c.id, name, cls, level, player: "", source: "t",
+                 added: Date.now(), payload: JSON.stringify(c) };
+      };
+      localStorage.setItem("ttb.gm.party", JSON.stringify([
+        mk("Vex", "Ranger", 5), mk("Nyx", "Rogue", 5)]));
+      localStorage.setItem("ttb.gm.play",
+        JSON.stringify({ clocks: [], scratch: "", rep: 6, mode: "table" }));
+      localStorage.setItem("ttb.lang", "es");
+    });
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT && window.TTES && window.TTES.book,
+      null, { timeout: 15000 });
+    await page.waitForTimeout(400);
+
+    const es = await page.evaluate(() => {
+      const T = window.TT;
+      T.setMode("table"); T.gmSec(0); T.render();
+      const strip = document.querySelector(".gm-rep");
+      const syn = document.querySelector(".gm-syn");
+      return {
+        // the band name comes from the book's own Street Cred table
+        band: (strip.querySelector(".meter-head b") || {}).textContent,
+        // these three are the lines the GM actually reads out
+        notes: [...strip.querySelectorAll(".meter-note")].map(n => n.textContent),
+        synHead: (syn.querySelector(".gm-label") || {}).textContent,
+        line: (syn.querySelector(".gm-syn-line") || {}).textContent,
+        roles: [...syn.querySelectorAll(".chip")].map(c => c.textContent),
+        // the pair's own name is a proper noun and stays English, like a class
+        pairName: (syn.querySelector(".gm-syn-card b") || {}).textContent
+      };
+    });
+    R.check("the Cred band is translated", /Nombre/.test(es.band), es.band);
+    R.check("so are the three lines under it",
+      es.notes.every(n => /Carisma|indagar|feo/.test(n)), JSON.stringify(es.notes));
+    R.check("and the synergy heading", /juntos/i.test(es.synHead), es.synHead);
+    R.check("and the pair's line", /exploradores/.test(es.line), es.line);
+    R.check("and the role chips", es.roles.indexOf("Músculo") >= 0, JSON.stringify(es.roles));
+    R.eq("but the pair's name stays English, like a class name", es.pairName, "Ambush Team");
+
+    // built by a click, long after applyLang() has run
+    const rolled = await page.evaluate(() => {
+      const T = window.TT;
+      T.gmSec(2); T.render();
+      [...document.querySelectorAll(".gm-react button")]
+        .find(b => /Tira la reacci|Roll the reaction/.test(b.textContent)).click();
+      return document.querySelector(".gm-react .gm-say").textContent;
+    });
+    R.check("a reaction rolled after render is still Spanish",
+      /Actúan|regañadientes|Negocio|inclina|Interviene/.test(rolled), rolled.slice(0, 70));
+
+    await page.evaluate(() => localStorage.setItem("ttb.lang", "en"));
+    await ctx.close();
+  }
+
   /* the retired per-character slider must not come back */
   {
     const { page, ctx } = await appPage(browser);

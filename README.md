@@ -28,7 +28,7 @@ with `npx serve .`.
 |---|---|
 | `index.html` | Shell markup and all the CSS. |
 | `app.js` | The player-facing application. Vanilla JS, one IIFE, no framework. |
-| `gm.js` | The GM tools — `window.TTBGM` (rulings, conditions, NPC templates) and `window.TTGM` (the code). |
+| `gm.js` | The GM tools — `window.TTBGM` (rulings, conditions, NPC templates, synergy pairs, Street Cred bands) and `window.TTGM` (the code). |
 | `data.js` | `window.TTB` — everything extracted from the Textbook. |
 | `expansion.js` | `window.TTBX` — the Neon Ledger expansion. |
 | `srd.js` | `window.TTSRD` — SRD 5.1 material, currently the Wild Magic Sorcerer. |
@@ -144,11 +144,52 @@ Five screens:
 
 | Screen | What it does |
 |---|---|
-| **Party** | Every PC's AC, HP, initiative, passives, saves, Humanity and class DC on one page. Plus *who's best at…* for any skill, and the god's attention die. |
+| **Party** | Every PC's AC, HP, initiative, passives, saves, Humanity and class DC on one page. Plus *who's best at…* for any skill, the god's attention die, the table's Street Cred, and which named pairs this particular set of people makes. |
 | **Encounter** | Initiative order, hit points, temp HP, conditions, round counter. Tap a number pad to damage or heal. |
-| **Rulings** | What to make them roll and what to set it at — with each character's real modifier and the odds. A searchable catalogue sits under a generic picker that covers anything. |
+| **Rulings** | What to make them roll and what to set it at — with each character's real modifier and the odds. A searchable catalogue sits under a generic picker that covers anything, and an NPC reaction roll for what someone makes of them. |
 | **NPCs** | Statblocks, from twelve templates or blank. Mooks are one line. Includes an improviser for the NPC you didn't prepare. |
 | **Clocks** | Segmented progress clocks and a session scratchpad. |
+
+### Street Cred and what the party is
+
+Two things on the GM's side read the whole table at once, which nothing else in
+the app can do. `app.js` computes one character at a time — `statsOf(c)` takes a
+single character and has no way to know who else is there, which is correct,
+because a player's own sheet genuinely does not know. So both live in `gm.js`
+next to `partyChars()`, the one place the party is already in one array, and
+neither appears on a player's screen.
+
+**Street Cred** is one number for the table, 0–10, kept beside the clocks in
+`ttb.gm.play`. The expansion has always described it as "a shared track" that
+adds to Charisma checks; until now it was a private slider on each sheet that
+nothing read. The bands, names and modifiers are the expansion's own table
+unchanged. Each band also carries a line for what it buys in a conversation,
+what it does when they go looking for something, and what happens when it turns
+ugly — the last two are new, because the book only ever covered the talking.
+
+The modifier is real: it goes through `bonusFor()`, so every Charisma check the
+Ruling Desk prices already has it, and the per-character skill chips show it
+too. It is the GM's to move — a point for a job the street saw, one back for
+folding in public. There is no quest log to infer it from, and inferring it
+would be worse than asking.
+
+**Synergies** are named class pairs — 18 of them, ten spanning both rulebooks,
+with all 21 classes appearing at least once. They are lines to read when both
+are in the room, not arithmetic, with one exception: Ranger + Rogue is
+**Ambush Team**, worth +1 initiative to both, computed in `combatInitiative()`
+the way `app.js`'s `initiative()` already hardcodes Chromehound and Firebrand.
+Under the pairs, every class carries one or two of six roles, and the party is
+told which it covers and which it does not. A narrow crew is a shape, not a
+fault — the coverage line says so rather than scoring it.
+
+**The NPC reaction roll** is one d20 plus Street Cred plus whatever the moment
+is worth, read off a five-band table from Hostile to Ally. It is built once and
+mounted twice, on the Ruling Desk and inside the encounter, because "does this
+turn into a fight", "does anyone step in once it is one" and "will this person
+help at all" are the same question asked at three different moments — and
+asking it mid-fight should not mean tabbing away from the fight. What the NPC
+actually does with that result is still the GM's call; nothing here scripts a
+betrayal or a rescue.
 
 ### Getting the party in
 
