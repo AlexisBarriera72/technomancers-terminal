@@ -121,7 +121,7 @@
       name: "", level: 3, cls: null, method: "pointbuy",
       scores: { Str: 8, Dex: 8, Con: 8, Int: 8, Wis: 8, Cha: 8 },
       rolled: null, arrayMap: {}, skills: [], bgPicks: [], techSwap: false, techReplaces: null,
-      sub: null, origin: null, bg: null, cred: 0, asi: [], picks: {}, sleeve: null,
+      sub: null, origin: null, bg: null, asi: [], picks: {}, sleeve: null,
       subChoices: {}, style: null, feats: [], invocations: [], infusions: [],
       cyber: [], augments: [], gear: [], traits: {}
     };
@@ -417,11 +417,6 @@
     out.level = lv === null ? base.level : lv;
 
     out.method = ["pointbuy", "array", "roll", "manual"].indexOf(c.method) >= 0 ? c.method : "pointbuy";
-
-    // cred is rendered into the dossier; a non-number here was the injection.
-    var cr = intIn(c.cred, 0, 10);
-    if (cr === null && c.cred !== undefined && c.cred !== null && c.cred !== 0) drop.push("cred");
-    out.cred = cr === null ? 0 : cr;
 
     // --- identity: must name something the app actually has -------------
     out.cls = classByName[c.cls] ? c.cls : null;
@@ -2972,11 +2967,6 @@
       orow.innerHTML = '<span class="k">Origin</span>' + esc(C.origin);
       gh.appendChild(orow);
     }
-    if (C.cred) {
-      var crow = el("div", "trait-line");
-      crow.innerHTML = '<span class="k">Street Cred</span>' + esc(C.cred) + " / 10";
-      gh.appendChild(crow);
-    }
     if (C.sleeve) {
       var srow = el("div", "trait-line");
       srow.innerHTML = '<span class="k">Sleeve</span>' + esc(C.sleeve);
@@ -3103,7 +3093,6 @@
     var es = essence();
     if (es) L.push("- **Essence** " + es.value + " (" + es.state + ")");
     if (C.origin) L.push("- **Origin** " + C.origin);
-    if (C.cred) L.push("- **Street Cred** " + C.cred + "/10");
     L.push("");
     if (cl && isExp(cl)) {
       L.push("## " + cl.name + " (Neon Ledger) — " + cl.resource);
@@ -3172,7 +3161,7 @@
     }
     L.push("---");
     var srcs = [];
-    if (isExp(cl) || C.origin || C.cred) srcs.push("the " + X.meta.title + " expansion");
+    if (isExp(cl) || C.origin) srcs.push("the " + X.meta.title + " expansion");
     if (sub && sub.origin === "srd" && SRD.meta) srcs.push(SRD.meta.title);
     L.push("Built from *" + D.meta.title + "* by " + D.meta.author + ", version " +
       D.meta.version + (srcs.length ? ", with " + srcs.join(" and ") : "") + ".");
@@ -3343,10 +3332,6 @@
       });
       c3.appendChild(bg);
     }
-    var cr = el("div", "cs-box");
-    cr.innerHTML = "<h4>Street Cred</h4>" +
-      '<div class="cs-line"><span>Standing</span><span class="b">' + esc(C.cred || 0) + " / 10</span></div>";
-    c3.appendChild(cr);
     cols.appendChild(c3);
     p1.appendChild(cols);
     root.appendChild(p1);
@@ -4126,18 +4111,6 @@
     body.appendChild(humanityMeter(true));
     var em2 = essenceMeter();
     if (em2) body.appendChild(em2);
-
-    var cred = el("div", "cred-row");
-    cred.innerHTML = '<span class="k" style="font-family:var(--f-mono);font-size:10px;' +
-      'letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)">Cred</span>';
-    var cr = el("input");
-    cr.type = "range"; cr.min = 0; cr.max = 10; cr.value = C.cred || 0; cr.id = "credRange";
-    cr.setAttribute("aria-label", "Street Cred");
-    cr.setAttribute("aria-valuetext", "Street Cred " + (C.cred || 0) + " of 10");
-    cr.oninput = function () { C.cred = +cr.value; delete C.isExample; save(); render(); };
-    cred.appendChild(cr);
-    cred.appendChild(el("span", "lvl-badge", esc(C.cred || 0)));
-    body.appendChild(cred);
 
     var btns = el("div", "btn-row");
     btns.style.cssText = "margin-top:6px;padding-top:12px";

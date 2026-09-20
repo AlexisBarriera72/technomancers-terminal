@@ -9,12 +9,12 @@ module.exports = async function (browser) {
   /* ================= item 1: no script execution from a share link ======== */
   {
     const payload = shareCode(baseChar({
-      name: "Pwn", cred: "<img src=x onerror=\"window.__pwned=1\">"
+      name: "Pwn", origin: "<img src=x onerror=\"window.__pwned=1\">"
     }));
     const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#c=" + payload });
     await page.waitForTimeout(400);
     const pwned = await page.evaluate(() => !!window.__pwned);
-    R.check("item 1 — onerror payload in cred does not execute", pwned === false);
+    R.check("item 1 — onerror payload in a text field does not execute", pwned === false);
     const rendered = await page.evaluate(() => ({
       stage: document.querySelector("#stage").children.length,
       dossier: document.querySelector("#dossier").children.length,
@@ -30,7 +30,7 @@ module.exports = async function (browser) {
   /* item 1b: the same payload pasted into an already-open tab (hashchange) */
   {
     const { page, ctx } = await appPage(browser);
-    const payload = shareCode(baseChar({ name: "Pwn2", cred: "<img src=x onerror=\"window.__pwned=1\">" }));
+    const payload = shareCode(baseChar({ name: "Pwn2", origin: "<img src=x onerror=\"window.__pwned=1\">" }));
     await page.evaluate(p => { location.hash = "#c=" + p; }, payload);
     await page.waitForTimeout(400);
     const pwned = await page.evaluate(() => !!window.__pwned);

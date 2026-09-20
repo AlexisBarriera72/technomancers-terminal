@@ -16,8 +16,8 @@ module.exports = async function (browser) {
   }, c);
   const validate = c => page.evaluate(ch => {
     const out = window.TT.migrate(ch);
-    return { level: out.level, cls: out.cls, sub: out.sub, cred: out.cred,
-             asi: out.asi, credType: typeof out.cred };
+    return { level: out.level, cls: out.cls, sub: out.sub,
+             asi: out.asi, levelType: typeof out.level };
   }, c);
 
   /* ---- item 7: rolled assignments must reach the sheet ---- */
@@ -166,8 +166,8 @@ module.exports = async function (browser) {
     R.check("item 4 — null ASI slot dropped", nullAsi.asi.every(s => s && typeof s === "object"),
       JSON.stringify(nullAsi.asi));
 
-    const badCred = await validate(baseChar({ cred: "<img src=x onerror=alert(1)>" }));
-    R.eq("item 4 — markup in cred coerced to a number", badCred.credType, "number");
+    const badLevel = await validate(baseChar({ level: "<img src=x onerror=alert(1)>" }));
+    R.eq("item 4 — markup in a number field coerced to a number", badLevel.levelType, "number");
   }
 
   /* ---- item 4: fractional level must not crash the meters ---- */

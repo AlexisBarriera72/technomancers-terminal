@@ -74,7 +74,7 @@ function baseChar(over) {
     id: "ctest", name: "Test", level: 5, cls: "Rogue", method: "pointbuy",
     scores: { Str: 10, Dex: 15, Con: 13, Int: 12, Wis: 10, Cha: 8 },
     rolled: null, arrayMap: {}, skills: [], bgPicks: [], techSwap: false, techReplaces: null,
-    sub: null, origin: null, cred: 0, asi: [], picks: {}, sleeve: null,
+    sub: null, origin: null, asi: [], picks: {}, sleeve: null,
     subChoices: {}, style: null, feats: [], invocations: [], infusions: [],
     cyber: [], augments: [], gear: [], traits: {}
   }, over || {});
