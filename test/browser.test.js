@@ -462,5 +462,150 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
+  /* ========== party synergies and Street Cred on the GM's screens ========== */
+  {
+    const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+    await page.waitForTimeout(300);
+
+    // Ranger + Rogue is the one wired pair; Streetdoc + Chromehound is a named
+    // one that is not. Records carry the denormalised name/cls/level the vault
+    // writes alongside the payload.
+    await page.evaluate(() => {
+      const T = window.TT;
+      const mk = (name, cls, level) => {
+        const c = T.blank();
+        c.id = "id-" + name; c.name = name; c.cls = cls; c.level = level;
+        c.scores = { Str: 12, Dex: 15, Con: 14, Int: 11, Wis: 13, Cha: 14 };
+        c.skills = ["Stealth", "Persuasion"];
+        return { id: c.id, name: name, cls: cls, level: level, player: "", source: "test",
+                 added: Date.now(), updated: Date.now(), payload: JSON.stringify(c) };
+      };
+      localStorage.setItem("ttb.gm.party", JSON.stringify([
+        mk("Vex", "Ranger", 5), mk("Nyx", "Rogue", 5),
+        mk("Doc", "Streetdoc", 4), mk("Ox", "Chromehound", 6)
+      ]));
+      const p = JSON.parse(localStorage.getItem("ttb.gm.play") || "{}");
+      p.mode = "table"; p.rep = 6;
+      localStorage.setItem("ttb.gm.play", JSON.stringify(p));
+    });
+    const goSection = async name => {
+      await page.reload();
+      await page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+      await page.waitForTimeout(250);
+      await page.evaluate(n => {
+        const b = [...document.querySelectorAll(".rail .step")].find(x => new RegExp(n, "i").test(x.textContent));
+        if (b) b.click();
+      }, name);
+      await page.waitForTimeout(300);
+    };
+
+    await goSection("Party");
+    const party = await page.evaluate(() => {
+      const cards = [...document.querySelectorAll(".gm-syn-card")];
+      const initOf = who => {
+        const card = [...document.querySelectorAll(".gm-card")]
+          .find(c => (c.querySelector(".gm-name") || {}).textContent === who);
+        if (!card) return null;
+        const v = [...card.querySelectorAll(".gm-v")]
+          .find(x => /INIT/i.test((x.querySelector(".k") || {}).textContent || ""));
+        return v ? v.textContent : null;
+      };
+      return {
+        named: cards.map(c => (c.querySelector("b") || {}).textContent),
+        wired: cards.filter(c => c.classList.contains("wired"))
+          .map(c => (c.querySelector("b") || {}).textContent),
+        covered: [...document.querySelectorAll(".gm-syn .chip:not(.off)")].map(c => c.textContent),
+        missing: [...document.querySelectorAll(".gm-syn .chip.off")].map(c => c.textContent),
+        tier: (document.querySelector(".gm-syn-cov b") || {}).textContent,
+        ranger: initOf("Vex"), rogue: initOf("Nyx"), medic: initOf("Doc"),
+        credTier: (document.querySelector(".gm-rep .meter-head b") || {}).textContent
+      };
+    });
+    R.check("both named pairs at this table are found",
+      party.named.indexOf("Ambush Team") >= 0 && party.named.indexOf("Trauma Team") >= 0,
+      JSON.stringify(party.named));
+    R.eq("only the pair that carries a number is marked as wired", party.wired, ["Ambush Team"]);
+    R.eq("the roles this party covers", party.covered.sort(), ["Muscle", "Stealth", "Support"]);
+    R.eq("and the ones it does not", party.missing.sort(), ["Arcane", "Face", "Tech"]);
+    R.check("three roles is a specialist crew", /Specialist/.test(party.tier || ""), party.tier);
+    R.check("the Ranger's card shows the pair bonus", /Ambush Team/.test(party.ranger || ""), party.ranger);
+    R.check("so does the Rogue's", /Ambush Team/.test(party.rogue || ""), party.rogue);
+    R.check("the Streetdoc's does not", !/Ambush Team/.test(party.medic || ""), party.medic);
+    R.check("the Cred meter names the band", /Name/.test(party.credTier || ""), party.credTier);
+
+    /* the number the GM moves is the number that persists */
+    await page.evaluate(() => {
+      const plus = [...document.querySelectorAll(".gm-rep-ctl button")].find(b => b.textContent === "+1");
+      plus.click(); plus.click();
+    });
+    await page.waitForTimeout(250);
+    const bumped = await page.evaluate(() => ({
+      shown: (document.querySelector(".gm-rep .meter-head b") || {}).textContent,
+      stored: JSON.parse(localStorage.getItem("ttb.gm.play") || "{}").rep
+    }));
+    R.eq("+1 twice moves 6 to 8", bumped.stored, 8);
+    R.check("and the meter says so", /8 \/ 10/.test(bumped.shown || ""), bumped.shown);
+
+    await goSection("Party");
+    const afterReload = await page.evaluate(() =>
+      (document.querySelector(".gm-rep .meter-head b") || {}).textContent);
+    R.check("Street Cred survives a reload", /8 \/ 10/.test(afterReload || ""), afterReload);
+
+    /* it reaches the Ruling Desk's odds, which is the point of wiring it */
+    await goSection("Rulings");
+    const desk = await page.evaluate(() => {
+      // pick a Charisma skill and read one row of the party table
+      const chip = [...document.querySelectorAll(".gm-picker .chip")].find(c => c.textContent === "Persuasion");
+      if (chip) chip.click();
+      const rows = [...document.querySelectorAll(".gm-picker table tr")].slice(1);
+      const cell = rows.length ? rows[0].children[1].textContent.trim() : null;
+      return { hasTool: !!document.querySelector(".gm-react"),
+               badge: !!document.querySelector(".gm-rep-badge"), cell: cell };
+    });
+    R.check("the reaction tool is on the ruling desk", desk.hasTool, "");
+    R.check("so is the Street Cred badge", desk.badge, "");
+    // Cha 14 (+2) + prof (+3) = +5, plus the +4 that Cred 8 is worth
+    R.eq("a Persuasion check carries the reputation", desk.cell, "+9");
+
+    const rolled = await page.evaluate(() => {
+      [...document.querySelectorAll(".gm-react button")].find(b => /Roll the reaction/.test(b.textContent)).click();
+      const out = document.querySelector(".gm-react .gm-roll-out");
+      return out ? out.textContent : "";
+    });
+    R.check("rolling it names one of the five bands",
+      /Hostile|Wary|Neutral|Friendly|Ally/.test(rolled), JSON.stringify(rolled.slice(0, 60)));
+
+    /* and the same tool opens inside a fight without leaving it */
+    await goSection("Encounter");
+    await page.evaluate(() => {
+      [...document.querySelectorAll("button")].find(b => /\+ Party/.test(b.textContent)).click();
+    });
+    await page.waitForTimeout(350);
+    const fight = await page.evaluate(() => {
+      [...document.querySelectorAll("button")].find(b => /Reaction check/.test(b.textContent)).click();
+      return { inline: !!document.querySelector(".gm-react-slot .gm-react"),
+               badge: !!document.querySelector(".gm-turnbar .gm-rep-badge"),
+               stillEncounter: /Encounter/.test((document.querySelector(".stage-head h2") || {}).textContent || "") };
+    });
+    R.check("the reaction check opens inside the encounter", fight.inline, "");
+    R.check("without navigating away from it", fight.stillEncounter, "");
+    R.check("and the fight shows what the city thinks of them", fight.badge, "");
+
+    R.check("no uncaught errors across the GM screens", errors.length === 0, errors.join(" | "));
+    await ctx.close();
+  }
+
+  /* the retired per-character slider must not come back */
+  {
+    const { page, ctx } = await appPage(browser);
+    const gone = await page.evaluate(() => ({
+      slider: !!document.querySelector("#credRange"),
+      field: "cred" in window.TT.blank()
+    }));
+    R.check("the per-character Cred slider is gone", !gone.slider, "");
+    R.check("and the field is off the character", !gone.field, "");
+    await ctx.close();
+  }
+
   return R;
 };

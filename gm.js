@@ -1014,6 +1014,12 @@ window.TTGM = (function () {
     god.appendChild(godOut);
     s.appendChild(god);
 
+    /* ---- what the city thinks of them ---- */
+    s.appendChild(repStrip());
+
+    /* ---- what this particular set of people is ---- */
+    s.appendChild(synergyStrip(party));
+
     /* ---- who's best at ---- */
     s.appendChild(bestAtBlock(party));
 
@@ -1023,6 +1029,161 @@ window.TTGM = (function () {
     s.appendChild(grid);
 
     renderVaultTools(s);
+  }
+
+  /* --------------------------------------------------- Street Cred widgets --
+     The whole table shares one number, so it lives on the GM's screen and
+     nowhere else. A player's own sheet has no way to read it, and a readout
+     there would be stale the moment anyone earned a point. */
+  function repMeter(rep) {
+    var r = repState(rep);
+    var box = el("div", "meter");
+    var head = el("div", "meter-head");
+    head.innerHTML = "<span>Street Cred</span><b class='tone-" + r.tone + "'>" +
+      r.rep + " / 10 · " + esc(r.tier) + "</b>";
+    box.appendChild(head);
+    var bar = el("div", "meter-bar");
+    var fill = el("div", "meter-fill bg-" + r.tone);
+    fill.style.width = (r.rep * 10) + "%";
+    bar.appendChild(fill);
+    box.appendChild(bar);
+    return box;
+  }
+  function repStrip() {
+    var wrap = el("div", "gm-rep");
+    function paint() {
+      wrap.innerHTML = "";
+      var r = repState(repGet());
+      wrap.appendChild(repMeter(r.rep));
+
+      var ctl = el("div", "gm-rep-ctl");
+      ctl.appendChild(btn("−1", "tiny", function () { repSet(repGet() - 1); paint(); refreshDossier(); }));
+      var sl = document.createElement("input");
+      sl.type = "range"; sl.min = 0; sl.max = 10; sl.step = 1; sl.value = r.rep;
+      sl.setAttribute("aria-label", "Street Cred");
+      sl.setAttribute("aria-valuetext", "Street Cred " + r.rep + " of 10, " + r.tier);
+      sl.oninput = function () { repSet(sl.value); paint(); refreshDossier(); };
+      ctl.appendChild(sl);
+      ctl.appendChild(btn("+1", "tiny", function () { repSet(repGet() + 1); paint(); refreshDossier(); }));
+      wrap.appendChild(ctl);
+
+      wrap.appendChild(txt("div", "meter-note", "+" + r.mod +
+        " to Charisma checks against anyone who has heard of them. " + r.buys));
+      wrap.appendChild(txt("div", "meter-note", "Looking into things · " + r.digging));
+      wrap.appendChild(txt("div", "meter-note", "When it turns ugly · " + r.combat));
+      wrap.appendChild(txt("div", "gm-note",
+        "Yours to move. A point for a job the street saw, one back for folding in public."));
+    }
+    paint();
+    return wrap;
+  }
+  /* Read-only, for screens where the number is context rather than the task. */
+  function repBadge() {
+    var r = repState(repGet());
+    var b = txt("div", "gm-rep-badge", "");
+    b.innerHTML = "<span class='gm-label'>Street Cred</span> <b class='tone-" + r.tone + "'>" +
+      r.rep + " · " + esc(r.tier) + "</b> <span class='gm-note'>" +
+      T.sgn(r.mod) + " to Charisma checks</span>";
+    return b;
+  }
+
+  /* ------------------------------------------------------- synergy widget --
+     Rendered once for the party rather than on every card: a pair belongs to
+     the table, not to either character in it. */
+  function synergyStrip(party) {
+    var syn = synergiesFor(party.map(function (p) { return p.c.cls; }));
+    var wrap = el("div", "gm-syn");
+    wrap.appendChild(txt("div", "gm-label", "Standing together"));
+
+    if (syn.pairs.length) {
+      var list = el("div", "gm-syn-list");
+      syn.pairs.forEach(function (s) {
+        var card = el("div", "gm-syn-card" + (s.wired ? " wired" : ""));
+        var h = el("div", "gm-syn-head");
+        h.appendChild(txt("b", null, s.name));
+        h.appendChild(txt("span", "gm-syn-pair", s.pair.join(" + ")));
+        card.appendChild(h);
+        card.appendChild(txt("div", "gm-syn-line", s.line));
+        if (s.wired) card.appendChild(txt("div", "gm-syn-wired", s.wired));
+        list.appendChild(card);
+      });
+      wrap.appendChild(list);
+    } else {
+      wrap.appendChild(txt("div", "gm-note",
+        "No named pair at this table. That is not a penalty — it means whatever they pull off is theirs."));
+    }
+
+    var cov = el("div", "gm-syn-cov");
+    // gold rather than alert at the narrow end: a specialist crew is a shape,
+    // not a fault, and alert is what Humanity uses for actually losing people.
+    cov.appendChild(txt("b", "tone-" + (syn.roles.length >= 6 ? "signal" : "gold"),
+      syn.tier ? syn.tier.name : ""));
+    cov.appendChild(txt("span", "gm-note", syn.tier ? " — " + syn.tier.gist : ""));
+    wrap.appendChild(cov);
+    var chips = el("div", "gm-chips tight");
+    syn.roles.forEach(function (r) { chips.appendChild(txt("span", "chip", r)); });
+    syn.missing.forEach(function (r) { chips.appendChild(txt("span", "chip off", r)); });
+    wrap.appendChild(chips);
+    return wrap;
+  }
+
+  /* --------------------------------------------------- the reaction roll --
+     Built once and mounted on both the Ruling Desk and the encounter, because
+     "does this turn into a fight", "does anyone step in" and "will they talk
+     to us" are the same question asked at three different moments. */
+  function reactionTool() {
+    var wrap = el("div", "gm-react");
+    var sit = 0, mode = "";
+    var head = el("div", "gm-react-head");
+    head.appendChild(txt("div", "gm-label", "NPC reaction"));
+    head.appendChild(txt("span", "gm-note",
+      "How someone takes them, given who they are. Roll it before a fight starts, in the middle of one, or at a door."));
+    wrap.appendChild(head);
+
+    var ctl = el("div", "gm-react-ctl");
+    ctl.appendChild(txt("span", "gm-label", "Situation"));
+    ctl.appendChild(numField(0, function (v) { sit = v || 0; paint(); }, "58px"));
+    var chips = el("div", "gm-chips tight");
+    [["", "Straight"], ["adv", "Advantage"], ["dis", "Disadvantage"]].forEach(function (m) {
+      var c = txt("button", "chip" + (m[0] === mode ? " on" : ""), m[1]);
+      c.onclick = function () {
+        mode = m[0];
+        [].forEach.call(chips.children, function (x) { x.classList.remove("on"); });
+        c.classList.add("on");
+        paint();
+      };
+      chips.appendChild(c);
+    });
+    ctl.appendChild(chips);
+    wrap.appendChild(ctl);
+
+    var pre = txt("div", "gm-note", "");
+    wrap.appendChild(pre);
+    var out = el("div", "gm-roll-out");
+    wrap.appendChild(btn("Roll the reaction", "primary", function () {
+      var r = npcReaction(sit, mode);
+      out.innerHTML = "";
+      var line = el("div", "gm-roll-line");
+      line.appendChild(txt("span", "gm-init", r.roll.nat));
+      line.appendChild(txt("span", "gm-note",
+        (r.roll.both.length > 1 ? "(" + r.roll.both.join(" / ") + ") " : "") +
+        T.sgn(r.roll.bonus) + " = " + r.roll.total));
+      line.appendChild(txt("b", "tone-" + r.band.tone, r.band.name));
+      out.appendChild(line);
+      out.appendChild(txt("div", "gm-say", r.band.gist));
+    }));
+    wrap.appendChild(out);
+
+    function paint() {
+      var b = repMod() + sit;
+      // 16 is the bottom of Friendly, the first band that actually helps them
+      var o = odds(16, b);
+      pre.textContent = "d20 " + T.sgn(b) + " (Cred " + T.sgn(repMod()) +
+        (sit ? ", situation " + T.sgn(sit) : "") + ") · " +
+        o.pct + "% chance of Friendly or better";
+    }
+    paint();
+    return wrap;
   }
 
   function bestAtBlock(party) {
@@ -1308,6 +1469,10 @@ window.TTGM = (function () {
         "The ruling desk works without them, but the useful half is seeing each character's real modifier next to the DC.");
     }
 
+    /* Street Cred is already inside every Charisma number below — this is so
+       you can see why one of them looks higher than the sheet says. */
+    s.appendChild(repBadge());
+
     /* ---- the generic picker: covers anything not in the catalogue ---- */
     var pick = el("div", "gm-picker");
     pick.appendChild(txt("div", "gm-label", "Any situation"));
@@ -1397,6 +1562,9 @@ window.TTGM = (function () {
     pick.appendChild(out);
     s.appendChild(pick);
     paint();
+
+    /* ---- what someone makes of them ---- */
+    s.appendChild(reactionTool());
 
     /* ---- the catalogue ---- */
     var cat = el("div", "gm-catalog");
@@ -1833,7 +2001,16 @@ window.TTGM = (function () {
       });
       redraw();
     }));
+    /* The same tool as the Ruling Desk's, opened in place: "does anyone step
+       in" is a question that happens mid-fight, and tabbing away to ask it
+       loses the moment. */
+    var reactHost = el("div", "gm-react-slot");
+    bar.appendChild(btn("Reaction check", "", function () {
+      if (reactHost.firstChild) { reactHost.innerHTML = ""; return; }
+      reactHost.appendChild(reactionTool());
+    }));
     s.appendChild(bar);
+    s.appendChild(reactHost);
 
     if (!enc.combatants.length) {
       empty(s, "Nothing in the initiative order.",
@@ -1845,6 +2022,7 @@ window.TTGM = (function () {
     /* round / turn controls */
     var ctl = el("div", "gm-turnbar");
     ctl.appendChild(txt("div", "gm-round", "Round " + enc.round));
+    ctl.appendChild(repBadge());
     var list = ordered(enc);
     var cur = turnOf(enc);
     ctl.appendChild(txt("div", "gm-turn", cur ? cur.name + "'s turn" : ""));

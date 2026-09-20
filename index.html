@@ -149,6 +149,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .chip.lvl{border-color:var(--accent-deep);color:var(--accent)}
 .chip.tier{border-color:var(--gold);color:var(--gold)}
 .chip.warn{border-color:var(--alert);color:var(--alert)}
+.chip.off{border-style:dashed;color:var(--ink-faint);opacity:.75}
 button.chip{cursor:pointer}
 button.chip:hover{border-color:var(--accent);color:var(--accent)}
 .page-ref{font-family:var(--f-mono);font-size:10px;color:var(--ink-faint);
@@ -510,6 +511,32 @@ details.item .body p,details.item .body ul{max-width:70ch}
 .gm-god-die{font-family:var(--f-display);font-size:30px;font-weight:700;color:var(--ink-dim);line-height:1}
 .gm-god-die.hit{color:var(--gold)}
 .gm-god-says{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--ink-dim)}
+
+/* Street Cred — one number for the whole table */
+.gm-rep{background:var(--sunk);border:1px solid var(--line);border-left:3px solid var(--signal);
+  border-radius:var(--r);padding:14px;margin:15px 0}
+.gm-rep-ctl{display:flex;gap:9px;align-items:center;margin:9px 0 3px}
+.gm-rep-ctl input[type=range]{flex:1;accent-color:var(--signal)}
+.gm-rep-badge{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:11px 0}
+.gm-rep-badge b{font-size:13px}
+
+/* what this particular set of people is */
+.gm-syn{margin:15px 0}
+.gm-syn-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:9px;margin:9px 0}
+.gm-syn-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px}
+.gm-syn-card.wired{border-left:3px solid var(--gold)}
+.gm-syn-head{display:flex;gap:8px;align-items:baseline;justify-content:space-between;margin-bottom:5px}
+.gm-syn-pair{font-family:var(--f-mono);font-size:10px;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink-faint)}
+.gm-syn-line{font-size:12.5px;color:var(--ink-dim);line-height:1.45}
+.gm-syn-wired{font-family:var(--f-mono);font-size:11px;letter-spacing:.05em;color:var(--gold);margin-top:6px}
+.gm-syn-cov{margin-top:9px;font-size:12.5px}
+
+/* the reaction roll */
+.gm-react{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);
+  padding:14px;margin:15px 0}
+.gm-react-head{margin-bottom:9px}
+.gm-react-ctl{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:7px}
 
 /* party cards */
 .gm-party{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:13px;margin-top:15px;
