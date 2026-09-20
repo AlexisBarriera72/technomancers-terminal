@@ -1019,7 +1019,7 @@ window.TTGM = (function () {
 
     /* ---- one card per character ---- */
     var grid = el("div", "gm-party");
-    party.forEach(function (p) { grid.appendChild(partyCard(p)); });
+    party.forEach(function (p) { grid.appendChild(partyCard(p, party)); });
     s.appendChild(grid);
 
     renderVaultTools(s);
@@ -1037,7 +1037,7 @@ window.TTGM = (function () {
         b.classList.add("on");
         out.innerHTML = "";
         var ranked = party.map(function (p) {
-          return { name: p.c.name || "Unnamed", bonus: T.skillBonus(sk, p.d),
+          return { name: p.c.name || "Unnamed", bonus: repSkillBonus(sk, p.d),
                    passive: T.passiveSkill(sk, p.d), prof: p.d.prof.indexOf(sk) >= 0 };
         }).sort(function (a, b2) { return b2.bonus - a.bonus; });
         var t = el("table", "gm-tbl");
@@ -1062,7 +1062,7 @@ window.TTGM = (function () {
     return wrap;
   }
 
-  function partyCard(p) {
+  function partyCard(p, party) {
     var c = p.c, d = p.d;
     var card = el("div", "gm-card");
 
@@ -1081,7 +1081,11 @@ window.TTGM = (function () {
     var dc = T.saveDC(d);
     [["AC", d.ac.ac, d.ac.from],
      ["HP", d.hp == null ? "—" : d.hp, (d.cls ? c.level + d.cls.hit : "")],
-     ["Init", T.sgn(T.initiative(d)), T.initiativeNote(d)],
+     // the same number the tracker will roll, synergy included, so the card
+     // and the encounter never disagree about it
+     ["Init", T.sgn(combatInitiative(p, party || [])),
+      [T.initiativeNote(d), ambushTeamBonus(c.cls, party || []) ? "Ambush Team +1" : ""]
+        .filter(Boolean).join(" · ")],
      ["Prof", T.sgn(d.pb), ""],
      ["P.Perc", T.passiveSkill("Perception", d), ""],
      ["P.Insight", T.passiveSkill("Insight", d), ""],
@@ -1126,7 +1130,7 @@ window.TTGM = (function () {
     sk.appendChild(txt("div", "gm-label", "Proficient"));
     var skc = el("div", "gm-chips tight");
     d.prof.slice().sort().forEach(function (name) {
-      skc.appendChild(txt("span", "chip", name + " " + T.sgn(T.skillBonus(name, d))));
+      skc.appendChild(txt("span", "chip", name + " " + T.sgn(repSkillBonus(name, d))));
     });
     if (!d.prof.length) skc.appendChild(txt("span", "gm-note", "none recorded"));
     sk.appendChild(skc);
@@ -1252,7 +1256,9 @@ window.TTGM = (function () {
   function bonusFor(roll, d) {
     if (!roll) return 0;
     if (roll.kind === "save") return T.saveBonus(roll.abil, d);
-    if (roll.kind === "check" || roll.kind === "contest") return T.skillBonus(roll.skill, d);
+    // repSkillBonus, not skillBonus: a Charisma check made by someone the city
+    // has heard of is the one place Street Cred was always meant to land.
+    if (roll.kind === "check" || roll.kind === "contest") return repSkillBonus(roll.skill, d);
     return 0;
   }
   function rollLabel(roll) {
@@ -1787,7 +1793,7 @@ window.TTGM = (function () {
         if (enc.combatants.some(function (c) { return c.src === "pc" && c.ref === p.rec.id; })) return;
         enc.combatants.push({
           cid: uid("k"), src: "pc", ref: p.rec.id, name: p.c.name || "Unnamed",
-          init: d20(T.initiative(p.d)).total, ac: p.d.ac.ac,
+          init: d20(combatInitiative(p, party)).total, ac: p.d.ac.ac,
           hpMax: p.d.hp || 1, hp: p.d.hp || 1, tmp: 0, conds: [], dead: false, notes: ""
         });
       });
@@ -1852,11 +1858,14 @@ window.TTGM = (function () {
       redraw();
     }));
     nav.appendChild(btn("Reroll initiative", "", function () {
+      // Hoisted: the synergy bonus needs the whole party, and rebuilding it
+      // per combatant re-parsed every share code in the vault each time.
+      var party = partyChars();
       encPatch(function (e) {
         e.combatants.forEach(function (c) {
           if (c.src === "pc") {
-            var p = partyChars().filter(function (x) { return x.rec.id === c.ref; })[0];
-            c.init = d20(p ? T.initiative(p.d) : 0).total;
+            var p = party.filter(function (x) { return x.rec.id === c.ref; })[0];
+            c.init = d20(p ? combatInitiative(p, party) : 0).total;
           } else {
             var n = npcAll().filter(function (x) { return x.id === c.ref; })[0];
             c.init = d20(n ? n.init : 0).total;
