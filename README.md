@@ -47,6 +47,32 @@ by the worker's ordinary fetch handler from then on.
 `app.js` hands `gm.js` a namespace (`window.TT`) at startup — the book lookups, the
 DOM helpers and the derived-stat functions. Everything else in `app.js` stays private.
 
+## The look
+
+"Neon Noir": dark by default whatever the device prefers, with light one tap
+away on the ◐ button (remembered per browser). Two neon colours — cyan for what
+you act on and what is selected, pink for section labels — and every text colour
+is at least 4.5:1 against every background it sits on, in both themes.
+
+- **Fonts.** Barlow for the interface, Chakra Petch for headings, JetBrains Mono
+  for labels and numbers. Rules text from the book (Codex entries, features,
+  what your character can do) stays in Spectral, so the book still reads like
+  the book.
+- **Cut corners** are a `clip-path`. It draws no border along the cut, so each cut
+  panel draws its own diagonal with `::after`, and the glow is inset because a
+  clip-path would cut an outer one off. Focus rings on cut things sit inside
+  them for the same reason.
+- **Roles** each have an icon and a colour (`ROLE_ICON` in `app.js`, the
+  `.role-*` rules in `index.html`), shown on class cards, the synergy preview,
+  the GM's coverage chips and each GM party card.
+- **Motion** is two things: a card lights up once when it is picked, and the
+  Street Cred rank flares when it crosses into a new band. A device set to
+  reduce motion gets neither.
+- **Printed sheets** are untouched: black on white, their own fonts.
+
+All of it lives in `index.html`; the "Neon Noir" section near the end of the
+stylesheet holds the cut corners, glow, role chips, empty screens and motion.
+
 ## Spanish
 
 The **ES** button in the masthead switches the whole interface to Spanish. It is

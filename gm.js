@@ -669,10 +669,45 @@ window.TTGM = (function () {
     host.appendChild(h);
     return h;
   }
-  function empty(host, text, hint) {
-    var e = el("div", "empty-state");
-    e.appendChild(txt("p", null, text));
-    if (hint) e.appendChild(txt("p", "hint", hint));
+  /* Line drawings for the screens that start empty. Stroke only, in the
+     accent colour, so they sit in either theme without a second set. */
+  var ART = {
+    // three seats at a table, the middle one waiting for someone
+    party: '<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+      '<circle cx="30" cy="34" r="10"/><path d="M14 72c0-12 7-20 16-20s16 8 16 20"/>' +
+      '<circle cx="106" cy="34" r="10"/><path d="M90 72c0-12 7-20 16-20s16 8 16 20"/>' +
+      '<g class="hot" stroke-dasharray="4 5"><circle cx="68" cy="28" r="12"/><path d="M48 72c0-15 9-24 20-24s20 9 20 24"/></g>' +
+      '<path d="M6 84h124"/><path class="hot" d="M68 22v12M62 28h12"/></g>',
+    // an ID card with nobody on it yet
+    npcs: '<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+      '<path d="M16 14h92l12 12v58H16z"/><circle cx="46" cy="44" r="12"/><path d="M28 76c2-10 9-15 18-15s16 5 18 15"/>' +
+      '<path d="M74 38h32M74 48h24M74 58h28"/><path class="hot" stroke-dasharray="3 4" d="M74 68h20"/></g>',
+    // a reticle over an empty initiative ladder
+    encounter: '<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+      '<circle cx="42" cy="48" r="26"/><circle cx="42" cy="48" r="8"/><path d="M42 14v14M42 68v14M8 48h14M62 48h14"/>' +
+      '<path d="M88 26h40M88 42h32M88 58h36M88 74h24" stroke-dasharray="5 5"/><path class="hot" d="M80 26h2"/></g>',
+    // a six-segment clock with nothing filled
+    clocks: '<g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+      '<circle cx="68" cy="48" r="34"/><path d="M68 14v68M38.6 31l58.8 34M38.6 65l58.8-34"/>' +
+      '<circle cx="68" cy="48" r="5" class="hot"/><path class="hot" d="M112 18l8-6M116 30h10M24 18l-8-6M20 30H10"/></g>'
+  };
+  function empty(host, text, hint, art) {
+    var e = el("div", "empty-state" + (art ? " art" : ""));
+    if (art && ART[art]) {
+      var pic = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      pic.setAttribute("viewBox", "0 0 136 96");
+      pic.setAttribute("class", "empty-art");
+      pic.setAttribute("aria-hidden", "true");
+      pic.innerHTML = ART[art];
+      e.appendChild(pic);
+      var words = el("div");
+      words.appendChild(txt("p", null, text));
+      if (hint) words.appendChild(txt("p", "hint", hint));
+      e.appendChild(words);
+    } else {
+      e.appendChild(txt("p", null, text));
+      if (hint) e.appendChild(txt("p", "hint", hint));
+    }
     host.appendChild(e);
     return e;
   }
@@ -951,7 +986,7 @@ window.TTGM = (function () {
     var party = partyChars();
     if (!party.length) {
       empty(s, "No one at the table yet.",
-        "Ask each player to open their Play Sheet, hit Copy share link, and send it to you. Paste it above.");
+        "Ask each player to open their Play Sheet, hit Copy share link, and send it to you. Paste it above.", "party");
       renderVaultTools(s);
       return;
     }
@@ -1009,7 +1044,7 @@ window.TTGM = (function () {
     // signed, not "6 / 10": the track runs both ways now and "−4 / 10" reads
     // like a fraction of the wrong thing
     b.appendChild(txt("span", null, T.sgn(r.rep) + " · "));
-    b.appendChild(txt("span", null, tierText(r.tier)));
+    b.appendChild(txt("span", "tier-name", tierText(r.tier)));
     head.appendChild(b);
     box.appendChild(head);
     /* Centre-anchored: zero in the middle, growing right when they are liked
@@ -1054,10 +1089,19 @@ window.TTGM = (function () {
     wrap.appendChild(txt("div", "gm-note",
       "Yours to move. A point for a job the street saw, one back for folding in public."));
 
+    var lastTier = null;
     function paint() {
       var r = repState(repGet());
       meterHost.innerHTML = "";
       meterHost.appendChild(repMeter(r.rep));
+      // crossing into a new band flares, so the table notices the city has
+      // changed its mind; moving within a band does not
+      if (lastTier !== null && lastTier !== r.tier) {
+        var tn = meterHost.querySelector(".tier-name"), fl = meterHost.querySelector(".meter-fill");
+        if (tn) tn.classList.add("rank-shift");
+        if (fl) fl.classList.add("rank-shift-bar", "tone-" + r.tone);
+      }
+      lastTier = r.tier;
       if (+sl.value !== r.rep) sl.value = r.rep;
       // attributes outside the overlay's list, so translated here
       sl.setAttribute("aria-valuetext",
@@ -1129,8 +1173,8 @@ window.TTGM = (function () {
     cov.appendChild(txt("span", "gm-note", syn.tier ? syn.tier.gist : ""));
     wrap.appendChild(cov);
     var chips = el("div", "gm-chips tight");
-    syn.roles.forEach(function (r) { chips.appendChild(txt("span", "chip", r)); });
-    syn.missing.forEach(function (r) { chips.appendChild(txt("span", "chip off", r)); });
+    syn.roles.forEach(function (r) { chips.appendChild(T.roleChip(r)); });
+    syn.missing.forEach(function (r) { chips.appendChild(T.roleChip(r, "off")); });
     wrap.appendChild(chips);
     return wrap;
   }
@@ -1250,6 +1294,9 @@ window.TTGM = (function () {
       (d.sub && c.level >= d.sub.levelAvailable ? " · " + d.sub.name : "") +
       (p.rec.player ? "  ·  " + p.rec.player : "")));
     head.appendChild(nm);
+    var roles = el("div", "pick-roles");
+    (SY.classRoles[c.cls] || []).forEach(function (r) { roles.appendChild(T.roleChip(r)); });
+    head.appendChild(roles);
     card.appendChild(head);
 
     /* the numbers you get asked for */
@@ -1509,7 +1556,7 @@ window.TTGM = (function () {
     var party = partyChars();
     if (!party.length) {
       empty(s, "Import the party first.",
-        "The ruling desk works without them, but the useful half is seeing each character's real modifier next to the DC.");
+        "The ruling desk works without them, but the useful half is seeing each character's real modifier next to the DC.", "party");
     }
 
     /* Street Cred is already inside every Charisma number below — this is so
@@ -1770,7 +1817,7 @@ window.TTGM = (function () {
     }
 
     var all = npcAll().sort(function (a, b) { return (a.name || "").localeCompare(b.name || ""); });
-    if (!all.length) { empty(s, "No NPCs yet.", "Start from a template — it's faster than a blank form."); return; }
+    if (!all.length) { empty(s, "No NPCs yet.", "Start from a template — it's faster than a blank form.", "npcs"); return; }
 
     var search = field(npcQ, "Search names, roles and tags", function (v) { npcQ = v; paint(); });
     search.className = "search";
@@ -2057,7 +2104,7 @@ window.TTGM = (function () {
 
     if (!enc.combatants.length) {
       empty(s, "Nothing in the initiative order.",
-        "Add the party, then drop in whatever they've walked into.");
+        "Add the party, then drop in whatever they've walked into.", "encounter");
       renderEncLibrary(s, enc);
       return;
     }
@@ -2328,7 +2375,7 @@ window.TTGM = (function () {
 
     if (!p.clocks.length) {
       empty(s, "No clocks running.",
-        "Good first ones for Cathedra: “The Cantor notices you”, “House Thorn calls the debt”, “The god turns its head”.");
+        "Good first ones for Cathedra: “The Cantor notices you”, “House Thorn calls the debt”, “The god turns its head”.", "clocks");
     } else {
       var wrap = el("div", "gm-clocks");
       p.clocks.forEach(function (c) { wrap.appendChild(clockCard(c)); });

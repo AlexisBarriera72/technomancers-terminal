@@ -968,6 +968,110 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
+  /* ===== the Neon Noir look: what it promises, as behaviour =====
+     Styling itself is checked by eye; these are the parts a refactor could
+     silently drop — role chips, the quiet header, dark by default, the
+     empty-screen pictures, and motion that fires once rather than on every
+     redraw. */
+  {
+    // a system set to light still opens dark: dark is the default now
+    const { page, ctx, errors } = await appPage(browser, { context: { colorScheme: "light" } });
+    const look = await page.evaluate(() => {
+      const bg = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number);
+      const meta = document.querySelector("#brandMeta");
+      return { theme: document.documentElement.getAttribute("data-theme"),
+               dark: bg[0] + bg[1] + bg[2] < 120, meta: meta.textContent, title: meta.title };
+    });
+    R.check("dark by default, even on a light-mode system", look.dark && !look.theme, JSON.stringify(look));
+    R.eq("the header shows only the version", look.meta, "v1.5");
+    R.check("and keeps the build one hover away", /build \d{4}-\d{2}-\d{2}/.test(look.title), look.title);
+    await page.click("#themeBtn");
+    const light = await page.evaluate(() => ({
+      theme: document.documentElement.getAttribute("data-theme"),
+      stored: localStorage.getItem("ttb.theme") }));
+    R.eq("one tap switches to light, and remembers it", light, { theme: "light", stored: "light" });
+
+    // role chips on the class card itself, with an icon
+    await page.evaluate(() => { const T = window.TT; T.setMode("forge"); T.render();
+      document.querySelectorAll(".rail .step")[0].click(); });
+    await page.waitForTimeout(200);
+    const cards = await page.evaluate(() => {
+      const card = n => [...document.querySelectorAll(".pick-wrap")]
+        .find(w => (w.querySelector("h3") || {}).textContent === n);
+      const roles = n => [...card(n).querySelectorAll(".pick > .pick-roles .chip.role")]
+        .map(c => [c.textContent, c.className.match(/role-(\w+)/)[1], !!c.querySelector("svg.ri path, svg.ri circle")]);
+      return { fighter: roles("Fighter"), bard: roles("Bard") };
+    });
+    R.eq("a class card shows its role, with an icon", cards.fighter, [["Muscle", "muscle", true]]);
+    R.eq("and both roles when it has two", cards.bard, [["Face", "face", true], ["Support", "support", true]]);
+
+    // picking lights the card once; a later redraw of the same pick does not
+    const glow = await page.evaluate(async () => {
+      const wrapOf = n => [...document.querySelectorAll(".pick-wrap")]
+        .find(w => (w.querySelector("h3") || {}).textContent === n);
+      wrapOf("Monk").querySelector(".pick").click();
+      await new Promise(r => setTimeout(r, 50));
+      const after = wrapOf("Monk");
+      const lit = after.classList.contains("just-picked") && after.classList.contains("on");
+      window.TT.render();
+      await new Promise(r => setTimeout(r, 50));
+      return { lit, again: wrapOf("Monk").classList.contains("just-picked") };
+    });
+    R.check("a picked card lights up", glow.lit, JSON.stringify(glow));
+    R.check("but not again on a redraw", !glow.again, JSON.stringify(glow));
+    R.eq("no page errors in the new look", errors, []);
+    await ctx.close();
+  }
+  {
+    // the GM side: empty screens get a picture, a party gets role chips,
+    // and crossing a Street Cred band flares while moving inside one does not
+    const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+    await page.waitForTimeout(300);
+    const emptyArt = await page.evaluate(() => {
+      const T = window.TT, out = {};
+      [[0, "party"], [1, "encounter"], [3, "npcs"], [4, "clocks"]].forEach(([i, k]) => {
+        T.setMode("table"); T.gmSec(i); T.render();
+        out[k] = !!document.querySelector("#stage .empty-state.art svg.empty-art");
+      });
+      return out;
+    });
+    R.eq("every empty GM screen has its picture", emptyArt,
+      { party: true, encounter: true, npcs: true, clocks: true });
+
+    await page.evaluate(() => {
+      const T = window.TT;
+      const mk = (name, cls) => { const c = T.blank(); c.id = "id-" + name; c.name = name; c.cls = cls; c.level = 5;
+        return { id: c.id, name, cls, level: 5, player: "", source: "t", added: 1, updated: 1, payload: JSON.stringify(c) }; };
+      localStorage.setItem("ttb.gm.party", JSON.stringify([mk("Vex", "Ranger"), mk("Brick", "Fighter")]));
+      localStorage.setItem("ttb.gm.play", JSON.stringify({ rep: 3, clocks: [], scratch: "", mode: "table" }));
+    });
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT);
+    await page.waitForTimeout(250);
+    const gm = await page.evaluate(() => {
+      const T = window.TT; T.setMode("table"); T.gmSec(0); T.render();
+      const card = n => [...document.querySelectorAll(".gm-card")]
+        .find(c => (c.querySelector(".gm-name") || {}).textContent === n);
+      const plus = () => [...document.querySelectorAll(".gm-rep-ctl button")].find(b => b.textContent === "+1");
+      const flared = () => !!document.querySelector(".gm-rep .tier-name.rank-shift");
+      plus().click();                      // 3 -> 4, still Somebody
+      const inside = flared();
+      plus().click();                      // 4 -> 5, Somebody -> Name
+      const across = flared();
+      return {
+        vex: [...card("Vex").querySelectorAll(".gm-card-head .chip.role")].map(c => c.textContent),
+        covered: [...document.querySelectorAll(".gm-syn .chip.role:not(.off)")].map(c => c.textContent),
+        inside, across
+      };
+    });
+    R.eq("a party card carries its role chip", gm.vex, ["Stealth"]);
+    R.eq("the crew's coverage is role chips too", gm.covered, ["Muscle", "Stealth"]);
+    R.check("moving inside a band does not flare", !gm.inside, JSON.stringify(gm));
+    R.check("crossing into a new band does", gm.across, JSON.stringify(gm));
+    R.eq("no page errors on the GM side of the new look", errors, []);
+    await ctx.close();
+  }
+
     /* the retired per-character slider must not come back */
   {
     const { page, ctx } = await appPage(browser);

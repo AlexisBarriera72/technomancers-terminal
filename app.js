@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-23 13:10";
+  var BUILD = "2026-09-23 15:40";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -1572,6 +1572,34 @@
      then picking Fighter would shut what you just opened. */
   var synOpen = {}, synPairOpen = {};
 
+  /* ------------------------------------------------------------- roles --
+     One icon and one colour per crew role, so a party's mix reads at a
+     glance. Drawn inline rather than shipped as image files: a few strokes
+     each, coloured by CSS, nothing to fetch. gm.js uses the same chips. */
+  var ROLE_ICON = {
+    Muscle: '<path d="M12 3l7 3v5c0 4.6-3 8.3-7 10-4-1.7-7-5.4-7-10V6z"/><path d="M13 7l-3 5h4l-3 5"/>',
+    Face: '<path d="M4 5h16v11H10l-4 4v-4H4z"/><path d="M8 9h8M8 12h5"/>',
+    Tech: '<rect x="7" y="7" width="10" height="10"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/>',
+    Arcane: '<path d="M12 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/>',
+    Stealth: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 20L20 4"/>',
+    Support: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/>'
+  };
+  function roleChipHTML(r, extra) {
+    return '<span class="chip role role-' + esc(String(r).toLowerCase()) + (extra ? " " + extra : "") + '">' +
+      '<svg class="ri" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (ROLE_ICON[r] || "") +
+      "</svg><span>" + esc(r) + "</span></span>";
+  }
+  function roleChip(r, extra) {
+    var t = document.createElement("span");
+    t.innerHTML = roleChipHTML(r, extra);
+    return t.firstChild;
+  }
+  function roleChips(name) {
+    return '<div class="pick-roles">' + (SY.classRoles[name] || []).map(function (r) {
+      return roleChipHTML(r);
+    }).join("") + "</div>";
+  }
+
   function pairsForClass(name) {
     return SY.pairs.filter(function (p) { return p.pair.indexOf(name) >= 0; });
   }
@@ -1599,7 +1627,7 @@
     var roles = SY.classRoles[name] || [];
     if (roles.length) {
       var rr = el("div", "gm-chips tight");
-      roles.forEach(function (r) { rr.appendChild(el("span", "chip", esc(r))); });
+      roles.forEach(function (r) { rr.appendChild(roleChip(r)); });
       panel.appendChild(rr);
     }
 
@@ -1632,7 +1660,7 @@
 
   /* The card and its preview, as one grid cell. */
   function classPick(c) {
-    var wrap = el("div", "pick-wrap");
+    var wrap = el("div", "pick-wrap" + (C.cls === c.name ? " on" : ""));
     wrap.appendChild(classCard(c));
     wrap.appendChild(synergyPreview(c.name));
     return wrap;
@@ -1647,6 +1675,7 @@
       "<h3>" + esc(c.name) +
       (isBook(c) ? "" : " " + sourceChip(c, "tier", "vertical-align:middle")) +
       "</h3>" +
+      roleChips(c.name) +
       '<div class="sub">' +
       (sub ? esc(sub.name) + " · unlocks at level " + sub.levelAvailable
            : subs.length + " archetypes · choose at level " + (subs[0] ? subs[0].levelAvailable : 3)) +
@@ -4514,7 +4543,7 @@
     ALL_CLASSES: ALL_CLASSES, ALL_SUBS: ALL_SUBS, ALL_FEATS: ALL_FEATS,
     tableByTitle: tableByTitle, subsFor: subsFor, paras: paras,
     sourceName: sourceName, isBook: isBook,
-    T: T, applyLang: applyLang, setLang: setLang,
+    T: T, applyLang: applyLang, setLang: setLang, roleChip: roleChip,
     getLang: function () { return LANG; }, esHasBook: esHasBook,
     ABIL: ABIL, ABIL_FULL: ABIL_FULL, HSTATE: HSTATE, CLASS_DC: CLASS_DC,
     // dom helpers
@@ -4544,8 +4573,11 @@
   };
 
   function init() {
-    $("#brandMeta").textContent = D.meta.author + " · v" + D.meta.version + " · " +
-      D.meta.pages + " pp · build " + BUILD;
+    // Just the version on screen; the rest is one hover away for whoever
+    // needs to know which build a tablet is running.
+    var bm = $("#brandMeta");
+    bm.textContent = "v" + String(D.meta.version).split(" ")[0];
+    bm.title = D.meta.author + " · v" + D.meta.version + " · " + D.meta.pages + " pp · build " + BUILD;
     // Before anything renders, so the first paint is already in the right
     // language rather than flashing English first.
     LANG = lsRead(LANG_KEY) === "es" ? "es" : "en";
@@ -4581,11 +4613,32 @@
     if ($("#langBtn")) {
       $("#langBtn").onclick = function () { setLang(LANG === "es" ? "en" : "es"); };
     }
+    /* A card lights up once, when it is picked. A style on [aria-pressed]
+       alone would replay on every redraw of the same selection; this finds
+       the card again after the click's own render() and marks just that one. */
+    document.addEventListener("click", function (e) {
+      var p = e.target.closest && e.target.closest(".pick");
+      var h = p && p.querySelector("h3");
+      if (!h) return;
+      var name = h.textContent;
+      setTimeout(function () {
+        var hit = [].filter.call(document.querySelectorAll('#stage .pick[aria-pressed="true"]'), function (x) {
+          var hh = x.querySelector("h3");
+          return hh && hh.textContent === name;
+        })[0];
+        if (!hit) return;
+        var card = hit.parentNode.classList.contains("pick-wrap") ? hit.parentNode : hit;
+        card.classList.remove("just-picked");
+        void card.offsetWidth;            // restart the animation if it is already there
+        card.classList.add("just-picked");
+      }, 0);
+    }, true);
+
     $("#themeBtn").onclick = function () {
       var r = document.documentElement;
       var cur = r.getAttribute("data-theme");
-      var isDark = cur ? cur === "dark" :
-        !window.matchMedia("(prefers-color-scheme: light)").matches;
+      // dark unless someone has chosen light: it is the default, not the system's call
+      var isDark = cur !== "light";
       r.setAttribute("data-theme", isDark ? "light" : "dark");
       try { localStorage.setItem("ttb.theme", r.getAttribute("data-theme")); } catch (e) {}
     };
