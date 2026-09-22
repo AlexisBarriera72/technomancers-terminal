@@ -1072,6 +1072,69 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
+  /* ===== the demo table: a game in progress, and your own table untouched =====
+     It loads over the real keys, so the whole point is that exiting puts back
+     exactly what was there — including through a reload in between. */
+  {
+    const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+    await page.waitForTimeout(300);
+    const mine = await page.evaluate(() => {
+      const T = window.TT, c = T.blank();
+      c.id = "mine-1"; c.name = "My Real PC"; c.cls = "Cleric"; c.level = 2;
+      localStorage.setItem("ttb.gm.party", JSON.stringify([{ id: c.id, name: c.name, cls: c.cls, level: 2,
+        player: "Me", source: "link", added: 1, updated: 1, payload: JSON.stringify(c) }]));
+      localStorage.setItem("ttb.gm.npcs", JSON.stringify([{ id: "my-npc", name: "My NPC", ac: 11, hp: 7 }]));
+      localStorage.setItem("ttb.gm.play", JSON.stringify({ rep: -4, clocks: [{ id: "mc", name: "Mine", seg: 4, filled: 2 }],
+        scratch: "my notes", mode: "table" }));
+      return ["ttb.gm.party", "ttb.gm.npcs", "ttb.gm.encounters", "ttb.gm.play"].map(k => JSON.parse(localStorage.getItem(k) || "null"));
+    });
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT);
+    await page.waitForTimeout(250);
+    const demo = await page.evaluate(() => {
+      const T = window.TT; T.setMode("table"); T.gmSec(0); T.render();
+      [...document.querySelectorAll("#stage button")].find(b => /load a demo table/i.test(b.textContent)).click();
+      const out = {
+        banner: !!document.querySelector(".gm-demo"),
+        party: [...document.querySelectorAll(".gm-card .gm-name")].map(n => n.textContent),
+        pairs: [...document.querySelectorAll(".gm-syn-card b")].map(n => n.textContent),
+        rep: window.TTGM.repGet()
+      };
+      T.gmSec(1); T.render();
+      out.turn = (document.querySelector(".gm-turn") || {}).textContent;
+      out.fighters = document.querySelectorAll(".gm-cb").length;
+      T.gmSec(4); T.render();
+      out.clocks = document.querySelectorAll(".gm-clock").length;
+      return out;
+    });
+    R.check("the demo announces itself", demo.banner, "");
+    R.eq("the demo seats a party of five", demo.party.length, 5);
+    R.check("with live synergy pairs to show", demo.pairs.indexOf("Ambush Team") >= 0 && demo.pairs.length >= 3,
+      JSON.stringify(demo.pairs));
+    R.check("mid-fight, someone's turn", /Sable Voss/.test(demo.turn || "") && demo.fighters >= 8, JSON.stringify(demo));
+    R.eq("with clocks ticking", demo.clocks, 3);
+
+    // survives a reload, then exits cleanly
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT);
+    await page.waitForTimeout(250);
+    const back = await page.evaluate(() => {
+      const still = !!document.querySelector(".gm-demo") && window.TTGM.inDemo();
+      [...document.querySelectorAll(".gm-demo button")].find(b => /exit demo/i.test(b.textContent)).click();
+      return { still, banner: !!document.querySelector(".gm-demo"), inDemo: window.TTGM.inDemo(),
+        keys: ["ttb.gm.party", "ttb.gm.npcs", "ttb.gm.encounters", "ttb.gm.play"].map(k => JSON.parse(localStorage.getItem(k) || "null")) };
+    });
+    R.check("the demo survives a reload", back.still, "");
+    R.check("exiting takes the banner away", !back.banner && !back.inDemo, JSON.stringify(back));
+    R.eq("your party comes back exactly", back.keys[0], mine[0]);
+    R.eq("and your NPCs", back.keys[1], mine[1]);
+    const pl = back.keys[3] || {};
+    R.eq("and your Street Cred, clocks and notes", [pl.rep, pl.clocks, pl.scratch],
+      [mine[3].rep, mine[3].clocks, mine[3].scratch]);
+    R.eq("no page errors running the demo", errors, []);
+    await ctx.close();
+  }
+
     /* the retired per-character slider must not come back */
   {
     const { page, ctx } = await appPage(browser);

@@ -915,6 +915,169 @@ window.TTGM = (function () {
           ", " + count(e.n, "encounter", "encounters"));
     redraw();
   }
+  /* ------------------------------------------------------------ demo table --
+     A made-up game already in progress — five characters, their NPCs, a fight
+     in its second round, clocks ticking — so the GM screens can be seen doing
+     their job before a real party exists.
+
+     It is loaded into the real keys rather than beside them, because every
+     screen already reads those. Whatever was there is set aside first, from
+     memory (the canonical copy, unsaved edits included), and put back exactly
+     on the way out. A demo that could eat someone's campaign is not a demo. */
+  var K_DEMO = "ttb.gm.demo";
+  function inDemo() {
+    try { return localStorage.getItem(K_DEMO) !== null; } catch (e) { return false; }
+  }
+  function demoChar(o) {
+    var c = T.blank();
+    Object.keys(o).forEach(function (k) { c[k] = o[k]; });
+    c.method = "array";
+    c.arrayMap = JSON.parse(JSON.stringify(c.scores));
+    return T.migrate(c);
+  }
+  function demoTable() {
+    var now = Date.now();
+    var cast = [
+      ["Ana", demoChar({ id: "demo-vesper", name: "Vesper Kane", level: 5, cls: "Ranger",
+        sub: "ranger-drone-master", bg: "cop",
+        scores: { Str: 10, Dex: 15, Con: 13, Int: 12, Wis: 14, Cha: 8 },
+        skills: ["Perception", "Stealth", "Survival"] })],
+      ["Leo", demoChar({ id: "demo-jax", name: "Jax Oriel", level: 5, cls: "Rogue",
+        sub: "rogue-saboteur", bg: "gangster",
+        scores: { Str: 8, Dex: 15, Con: 13, Int: 14, Wis: 12, Cha: 10 },
+        skills: ["Stealth", "Perception", "Sleight of Hand", "Deception"],
+        cyber: [{ name: "Wired Reflexes", tier: "2" }] })],
+      ["Mia", demoChar({ id: "demo-sable", name: "Sable Voss", level: 5, cls: "Wirewalker",
+        sub: "wirewalker-icebreaker", bg: "hacker",
+        scores: { Str: 8, Dex: 14, Con: 13, Int: 15, Wis: 12, Cha: 10 },
+        skills: ["Technology", "Investigation", "Stealth"] })],
+      ["Sam", demoChar({ id: "demo-brick", name: "Brick Halloran", level: 5, cls: "Barbarian",
+        sub: "barbarian-street-savage", bg: "punk-rocker",
+        scores: { Str: 15, Dex: 13, Con: 14, Int: 8, Wis: 12, Cha: 10 },
+        skills: ["Athletics", "Intimidation"],
+        cyber: [{ name: "Dermal Barrier", tier: "2" }] })],
+      ["Rae", demoChar({ id: "demo-lux", name: "Lux Marrow", level: 5, cls: "Bard",
+        sub: "bard-college-of-anarchy", bg: "celebrity",
+        scores: { Str: 8, Dex: 14, Con: 13, Int: 10, Wis: 12, Cha: 15 },
+        skills: ["Persuasion", "Performance", "Insight"] })]
+    ].filter(function (x) { return x[1] && x[1].cls; });
+
+    var party = cast.map(function (x, i) {
+      var c = x[1];
+      return { id: c.id, name: c.name, cls: c.cls, level: c.level, player: x[0], source: "demo",
+               added: now - (cast.length - i) * 60000, updated: now, payload: JSON.stringify(c) };
+    });
+
+    function fromTemplate(tname, patch) {
+      var t = G.npcTemplates.filter(function (x) { return x.name === tname; })[0] || G.npcTemplates[0];
+      var n = npcFromTemplate(t);
+      Object.keys(patch).forEach(function (k) { n[k] = patch[k]; });
+      n.id = patch.id; n.updated = now;
+      return n;
+    }
+    var npcs = [
+      fromTemplate("Corpo Lieutenant", { id: "demo-n-dace", name: "Ser Ambrel Dace",
+        role: "House Thorn, collections", tags: ["Cathedra", "House Thorn"],
+        notes: "Here for Brick's debt, with interest.\nWants: the ichor vial Jax lifted last session.\nTell: straightens his cuffs before he lies." }),
+      fromTemplate("Corpo Security", { id: "demo-n-enforcer", name: "Thorn Enforcer",
+        role: "House Thorn muscle", tags: ["Cathedra", "House Thorn"],
+        notes: "Paid by the hour. Will fold if Dace drops." }),
+      fromTemplate("Combat Drone", { id: "demo-n-drone", name: "Collections Drone",
+        role: "Construct", tags: ["Cathedra", "House Thorn"], notes: "" }),
+      fromTemplate("Gutter Ganger", { id: "demo-n-ganger", name: "Gullet Runner",
+        role: "Mook", tags: ["Cathedra", "The Gullet"],
+        notes: "Sells directions. Sells you out for the same price." }),
+      fromTemplate("Corpo Security", { id: "demo-n-slate", name: "Mother Slate", kind: "npc",
+        role: "Fixer, the Marrowworks", tags: ["Cathedra", "contact"],
+        notes: "Gave them the job. Owes Lux a favour and knows it.\nWants: the Houses fighting each other, not her." })
+    ];
+
+    // the fight: round 2, Sable to act, everyone a little worse for wear
+    var pcs = party.map(function (r) { var c = charOf(r); return { rec: r, c: c, d: T.statsOf(c) }; });
+    var inits = { "demo-vesper": 19, "demo-jax": 21, "demo-sable": 17, "demo-brick": 9, "demo-lux": 12 };
+    var hurt = { "demo-vesper": 9, "demo-jax": 0, "demo-sable": 14, "demo-brick": 22, "demo-lux": 4 };
+    var conds = { "demo-brick": ["Frightened"], "demo-lux": ["Concentrating"] };
+    var k = 0;
+    function cid() { return "demo-k" + (k++); }
+    var combatants = pcs.map(function (p) {
+      var max = p.d.hp || 1;
+      return { cid: cid(), src: "pc", ref: p.rec.id, name: p.c.name, init: inits[p.rec.id] || 10,
+               ac: p.d.ac.ac, hpMax: max, hp: Math.max(1, max - (hurt[p.rec.id] || 0)),
+               tmp: p.rec.id === "demo-brick" ? 5 : 0, conds: conds[p.rec.id] || [], dead: false, notes: "" };
+    });
+    function foe(n, name, init, hp, extra) {
+      var cb = { cid: cid(), src: "npc", ref: n.id, name: name, init: init, ac: n.ac,
+                 hpMax: n.hp, hp: hp, tmp: 0, conds: [], dead: hp <= 0, notes: "" };
+      Object.keys(extra || {}).forEach(function (x) { cb[x] = extra[x]; });
+      return cb;
+    }
+    combatants.push(foe(npcs[0], "Ser Ambrel Dace", 15, 41));
+    combatants.push(foe(npcs[1], "Thorn Enforcer", 13, 11, { conds: ["Prone"] }));
+    combatants.push(foe(npcs[1], "Thorn Enforcer B", 13, 26));
+    combatants.push(foe(npcs[2], "Collections Drone", 16, 0));
+    var enc = { id: "demo-e-live", name: "Collections in the Gullet", round: 2,
+                turnCid: combatants.filter(function (c) { return c.ref === "demo-sable"; })[0].cid,
+                combatants: combatants };
+
+    var encs = [{ id: "demo-e-cantor", name: "The lifts arrive early", created: now,
+      round: 1, turnCid: null, combatants: [
+        foe(npcs[2], "Collections Drone", 14, npcs[2].hp),
+        foe(npcs[2], "Collections Drone B", 11, npcs[2].hp),
+        foe(npcs[3], "Gullet Runner", 8, npcs[3].hp)] }];
+
+    var play = {
+      mode: "table", rep: 3, updated: now,
+      clocks: [
+        { id: "demo-c1", name: "The Cantor notices you", seg: 6, filled: 4, notes: "" },
+        { id: "demo-c2", name: "House Thorn calls the debt", seg: 8, filled: 5, notes: "" },
+        { id: "demo-c3", name: "The god turns its head", seg: 4, filled: 1, notes: "" }
+      ],
+      scratch: "Session 4 — Collections in the Gullet\n" +
+        "[20:10] Jax lifted the ichor vial from Dace's courier. Dace knows.\n" +
+        "[20:35] Mother Slate: the Marrowworks crew hit something that bled warm.\n" +
+        "[21:02] Fight in the Gullet. Brick owes Thorn 4,000₵ and a tooth.\n" +
+        "Next time: the lifts arrive before they are called.",
+      enc: enc
+    };
+    return { party: party, npcs: npcs, encs: encs, play: play };
+  }
+  function loadDemo() {
+    if (!inDemo()) {
+      var stash = { party: partyAll(), npcs: npcAll(), encs: encAll(), play: playState() };
+      if (!lsSet(K_DEMO, stash)) { toast("Storage is blocked, so your table can't be set aside for the demo"); return; }
+    }
+    var d = demoTable();
+    partyWrite(d.party); npcWrite(d.npcs); encWrite(d.encs);
+    commit("play", K_PLAY, d.play);
+    toast("Demo table loaded");
+    redraw();
+  }
+  function exitDemo() {
+    var st = lsGet(K_DEMO, null);
+    if (st && typeof st === "object") {
+      partyWrite(arrOf(st.party)); npcWrite(arrOf(st.npcs)); encWrite(arrOf(st.encs));
+      var back = st.play && typeof st.play === "object" ? st.play : {};
+      back.mode = "table";
+      if (commit("play", K_PLAY, back)) mem.play = null;   // re-read through playState's checks
+    }
+    try { localStorage.removeItem(K_DEMO); } catch (e) {}
+    toast("Your own table is back");
+    redraw();
+  }
+  function demoBanner(s) {
+    var b = el("div", "gm-demo");
+    var words = el("div");
+    words.appendChild(txt("b", null, "Demo table"));
+    words.appendChild(txt("span", null,
+      "Made-up characters mid-fight. Your own table is set aside and comes back when you exit; nothing you change here is kept."));
+    b.appendChild(words);
+    var r = row("gm-row tight");
+    r.appendChild(btn("Reset the demo", "", loadDemo));
+    r.appendChild(btn("Exit demo", "primary", exitDemo));
+    b.appendChild(r);
+    s.appendChild(b);
+  }
+
   function readFile(accept, fn) {
     var inp = document.createElement("input");
     inp.type = "file"; inp.accept = accept || "application/json";
@@ -987,6 +1150,9 @@ window.TTGM = (function () {
     if (!party.length) {
       empty(s, "No one at the table yet.",
         "Ask each player to open their Play Sheet, hit Copy share link, and send it to you. Paste it above.", "party");
+      var tryRow = row("gm-row");
+      tryRow.appendChild(btn("Or load a demo table", "primary", loadDemo));
+      s.appendChild(tryRow);
       renderVaultTools(s);
       return;
     }
@@ -1417,6 +1583,14 @@ window.TTGM = (function () {
       readFile("application/json", importVault);
     }));
     wrap.appendChild(r);
+    if (!inDemo()) {
+      wrap.appendChild(txt("div", "gm-label", "Try it"));
+      var dr = row("gm-row");
+      dr.appendChild(btn("Load a demo table", "", loadDemo));
+      dr.appendChild(txt("span", "gm-note",
+        "A made-up Cathedra game mid-fight, to see every screen in use. Your own table is set aside and comes back when you exit."));
+      wrap.appendChild(dr);
+    }
     var age = p.exported ? Math.floor((Date.now() - p.exported) / 86400000) : null;
     wrap.appendChild(txt("div", "gm-note", age == null
       ? "Never exported. Everything here lives in this browser only — clearing site data deletes it."
@@ -1434,6 +1608,7 @@ window.TTGM = (function () {
   function renderStage(s, sec) {
     rememberMode("table");
     s.classList.add("gm");
+    if (inDemo()) demoBanner(s);
     var fns = [renderParty, renderEncounter, renderRulings, renderNPCs, renderClocks];
     (fns[sec] || renderParty)(s);
   }
@@ -2454,6 +2629,6 @@ window.TTGM = (function () {
     synergiesFor: synergiesFor, ambushTeamBonus: ambushTeamBonus,
     repGet: repGet, repSet: repSet, repState: repState, repMod: repMod,
     repSkillBonus: repSkillBonus, reactionBand: reactionBand, npcReaction: npcReaction,
-    importVault: importVault
+    importVault: importVault, loadDemo: loadDemo, exitDemo: exitDemo, inDemo: inDemo
   };
 })();

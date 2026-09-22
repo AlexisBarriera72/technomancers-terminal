@@ -788,6 +788,21 @@ window.TTES.ui = {
   "snapshot taken {0}/{1}/{2} · re-paste their link after they level": "instantánea tomada el {0}/{1}/{2} · vuelve a pegar su enlace cuando suban de nivel",
   // Bands are looked up under this prefix first: "Name" alone is the form label.
   "Cred tier: Name": "Un nombre",
+  // the demo table
+  "Demo table": "Mesa de demostración",
+  "Made-up characters mid-fight. Your own table is set aside and comes back when you exit; nothing you change here is kept.":
+    "Personajes inventados en plena pelea. Tu propia mesa queda apartada y vuelve cuando sales; nada de lo que cambies aquí se guarda.",
+  "Reset the demo": "Reiniciar la demostración",
+  "Exit demo": "Salir de la demostración",
+  "Try it": "Pruébalo",
+  "Load a demo table": "Cargar una mesa de demostración",
+  "Or load a demo table": "O carga una mesa de demostración",
+  "A made-up Cathedra game mid-fight, to see every screen in use. Your own table is set aside and comes back when you exit.":
+    "Una partida inventada de Cathedra en plena pelea, para ver todas las pantallas en uso. Tu propia mesa queda apartada y vuelve cuando sales.",
+  "Demo table loaded": "Mesa de demostración cargada",
+  "Your own table is back": "Tu propia mesa ha vuelto",
+  "Storage is blocked, so your table can't be set aside for the demo":
+    "El almacenamiento está bloqueado, así que no se puede apartar tu mesa para la demostración",
   "Blacklisted": "En la lista negra",
   "The city has decided. Nothing legitimate is on offer at any price.": "La ciudad ya ha decidido. No hay nada legal en oferta a ningún precio.",
   "Every question is a warning to whoever they asked about.": "Cada pregunta es un aviso para aquel por quien preguntaron.",

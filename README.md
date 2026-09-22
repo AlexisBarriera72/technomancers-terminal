@@ -167,6 +167,14 @@ before handing the tablet to a player.
 > not a determined one. The real guarantee is that nothing the GM keeps ever
 > leaves the device. Change `TTBGM.unlock` to change the address.
 
+**Load a demo table** (on the Party screen, under Backup) fills every screen
+with a made-up Cathedra game in progress: five level-5 characters with three
+live synergy pairs, their NPCs, a fight in round two, three clocks, Street Cred
+and session notes. It loads into the real `ttb.gm.*` keys, so your own table is
+first copied aside to `ttb.gm.demo`; **Exit demo** puts it back exactly, and a
+banner on every GM screen says you are in the demo until then. The demo itself
+is `demoTable()` in `gm.js`.
+
 Five screens:
 
 | Screen | What it does |
