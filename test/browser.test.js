@@ -544,12 +544,12 @@ module.exports = async function (browser) {
       stored: JSON.parse(localStorage.getItem("ttb.gm.play") || "{}").rep
     }));
     R.eq("+1 twice moves 6 to 8", bumped.stored, 8);
-    R.check("and the meter says so", /8 \/ 10/.test(bumped.shown || ""), bumped.shown);
+    R.check("and the meter says so", /\+8/.test(bumped.shown || ""), bumped.shown);
 
     await goSection("Party");
     const afterReload = await page.evaluate(() =>
       (document.querySelector(".gm-rep .meter-head b") || {}).textContent);
-    R.check("Street Cred survives a reload", /8 \/ 10/.test(afterReload || ""), afterReload);
+    R.check("Street Cred survives a reload", /\+8/.test(afterReload || ""), afterReload);
 
     /* it reaches the Ruling Desk's odds, which is the point of wiring it */
     await goSection("Rulings");

@@ -517,6 +517,11 @@ details.item .body p,details.item .body ul{max-width:70ch}
   border-radius:var(--r);padding:14px;margin:15px 0}
 .gm-rep-ctl{display:flex;gap:9px;align-items:center;margin:9px 0 3px}
 .gm-rep-ctl input[type=range]{flex:1;accent-color:var(--signal)}
+/* the Cred track runs both ways, so it fills out from the middle */
+.meter-bar.bipolar{position:relative}
+.meter-fill.bipolar{position:absolute;top:0;bottom:0;height:auto}
+.meter-zero{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;
+  background:var(--ink-faint);opacity:.55}
 .gm-rep-badge{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:11px 0}
 .gm-rep-badge b{font-size:13px}
 

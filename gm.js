@@ -25,7 +25,8 @@
  * Synergies live in synergy.js (window.TTSY), not here — a player's class
  *   picker reads them now, and this file is GM-only.
  *
- * Street Cred — repBands is the expansion's own 0-10 table made real:
+ * Street Cred — repBands is the expansion's own 0-10 table made real, plus
+ *   a mirrored negative half the book never had:
  *   {min, max, tier, mod, tone, buys, digging, combat}. mod is added to
  *   Charisma checks. reactionBands turn one d20 into what an NPC does about
  *   the party: {max, name, tone, gist}, ascending, null max on the top band.
@@ -277,7 +278,32 @@ window.TTBGM = {
      so each band also carries a line for looking into things and a line for
      what happens when the shooting is about to start.                       */
   repBands: [
-    { min: 0, max: 0, tier: "Nobody", mod: 0, tone: "alert",
+    /* Below zero is not in the expansion — the book only ever went up. These
+       five mirror the five above, because a party the city has decided against
+       should cost exactly what a party it likes is paid. */
+    { min: -10, max: -9, tier: "Blacklisted", mod: -5, tone: "alert",
+      buys: "The city has decided. Nothing legitimate is on offer at any price.",
+      digging: "Every question is a warning to whoever they asked about.",
+      combat: "There is a standing rate for them, and more than one person knows it." },
+    { min: -8, max: -7, tier: "Poison", mod: -4, tone: "alert",
+      buys: "Being seen with them costs other people work, and those people know it.",
+      digging: "Doors that were open close as they reach them.",
+      combat: "A fight they start is one the neighbourhood finishes, on the other side." },
+    { min: -6, max: -5, tier: "Marked", mod: -3, tone: "alert",
+      buys: "Fixers stop returning calls. The work that reaches them is the work nobody else took.",
+      digging: "Ask twice about the same thing and it gets back to the wrong person.",
+      combat: "Somebody is already being paid to be there when it starts." },
+    { min: -4, max: -3, tier: "Bad paper", mod: -2, tone: "gold",
+      buys: "Their name on a job makes people quote higher. Some stop quoting.",
+      digging: "The easy sources dry up, and they pay for what they used to be told.",
+      combat: "Nobody steps in on their side. They have seen how that ends." },
+    { min: -2, max: -1, tier: "Burned", mod: -1, tone: "gold",
+      buys: "Somebody is telling the story of how they did not pay, and it is mostly true.",
+      digging: "People answer, then check who else was listening.",
+      combat: "A crew that would have walked past decides to watch them instead." },
+    /* Zero is the middle of the track now, not the floor, so it stops being
+       coloured like a problem. */
+    { min: 0, max: 0, tier: "Nobody", mod: 0, tone: "gold",
       buys: "You get searched at the door.",
       digging: "No one owes them the truth.",
       combat: "Nobody is afraid of them, and nobody comes running." },
@@ -513,7 +539,7 @@ window.TTGM = (function () {
       if (!p || typeof p !== "object") p = {};
       if (!Array.isArray(p.clocks)) p.clocks = [];
       if (typeof p.scratch !== "string") p.scratch = "";
-      if (typeof p.rep !== "number" || p.rep < 0 || p.rep > 10) p.rep = 0;
+      if (typeof p.rep !== "number" || p.rep < -10 || p.rep > 10) p.rep = 0;
       mem.play = p;
     }
     return mem.play;
@@ -704,12 +730,12 @@ window.TTGM = (function () {
      worse than asking.                                                      */
   function repGet() { return playState().rep || 0; }
   function repSet(n) {
-    var v = Math.max(0, Math.min(10, Math.round(+n || 0)));
+    var v = Math.max(-10, Math.min(10, Math.round(+n || 0)));
     playPatch(function (p) { p.rep = v; });
     return v;
   }
   function repState(rep) {
-    var r = Math.max(0, Math.min(10, +rep || 0));
+    var r = Math.max(-10, Math.min(10, +rep || 0));
     var band = G.repBands.filter(function (b) { return r >= b.min && r <= b.max; })[0];
     return band ? { rep: r, tier: band.tier, mod: band.mod, tone: band.tone,
                     buys: band.buys, digging: band.digging, combat: band.combat }
@@ -953,13 +979,21 @@ window.TTGM = (function () {
     // the band name is its own node: glued to the number it would be a new
     // key for every point on the track, and the book already translates it
     var b = el("b", "tone-" + r.tone);
-    b.appendChild(txt("span", null, r.rep + " / 10 · "));
+    // signed, not "6 / 10": the track runs both ways now and "−4 / 10" reads
+    // like a fraction of the wrong thing
+    b.appendChild(txt("span", null, T.sgn(r.rep) + " · "));
     b.appendChild(txt("span", null, r.tier));
     head.appendChild(b);
     box.appendChild(head);
-    var bar = el("div", "meter-bar");
-    var fill = el("div", "meter-fill bg-" + r.tone);
-    fill.style.width = (r.rep * 10) + "%";
+    /* Centre-anchored: zero in the middle, growing right when they are liked
+       and left when they are not. Its own classes, because humanityMeter()
+       uses the plain .meter-bar/.meter-fill and must not move. */
+    var bar = el("div", "meter-bar bipolar");
+    bar.appendChild(el("div", "meter-zero"));
+    var fill = el("div", "meter-fill bipolar bg-" + r.tone);
+    var half = Math.abs(r.rep) / 10 * 50;
+    fill.style.width = half + "%";
+    if (r.rep >= 0) fill.style.left = "50%"; else fill.style.right = "50%";
     bar.appendChild(fill);
     box.appendChild(bar);
     return box;
@@ -974,9 +1008,9 @@ window.TTGM = (function () {
       var ctl = el("div", "gm-rep-ctl");
       ctl.appendChild(btn("−1", "tiny", function () { repSet(repGet() - 1); paint(); refreshDossier(); }));
       var sl = document.createElement("input");
-      sl.type = "range"; sl.min = 0; sl.max = 10; sl.step = 1; sl.value = r.rep;
+      sl.type = "range"; sl.min = -10; sl.max = 10; sl.step = 1; sl.value = r.rep;
       sl.setAttribute("aria-label", "Street Cred");
-      sl.setAttribute("aria-valuetext", "Street Cred " + r.rep + " of 10, " + r.tier);
+      sl.setAttribute("aria-valuetext", "Street Cred " + T.sgn(r.rep) + ", " + r.tier);
       sl.oninput = function () { repSet(sl.value); paint(); refreshDossier(); };
       ctl.appendChild(sl);
       ctl.appendChild(btn("+1", "tiny", function () { repSet(repGet() + 1); paint(); refreshDossier(); }));
@@ -1007,7 +1041,7 @@ window.TTGM = (function () {
     var b = txt("div", "gm-rep-badge", "");
     b.appendChild(txt("span", "gm-label", "Street Cred"));
     var v = el("b", "tone-" + r.tone);
-    v.appendChild(txt("span", null, r.rep + " · "));
+    v.appendChild(txt("span", null, T.sgn(r.rep) + " · "));
     v.appendChild(txt("span", null, r.tier));
     b.appendChild(v);
     b.appendChild(txt("span", "gm-note", T.sgn(r.mod) + " to Charisma checks"));

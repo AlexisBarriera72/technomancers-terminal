@@ -554,22 +554,28 @@ module.exports = async function (browser) {
     const rep = await page.evaluate(() => {
       const G = window.TTGM;
       const mods = [], tiers = [];
-      for (let r = 0; r <= 10; r++) { mods.push(G.repState(r).mod); tiers.push(G.repState(r).tier); }
+      for (let r = -10; r <= 10; r++) { mods.push(G.repState(r).mod); tiers.push(G.repState(r).tier); }
       return {
         mods, tiers,
-        // out of range must not fall off the table
-        low: G.repState(-4).tier, high: G.repState(99).tier,
-        clampUp: G.repSet(99), clampDown: G.repSet(-5), round: G.repSet(3)
+        // out of range must not fall off either end of the table
+        low: G.repState(-99).tier, high: G.repState(99).tier,
+        clampUp: G.repSet(99), clampDown: G.repSet(-99), round: G.repSet(3)
       };
     });
-    R.eq("every point of Cred has a modifier", rep.mods, [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
-    R.eq("the bands are the expansion's", rep.tiers,
+    R.eq("every point of Cred has a modifier", rep.mods,
+      [-5, -5, -4, -4, -3, -3, -2, -2, -1, -1, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
+    R.check("infamy costs what fame pays",
+      rep.mods.every((m, i) => m === -rep.mods[rep.mods.length - 1 - i]), JSON.stringify(rep.mods));
+    R.eq("the positive bands are still the expansion's", rep.tiers.slice(10),
       ["Nobody", "Known face", "Known face", "Somebody", "Somebody",
        "Name", "Name", "Legend", "Legend", "Myth", "Myth"]);
-    R.eq("below the table is still the bottom band", rep.low, "Nobody");
-    R.eq("above the table is still the top band", rep.high, "Myth");
+    R.eq("and the negative half mirrors them", rep.tiers.slice(0, 10),
+      ["Blacklisted", "Blacklisted", "Poison", "Poison", "Marked", "Marked",
+       "Bad paper", "Bad paper", "Burned", "Burned"]);
+    R.eq("below the track is still the bottom band", rep.low, "Blacklisted");
+    R.eq("above the track is still the top band", rep.high, "Myth");
     R.eq("setting above 10 clamps", rep.clampUp, 10);
-    R.eq("setting below 0 clamps", rep.clampDown, 0);
+    R.eq("setting below -10 clamps there now, not at zero", rep.clampDown, -10);
     R.eq("setting in range is kept", rep.round, 3);
   }
 
@@ -584,13 +590,15 @@ module.exports = async function (browser) {
       const at = rep => { G.repSet(rep); return {
         cha: G.repSkillBonus("Persuasion", d), str: G.repSkillBonus("Athletics", d) }; };
       const base = { cha: T.skillBonus("Persuasion", d), str: T.skillBonus("Athletics", d) };
-      const zero = at(0), five = at(5);
+      const zero = at(0), five = at(5), bad = at(-6);
       G.repSet(0);
-      return { base, zero, five };
+      return { base, zero, five, bad };
     });
     R.eq("at no reputation a Charisma check is unchanged", cha.zero.cha, cha.base.cha);
     R.eq("at Cred 5 a Charisma check gains the band's +3", cha.five.cha, cha.base.cha + 3);
+    R.eq("at Cred -6 the same check loses that band's 3", cha.bad.cha, cha.base.cha - 3);
     R.eq("a Strength check never moves", cha.five.str, cha.base.str);
+    R.eq("not even when they are hated", cha.bad.str, cha.base.str);
     R.eq("and it did not move at zero either", cha.zero.str, cha.base.str);
   }
 
