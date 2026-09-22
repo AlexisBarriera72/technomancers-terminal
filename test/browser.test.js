@@ -630,7 +630,7 @@ module.exports = async function (browser) {
       localStorage.setItem("ttb.gm.party", JSON.stringify([
         mk("Vex", "Ranger", 5), mk("Nyx", "Rogue", 5)]));
       localStorage.setItem("ttb.gm.play",
-        JSON.stringify({ clocks: [], scratch: "", rep: 6, mode: "table" }));
+        JSON.stringify({ clocks: [], scratch: "", rep: -6, mode: "table" }));
       localStorage.setItem("ttb.lang", "es");
     });
     await page.reload();
@@ -655,9 +655,11 @@ module.exports = async function (browser) {
         pairName: (syn.querySelector(".gm-syn-card b") || {}).textContent
       };
     });
-    R.check("the Cred band is translated", /Nombre/.test(es.band), es.band);
+    R.check("a negative Cred band is translated too", /Señalados/.test(es.band), es.band);
     R.check("so are the three lines under it",
       es.notes.every(n => /Carisma|indagar|feo/.test(n)), JSON.stringify(es.notes));
+    R.check("including the penalty, which needs its own sign in the key",
+      /-3 a las pruebas de Carisma/.test(es.notes[0] || ""), es.notes[0]);
     R.check("and the synergy heading", /juntos/i.test(es.synHead), es.synHead);
     R.check("and the pair's line", /exploradores/.test(es.line), es.line);
     R.check("and the role chips", es.roles.indexOf("Músculo") >= 0, JSON.stringify(es.roles));
@@ -671,6 +673,28 @@ module.exports = async function (browser) {
         .find(b => /Tira la reacci|Roll the reaction/.test(b.textContent)).click();
       return document.querySelector(".gm-react .gm-say").textContent;
     });
+    const pv = await page.evaluate(() => {
+      const T = window.TT;
+      T.setMode("forge"); T.render();
+      const r = [...document.querySelectorAll(".rail .step")].find(x => /Clase|Class/i.test(x.textContent));
+      if (r) r.click();
+      const w = [...document.querySelectorAll(".pick-wrap")]
+        .find(x => (x.querySelector(".pick h3") || {}).textContent.trim().indexOf("Fighter") === 0);
+      w.querySelector(".sec-toggle").click();
+      w.querySelectorAll(".syn-pv-row .sec-toggle")[0].click();
+      return { head: w.querySelector(".sec-toggle").textContent,
+               role: (w.querySelector(".syn-pv-body .chip") || {}).textContent,
+               partner: (w.querySelector(".syn-pv-row .count") || {}).textContent,
+               pairName: (w.querySelector(".syn-pv-row b") || {}).textContent,
+               line: (w.querySelector(".syn-pv-line") || {}).textContent };
+    });
+    R.check("the preview's heading is translated", /Sinergias/.test(pv.head), pv.head);
+    R.check("and the role chip", /Músculo/.test(pv.role || ""), pv.role);
+    R.check("and the partner line, with the class name passed through",
+      /^con Paladin/.test((pv.partner || "").trim()), pv.partner);
+    R.check("and the pair's own line", /primera línea/.test(pv.line || ""), (pv.line || "").slice(0, 50));
+    R.eq("but the pair's name stays English here too", pv.pairName, "Shield Wall");
+
     R.check("a reaction rolled after render is still Spanish",
       /Actúan|regañadientes|Negocio|inclina|Interviene/.test(rolled), rolled.slice(0, 70));
 

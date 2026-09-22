@@ -786,6 +786,29 @@ window.TTES.ui = {
   "Roll it secretly for everyone": "Tírala en secreto por todos",
   "On a failure": "Si falla",
   "snapshot taken {0}/{1}/{2} · re-paste their link after they level": "instantánea tomada el {0}/{1}/{2} · vuelve a pegar su enlace cuando suban de nivel",
+  "Blacklisted": "En la lista negra",
+  "The city has decided. Nothing legitimate is on offer at any price.": "La ciudad ya ha decidido. No hay nada legal en oferta a ningún precio.",
+  "Every question is a warning to whoever they asked about.": "Cada pregunta es un aviso para aquel por quien preguntaron.",
+  "There is a standing rate for them, and more than one person knows it.": "Hay una tarifa fija por sus cabezas, y más de uno se la sabe.",
+  "Poison": "Veneno",
+  "Being seen with them costs other people work, and those people know it.": "Que te vean con ellos le cuesta trabajo a los demás, y los demás lo saben.",
+  "Doors that were open close as they reach them.": "Las puertas que estaban abiertas se cierran justo cuando llegan.",
+  "A fight they start is one the neighbourhood finishes, on the other side.": "Una pelea que empiezan la termina el barrio, y del otro lado.",
+  "Marked": "Señalados",
+  "Fixers stop returning calls. The work that reaches them is the work nobody else took.": "Los fixers dejan de devolver las llamadas. El trabajo que les llega es el que nadie más quiso.",
+  "Ask twice about the same thing and it gets back to the wrong person.": "Pregunta dos veces por lo mismo y llega a oídos de quien no debe.",
+  "Somebody is already being paid to be there when it starts.": "A alguien ya le están pagando por estar allí cuando empiece.",
+  "Bad paper": "Papel mojado",
+  "Their name on a job makes people quote higher. Some stop quoting.": "Su nombre en un trabajo hace que la gente cobre más. Algunos dejan de dar presupuesto.",
+  "The easy sources dry up, and they pay for what they used to be told.": "Las fuentes fáciles se secan, y pagan por lo que antes les contaban.",
+  "Nobody steps in on their side. They have seen how that ends.": "Nadie interviene de su lado. Ya han visto cómo acaba eso.",
+  "Burned": "Quemados",
+  "Somebody is telling the story of how they did not pay, and it is mostly true.": "Alguien anda contando cómo no pagaron, y es cierto casi todo.",
+  "People answer, then check who else was listening.": "La gente responde y luego mira quién más estaba escuchando.",
+  "A crew that would have walked past decides to watch them instead.": "Una cuadrilla que habría pasado de largo decide quedarse a mirarlos.",
+  "Synergies": "Sinergias",
+  "Pairs with": "Hace pareja con",
+  "-{0} to Charisma checks": "-{0} a las pruebas de Carisma",
   "−{0} HUM": "−{0} HUM"
 };
 
@@ -808,6 +831,7 @@ window.TTES.patterns = [
   ["{*} · lv {*}", "{*} · niv {*}"],
   ["{*} · CR {*}", "{*} · VD {*}"],
   ["{*} vs {*}", "{*} contra {*}"],
+  ["with {*}", "con {*}"],
   ["Level {*}", "Nivel {*}"],
   ["{*}  (their passive {*} {*})", "{*}  ({*} pasiva {*})"]
 ];
