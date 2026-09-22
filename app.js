@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-22 15:30";
+  var BUILD = "2026-09-23 10:15";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -4258,6 +4258,11 @@
     host.parentNode.insertBefore(box, host);
   }
 
+  /* The dossier is already long on a phone, so the roster shows the twelve
+     most recent by default. It used to stop there: the header counted every
+     save, the list showed twelve, and anything older had no Open or Delete
+     button anywhere in the interface. */
+  var ROSTER_SHORT = 12, rosterAllShown = false;
   function refreshRoster() {
     var host = $("#roster");
     if (!host) return;
@@ -4278,12 +4283,13 @@
     if (!list.length)
       host.appendChild(el("p", "empty-state", "Nothing saved yet. Hit Save to roster above."));
     var w = el("div", "roster");
-    list.sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); })
-      .slice(0, 12).forEach(function (r) {
+    var sorted = list.slice().sort(function (a, b) { return (b.updated || 0) - (a.updated || 0); });
+    var shown = rosterAllShown ? sorted : sorted.slice(0, ROSTER_SHORT);
+    shown.forEach(function (r) {
         var item = el("div", "roster-item" + (r.id === C.id ? " current" : ""));
         item.innerHTML = '<span class="nm">' + esc(r.name) + '</span>' +
-          '<span class="meta">' + esc(r.cls) + " " + r.level + "</span>";
-        var open = el("button", "chip", r.id === C.id ? "Open" : "Open");
+          '<span class="meta">' + esc(r.cls) + " " + esc(r.level) + "</span>";
+        var open = el("button", "chip", "Open");
         open.onclick = function () {
           try {
             clearShareHash();
@@ -4300,6 +4306,13 @@
         w.appendChild(item);
       });
     host.appendChild(w);
+    if (sorted.length > ROSTER_SHORT) {
+      var more = el("button", "chip", rosterAllShown ? "Show the latest " + ROSTER_SHORT
+                                                     : "Show all " + sorted.length);
+      more.style.marginTop = "6px";
+      more.onclick = function () { rosterAllShown = !rosterAllShown; refreshRoster(); };
+      host.appendChild(more);
+    }
 
     var row = el("div", "toolbar");
     row.style.marginTop = "8px";
@@ -4336,6 +4349,10 @@
     };
     row.appendChild(exp); row.appendChild(imp);
     host.appendChild(row);
+    // Also called on its own after a delete or an import, when render() — and
+    // so applyLang() — is not running. Without this the roster redrew itself
+    // in English on a Spanish page.
+    applyLang(host);
   }
 
   function localList() {
