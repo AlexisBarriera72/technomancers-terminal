@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-23 12:30";
+  var BUILD = "2026-09-23 13:10";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -155,7 +155,6 @@
   var step = 0;
   var codexSec = 0;
   var codexQ = "";
-  var db = null, downloads = null;
   var STEPS = ["Class", "Archetype", "Background", "Abilities", "Proficiencies",
                "Level-Ups", "Chrome & Gear", "Play Sheet"];
   var CAMPSEC = ["Overview", "House Rules", "People", "Places", "Custom Gear", "Session Log", "Hooks"];
@@ -1446,7 +1445,6 @@
 
   /* ============================================== standalone web features === */
   var CAMP = (window.TTBC && window.TTBC.campaigns) ? window.TTBC.campaigns.slice() : [];
-  var STANDALONE = !(window.claude && window.claude.use);
 
   function downloadFile(name, text, mime) {
     try {
@@ -1460,11 +1458,6 @@
     } catch (e) { return false; }
   }
   function saveAs(name, text, mime) {
-    if (downloads) {
-      downloads.save({ filename: name, data: text })
-        .then(function () { toast("Saved"); }, function () { toast("Download declined"); });
-      return;
-    }
     toast(downloadFile(name, text, mime) ? "Downloaded " + name : "Download blocked by the browser");
   }
 
@@ -4230,9 +4223,6 @@
       save();
     }
     var ok = rosterPut(C);
-    if (db) { try { db.doc("characters/" + C.id).set({ id: C.id, name: C.name, cls: C.cls || "—",
-      level: C.level, updated: Date.now(), payload: JSON.stringify(C) }).then(function () {}, function () {}); }
-      catch (e) { db = null; } }
     refreshRoster();
     if (ok) toast("Saved to this browser");
     else storageFailed("Not saved — this browser refused to store it.");
@@ -4615,12 +4605,6 @@
       toast("Shared character loaded");
     });
 
-    if (window.claude && window.claude.use) {
-      window.claude.use("db").then(function (x) { db = x; if (db) refreshRoster(); },
-        function () {});
-      window.claude.use("downloads").then(function (x) { downloads = x; if (x) render(); },
-        function () {});
-    }
   }
   /* Offline shell. Lives here rather than inline in index.html so the page can
      ship a Content-Security-Policy with script-src 'self' and no unsafe-inline.

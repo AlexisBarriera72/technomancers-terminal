@@ -814,7 +814,6 @@ window.TTES.ui = {
   "Show all {0}": "Mostrar los {0}",
   "Show the latest {0}": "Mostrar solo los {0} últimos",
   "Saved": "Guardado",
-  "Download declined": "Descarga rechazada",
   "Pick limit reached": "Has llegado al límite de elecciones",
   "Limit reached": "Límite alcanzado",
   "Copied to clipboard": "Copiado al portapapeles",
