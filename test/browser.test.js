@@ -779,7 +779,65 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
-  /* the retired per-character slider must not come back */
+  /* ===== the roster used to strand everything past the twelfth save ===== */
+  {
+    const { page, ctx } = await appPage(browser);
+    await page.evaluate(() => {
+      const T = window.TT, list = [];
+      for (let i = 1; i <= 15; i++) {
+        const c = T.blank(); c.id = "r" + i; c.name = "Char" + i; c.cls = "Fighter"; c.level = 1;
+        list.push({ id: c.id, name: c.name, cls: c.cls, level: 1, updated: 1000 + i,
+                    payload: JSON.stringify(c) });
+      }
+      localStorage.setItem("ttb.roster", JSON.stringify(list));
+    });
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+    await page.waitForTimeout(300);
+    const names = () => page.evaluate(() =>
+      [...document.querySelectorAll("#roster .roster-item .nm")].map(x => x.textContent));
+    const before = await names();
+    R.eq("the short list is the twelve most recent", before.length, 12);
+    R.check("the oldest are not in it yet", before.indexOf("Char1") < 0, JSON.stringify(before));
+    const label = await page.evaluate(() => {
+      const b = [...document.querySelectorAll("#roster button")].find(x => /Show all/.test(x.textContent));
+      if (b) b.click();
+      return b ? b.textContent : null;
+    });
+    R.eq("a control offers the rest, with the real count", label, "Show all 15");
+    await page.waitForTimeout(150);
+    const after = await names();
+    R.eq("and shows every save", after.length, 15);
+    R.check("including the three that used to be unreachable",
+      ["Char1", "Char2", "Char3"].every(n => after.indexOf(n) >= 0), JSON.stringify(after));
+    await ctx.close();
+  }
+
+  /* ===== every toast has Spanish =====
+     Toasts only appear after an action, so a sweep of the screens never sees
+     them — which is how 29 of them went out English. This reads the source. */
+  {
+    const fs = require("fs"), path = require("path");
+    const root = path.join(__dirname, "..");
+    const win = {};
+    new Function("window", fs.readFileSync(path.join(root, "es-ui.js"), "utf8"))(win);
+    const ui = win.TTES.ui;
+    const numKey = s => { let i = 0; return s.replace(/\d+/g, () => "{" + (i++) + "}"); };
+    const missing = [];
+    for (const f of ["app.js", "gm.js"]) {
+      const src = fs.readFileSync(path.join(root, f), "utf8");
+      const re = /toast\(\s*("(?:[^"\\]|\\.)*")\s*\)/g;
+      let m;
+      while ((m = re.exec(src))) {
+        const lit = JSON.parse(m[1]);
+        if (/[áéíóúñ]/.test(lit)) continue;            // already written in Spanish
+        if (!ui[lit] && !ui[numKey(lit)]) missing.push(f + ": " + lit);
+      }
+    }
+    R.eq("every plain toast message has a Spanish entry", missing, []);
+  }
+
+    /* the retired per-character slider must not come back */
   {
     const { page, ctx } = await appPage(browser);
     const gone = await page.evaluate(() => ({
