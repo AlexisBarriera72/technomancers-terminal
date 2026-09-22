@@ -1009,7 +1009,7 @@ window.TTGM = (function () {
     // signed, not "6 / 10": the track runs both ways now and "−4 / 10" reads
     // like a fraction of the wrong thing
     b.appendChild(txt("span", null, T.sgn(r.rep) + " · "));
-    b.appendChild(txt("span", null, r.tier));
+    b.appendChild(txt("span", null, tierText(r.tier)));
     head.appendChild(b);
     box.appendChild(head);
     /* Centre-anchored: zero in the middle, growing right when they are liked
@@ -1025,24 +1025,45 @@ window.TTGM = (function () {
     box.appendChild(bar);
     return box;
   }
+  /* "Name" is also the label on every name field, and the overlay has one key
+     per string, so in Spanish the band read "Nombre". Bands look themselves up
+     under their own prefix first. */
+  function tierText(tier) {
+    var k = "Cred tier: " + tier, v = T.T ? T.T(k) : k;
+    return v === k ? tier : v;
+  }
   function repStrip() {
     var wrap = el("div", "gm-rep");
+    var meterHost = el("div"), notes = el("div");
+
+    /* The slider is built once and only its value changes. Rebuilding it on
+       every input replaced the element mid-gesture: a drag stopped after the
+       first step and arrow keys lost focus after one press. */
+    var ctl = el("div", "gm-rep-ctl");
+    var sl = document.createElement("input");
+    sl.type = "range"; sl.min = -10; sl.max = 10; sl.step = 1;
+    sl.setAttribute("aria-label", "Street Cred");
+    function move(v) { repSet(v); paint(); refreshDossier(); }
+    sl.oninput = function () { move(sl.value); };
+    ctl.appendChild(btn("−1", "tiny", function () { move(repGet() - 1); }));
+    ctl.appendChild(sl);
+    ctl.appendChild(btn("+1", "tiny", function () { move(repGet() + 1); }));
+    wrap.appendChild(meterHost);
+    wrap.appendChild(ctl);
+    wrap.appendChild(notes);
+    wrap.appendChild(txt("div", "gm-note",
+      "Yours to move. A point for a job the street saw, one back for folding in public."));
+
     function paint() {
-      wrap.innerHTML = "";
       var r = repState(repGet());
-      wrap.appendChild(repMeter(r.rep));
+      meterHost.innerHTML = "";
+      meterHost.appendChild(repMeter(r.rep));
+      if (+sl.value !== r.rep) sl.value = r.rep;
+      // attributes outside the overlay's list, so translated here
+      sl.setAttribute("aria-valuetext",
+        T.T("Street Cred") + " " + T.sgn(r.rep) + ", " + T.T(tierText(r.tier)));
 
-      var ctl = el("div", "gm-rep-ctl");
-      ctl.appendChild(btn("−1", "tiny", function () { repSet(repGet() - 1); paint(); refreshDossier(); }));
-      var sl = document.createElement("input");
-      sl.type = "range"; sl.min = -10; sl.max = 10; sl.step = 1; sl.value = r.rep;
-      sl.setAttribute("aria-label", "Street Cred");
-      sl.setAttribute("aria-valuetext", "Street Cred " + T.sgn(r.rep) + ", " + r.tier);
-      sl.oninput = function () { repSet(sl.value); paint(); refreshDossier(); };
-      ctl.appendChild(sl);
-      ctl.appendChild(btn("+1", "tiny", function () { repSet(repGet() + 1); paint(); refreshDossier(); }));
-      wrap.appendChild(ctl);
-
+      notes.innerHTML = "";
       // Each half is its own text node rather than one built string, so the
       // Spanish table can translate the label and the band line separately —
       // a concatenation would need one key per band per line.
@@ -1050,14 +1071,12 @@ window.TTGM = (function () {
         var d = el("div", "meter-note");
         d.appendChild(txt("span", "gm-label", label));
         d.appendChild(txt("span", null, " " + body));
-        wrap.appendChild(d);
+        notes.appendChild(d);
       }
       note(T.sgn(r.mod) + " to Charisma checks", r.buys);
       note("Looking into things", r.digging);
       note("When it turns ugly", r.combat);
-      wrap.appendChild(txt("div", "gm-note",
-        "Yours to move. A point for a job the street saw, one back for folding in public."));
-      if (T.applyLang) T.applyLang(wrap);
+      if (T.applyLang) { T.applyLang(meterHost); T.applyLang(notes); }
     }
     paint();
     return wrap;
@@ -1069,7 +1088,7 @@ window.TTGM = (function () {
     b.appendChild(txt("span", "gm-label", "Street Cred"));
     var v = el("b", "tone-" + r.tone);
     v.appendChild(txt("span", null, T.sgn(r.rep) + " · "));
-    v.appendChild(txt("span", null, r.tier));
+    v.appendChild(txt("span", null, tierText(r.tier)));
     b.appendChild(v);
     b.appendChild(txt("span", "gm-note", T.sgn(r.mod) + " to Charisma checks"));
     return b;

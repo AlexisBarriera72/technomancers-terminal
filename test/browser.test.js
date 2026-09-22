@@ -568,6 +568,20 @@ module.exports = async function (browser) {
       (document.querySelector(".gm-rep .meter-head b") || {}).textContent);
     R.check("Street Cred survives a reload", /\+8/.test(afterReload || ""), afterReload);
 
+    /* the slider has to survive its own input: it used to be rebuilt on every
+       step, so arrows lost focus after one press and a drag went nowhere */
+    await page.focus(".gm-rep input[type=range]");
+    for (let i = 0; i < 3; i++) await page.keyboard.press("ArrowLeft");
+    const keyed = await page.evaluate(() => ({
+      rep: window.TTGM.repGet(),
+      focus: document.activeElement === document.querySelector(".gm-rep input[type=range]"),
+      said: document.querySelector(".gm-rep input[type=range]").getAttribute("aria-valuetext")
+    }));
+    R.eq("three arrow presses move Cred three points", keyed.rep, 5);
+    R.check("and the slider keeps focus", keyed.focus, "");
+    R.eq("and announces the band", keyed.said, "Street Cred +5, Name");
+    await page.evaluate(() => { window.TTGM.repSet(8); });
+
     /* it reaches the Ruling Desk's odds, which is the point of wiring it */
     await goSection("Rulings");
     const desk = await page.evaluate(() => {
@@ -664,6 +678,20 @@ module.exports = async function (browser) {
     R.check("and the pair's line", /exploradores/.test(es.line), es.line);
     R.check("and the role chips", es.roles.indexOf("Músculo") >= 0, JSON.stringify(es.roles));
     R.eq("but the pair's name stays English, like a class name", es.pairName, "Ambush Team");
+
+    // "Name" is a band and a form label; it used to come out as the label
+    const bands = await page.evaluate(() => {
+      const T = window.TT, out = [];
+      for (const r of [5, 8]) {
+        window.TTGM.repSet(r); T.gmSec(0); T.render();
+        out.push((document.querySelector(".gm-rep .meter-head b") || {}).textContent);
+      }
+      window.TTGM.repSet(-6);
+      return out;
+    });
+    R.check("the Name band is a reputation, not a form label",
+      /Un nombre/.test(bands[0]) && !/Nombre$/.test(bands[0]), bands[0]);
+    R.check("and the positive bands are translated too", /Leyenda/.test(bands[1]), bands[1]);
 
     // built by a click, long after applyLang() has run
     const rolled = await page.evaluate(() => {
@@ -835,6 +863,52 @@ module.exports = async function (browser) {
       }
     }
     R.eq("every plain toast message has a Spanish entry", missing, []);
+  }
+
+  /* ===== the level slider survives its own input =====
+     It re-rendered the whole page on every step, replacing itself: arrows
+     moved one level and dropped focus, and a drag stopped after one level. */
+  {
+    const { page, ctx, errors } = await appPage(browser);
+    const hp = () => page.evaluate(() =>
+      [...document.querySelectorAll(".vital")].map(v => v.textContent).join("|"));
+    const before = { lvl: await page.evaluate(() => +document.querySelector("#levelRange").value), hp: await hp() };
+    await page.focus("#levelRange");
+    for (let i = 0; i < 3; i++) await page.keyboard.press("ArrowRight");
+    const after = await page.evaluate(() => ({
+      lvl: +document.querySelector("#levelRange").value,
+      badge: document.querySelector(".lvl-badge").textContent,
+      focus: document.activeElement && document.activeElement.id
+    }));
+    R.eq("three arrow presses move three levels", after.lvl, before.lvl + 3);
+    R.eq("the badge follows", after.badge, String(before.lvl + 3));
+    R.eq("and the slider keeps focus", after.focus, "levelRange");
+    R.check("the sheet is redrawn for the new level", (await hp()) !== before.hp, before.hp);
+
+    const box = await page.locator("#levelRange").boundingBox();
+    const y = box.y + box.height / 2, x0 = box.x + (after.lvl - 1) / 19 * box.width;
+    await page.mouse.move(x0, y); await page.mouse.down();
+    for (let i = 1; i <= 15; i++) await page.mouse.move(x0 + i * box.width / 15, y);
+    await page.mouse.up();
+    R.eq("a drag runs the whole track", await page.evaluate(() => +document.querySelector("#levelRange").value), 20);
+    R.eq("no page errors moving the level", errors, []);
+    await ctx.close();
+  }
+
+  /* ===== a filter keystroke keeps the page in Spanish =====
+     Filters redraw only the stage, and applyLang ran only in render(). */
+  {
+    const { page, ctx } = await appPage(browser);
+    await page.evaluate(() => localStorage.setItem("ttb.lang", "es"));
+    await page.reload();
+    await page.waitForFunction(() => window.TT && window.TTES && window.TTES.book, null, { timeout: 15000 });
+    await page.waitForTimeout(300);
+    await page.evaluate(() => { window.TT.setMode("codex"); window.TT.render(); });
+    await page.fill("#codexSearch", "a");
+    await page.waitForTimeout(200);
+    const head = await page.evaluate(() => document.querySelector("#stage").innerText.slice(0, 40));
+    R.check("typing in the Codex filter keeps the page in Spanish", /CÓDICE|Códice/.test(head), head);
+    await ctx.close();
   }
 
   /* ===== counted toasts read as sentences in both languages =====

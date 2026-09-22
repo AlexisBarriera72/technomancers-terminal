@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-23 11:40";
+  var BUILD = "2026-09-23 12:30";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -2344,11 +2344,7 @@
           fin.setAttribute("aria-label", "Filter feats");
           fin.placeholder = "Filter " + ALL_FEATS.length + " feats…";
           fin.value = featQ[i] || "";
-          fin.oninput = function () {
-            featQ[i] = fin.value; renderStage();
-            var n = $("#featFilter" + i);
-            if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
-          };
+          fin.oninput = function () { featQ[i] = fin.value; restage("featFilter" + i); };
           wrap.appendChild(fin);
 
           var shown = ALL_FEATS.filter(function (f) {
@@ -2569,12 +2565,7 @@
     fi.setAttribute("aria-label", "Filter chrome and gear");
     fi.placeholder = "Filter implants, augments and gear…";
     fi.value = gearQ;
-    fi.oninput = function () {
-      gearQ = fi.value;
-      renderStage();
-      var n = $("#gearFilter");
-      if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
-    };
+    fi.oninput = function () { gearQ = fi.value; restage("gearFilter"); };
     fb.appendChild(fi);
     var expandAll = el("button", "chip", "Expand all");
     expandAll.onclick = function () {
@@ -3637,11 +3628,7 @@
     inp.placeholder = "Filter " + sec.toLowerCase() + "…";
     inp.setAttribute("aria-label", "Filter " + sec);
     inp.value = codexQ;
-    inp.oninput = function () {
-      codexQ = inp.value; renderStage();
-      var n = $("#codexSearch");
-      if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
-    };
+    inp.oninput = function () { codexQ = inp.value; restage("codexSearch"); };
     s.appendChild(inp);
     before = s.childElementCount;
 
@@ -4074,6 +4061,7 @@
       default: return false;
     }
   }
+  var levelFrom = null;   // the level a slider gesture started at, for the toast
   function renderDossier() {
     var d = $("#dossier");
     d.innerHTML = "";
@@ -4096,10 +4084,26 @@
     var range = el("input");
     range.type = "range"; range.min = 1; range.max = 20; range.value = C.level; range.id = "levelRange";
     range.setAttribute("aria-label", "Character level");
-    range.setAttribute("aria-valuetext", "Level " + C.level);
+    range.setAttribute("aria-valuetext", T("Level " + C.level));
+    var badge = el("span", "lvl-badge", C.level);
+    /* While it moves, update in place: rebuilding the slider under the pointer
+       ended a drag after one level, and the arrow keys lost focus after one
+       press. The full redraw waits for "change", which fires on release and on
+       every key press. */
     range.oninput = function () {
-      var was = C.level, now = +range.value;
+      if (levelFrom == null) levelFrom = C.level;
+      C.level = +range.value; delete C.isExample; save();
+      badge.textContent = C.level;
+      range.setAttribute("aria-valuetext", T("Level " + C.level));
+      renderRail(); applyLang($("#rail"));
+      renderStage(); applyLang($("#stage"));
+    };
+    range.onchange = function () {
+      var was = levelFrom == null ? C.level : levelFrom, now = +range.value;
+      levelFrom = null;
       C.level = now; delete C.isExample; save(); render();
+      var again = $("#levelRange");
+      if (again) again.focus();
       if (now > was) {
         var gained = ladder().filter(function (r) { return r.level > was && r.level <= now; })
           .reduce(function (a, r) { return a.concat(r.gains); }, []);
@@ -4110,7 +4114,7 @@
       }
     };
     lv.appendChild(range);
-    lv.appendChild(el("span", "lvl-badge", C.level));
+    lv.appendChild(badge);
     body.appendChild(lv);
 
     var vit = el("div", "vitals");
@@ -4360,6 +4364,16 @@
   }
 
   /* ------------------------------------------------------------------ boot */
+  /* Redraw just the stage from a filter box, and put the caret back. It has to
+     do what render() does last, too: without applyLang one keystroke in Spanish
+     turned the whole page back to English. */
+  function restage(focusId) {
+    renderStage();
+    applyLang($("#stage"));
+    var n = focusId && $("#" + focusId);
+    if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); }
+  }
+
   function renderStage() {
     var s = $("#stage");
     s.innerHTML = "";

@@ -547,7 +547,7 @@ window.TTES.ui = {
   "The number you actually add to dice rolls, worked out from an ability score. Score {0}–{1} gives +{2}, and every {3} points above or below shifts it by {4}. Score {5} gives +{6}.": "El número que sumas de verdad a las tiradas, calculado a partir de una puntuación de característica. Una puntuación de {0}–{1} da +{2}, y cada {3} puntos por encima o por debajo lo mueven {4}. Una puntuación de {5} da +{6}.",
   "The personality tables at the bottom are optional. Roll them if you want ideas for who this person actually is.": "Las tablas de personalidad del final son opcionales. Tíralas si quieres ideas sobre quién es esta persona en realidad.",
   "The picks bind. Another attempt takes ten minutes, or the tools break.": "Las ganzúas se atascan. Otro intento cuesta diez minutos, o se rompen las herramientas.",
-  "The record is gone and the deletion is logged. Someone will read that log.": "El registro ya no está y el borrado queda anotado. Alguien leerá ese anotado.",
+  "The record is gone and the deletion is logged. Someone will read that log.": "El registro ya no está y el borrado queda anotado. Alguien leerá esa anotación.",
   "The roll at the start of a fight that decides turn order. It's a d{0} plus your Dexterity modifier.": "La tirada del principio de un combate que decide el orden de turnos. Es un d{0} más tu modificador de Destreza.",
   "The ruling desk works without them, but the useful half is seeing each character's real modifier next to the DC.": "La mesa de arbitraje funciona sin ellos, pero la mitad útil es ver el modificador real de cada personaje junto a la CD.",
   "The splice holds for one scene, then security notices the duplicate stream.": "El pinchazo aguanta una escena; después seguridad detecta el flujo duplicado.",
@@ -786,6 +786,8 @@ window.TTES.ui = {
   "Roll it secretly for everyone": "Tírala en secreto por todos",
   "On a failure": "Si falla",
   "snapshot taken {0}/{1}/{2} · re-paste their link after they level": "instantánea tomada el {0}/{1}/{2} · vuelve a pegar su enlace cuando suban de nivel",
+  // Bands are looked up under this prefix first: "Name" alone is the form label.
+  "Cred tier: Name": "Un nombre",
   "Blacklisted": "En la lista negra",
   "The city has decided. Nothing legitimate is on offer at any price.": "La ciudad ya ha decidido. No hay nada legal en oferta a ningún precio.",
   "Every question is a warning to whoever they asked about.": "Cada pregunta es un aviso para aquel por quien preguntaron.",
