@@ -661,6 +661,83 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
+  /* ===== the synergy preview on the class cards ===== */
+  {
+    const { page, ctx, errors } = await appPage(browser);
+    await page.evaluate(() => {
+      window.__wrap = name => [...document.querySelectorAll(".pick-wrap")]
+        .find(w => (w.querySelector(".pick h3") || {}).textContent.trim().indexOf(name) === 0);
+      window.TT.setMode("forge"); window.TT.render();
+      const r = [...document.querySelectorAll(".rail .step")].find(x => /Class/i.test(x.textContent));
+      if (r) r.click();
+    });
+    await page.waitForTimeout(300);
+
+    const shut = await page.evaluate(() => {
+      const w = window.__wrap("Fighter");
+      return { count: w.querySelector(".sec-toggle .count").textContent.trim(),
+               hidden: w.querySelector(".syn-pv-body").hidden,
+               // the preview must be a sibling of the card, never inside it:
+               // a button cannot contain a button
+               nested: !!w.querySelector("button.pick .sec-toggle") };
+    });
+    R.eq("Fighter's card counts its pairs before you open it", shut.count, "2");
+    R.check("and starts closed", shut.hidden === true, "");
+    R.check("the disclosure is beside the card, not inside the button", !shut.nested, "");
+
+    await page.evaluate(() => window.__wrap("Fighter").querySelector(".sec-toggle").click());
+    await page.waitForTimeout(150);
+    const open = await page.evaluate(() => {
+      const w = window.__wrap("Fighter");
+      return { roles: [...w.querySelectorAll(".syn-pv-body .chip")].map(c => c.textContent),
+               rows: [...w.querySelectorAll(".syn-pv-row .sec-toggle")].map(t => t.textContent.trim()),
+               detailsShut: [...w.querySelectorAll(".syn-pv-det")].every(d => d.hidden) };
+    });
+    R.eq("it names the role the class covers", open.roles, ["Muscle"]);
+    R.check("and both pairs, each with its partner class",
+      open.rows.length === 2 && /Shield Wall/.test(open.rows[0]) && /Paladin/.test(open.rows[0]) &&
+      /Warband/.test(open.rows[1]) && /Barbarian/.test(open.rows[1]), JSON.stringify(open.rows));
+    R.check("the second level is still closed", open.detailsShut, "");
+
+    await page.evaluate(() =>
+      window.__wrap("Fighter").querySelectorAll(".syn-pv-row .sec-toggle")[0].click());
+    await page.waitForTimeout(150);
+    const deep = await page.evaluate(() => {
+      const d = window.__wrap("Fighter").querySelector(".syn-pv-det");
+      return { open: !d.hidden, line: d.querySelector(".syn-pv-line").textContent };
+    });
+    R.check("clicking a pair opens its detail", deep.open, "");
+    R.check("which is that pair's own line", /front-liners holding the same door/.test(deep.line),
+      deep.line.slice(0, 50));
+
+    /* render() rebuilds the whole stage, so picking the class you were reading
+       about would otherwise shut the thing you opened to decide with */
+    await page.evaluate(() => window.__wrap("Fighter").querySelector("button.pick").click());
+    await page.waitForTimeout(400);
+    const after = await page.evaluate(() => {
+      window.__wrap = name => [...document.querySelectorAll(".pick-wrap")]
+        .find(w => (w.querySelector(".pick h3") || {}).textContent.trim().indexOf(name) === 0);
+      const w = window.__wrap("Fighter");
+      return { pressed: w.querySelector("button.pick").getAttribute("aria-pressed"),
+               body: !w.querySelector(".syn-pv-body").hidden,
+               det: !w.querySelector(".syn-pv-det").hidden };
+    });
+    R.eq("choosing that class selects it", after.pressed, "true");
+    R.check("and the preview is still open after the re-render", after.body && after.det,
+      JSON.stringify(after));
+
+    /* a class in no pair must not render an empty disclosure */
+    const none = await page.evaluate(() => {
+      const empties = [...document.querySelectorAll(".pick-wrap")]
+        .filter(w => !w.querySelector(".sec-toggle"))
+        .map(w => w.querySelector(".pick h3").textContent.trim());
+      return empties;
+    });
+    R.eq("every class is in at least one pair, so none render empty", none, []);
+    R.check("no uncaught errors from the preview", errors.length === 0, errors.join(" | "));
+    await ctx.close();
+  }
+
   /* the retired per-character slider must not come back */
   {
     const { page, ctx } = await appPage(browser);

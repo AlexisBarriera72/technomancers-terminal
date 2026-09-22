@@ -29,6 +29,9 @@
   var ARRAY = [15, 14, 13, 12, 10, 8];
   var X = window.TTBX || { classes: [], subclasses: [], feats: [], systems: [], origins: null };
   var SRD = window.TTSRD || { meta: null, subclasses: [] };
+  /* Which classes are worth standing next to. Read-only here — the sheet never
+     stores any of it, and a missing file costs the preview and nothing else. */
+  var SY = window.TTSY || { roles: [], classRoles: {}, crewTiers: [], pairs: [] };
   var tableByTitle = {};
   D.tables.forEach(function (t) { tableByTitle[t.title] = t; });
 
@@ -1566,6 +1569,82 @@
   }
 
   /* ====================================================== STEP: 1 — CLASS */
+  /* ------------------------------------------------- the synergy preview --
+     A class card is a <button>, so this cannot live inside one: nested
+     interactive elements are invalid and every click would bubble into
+     selecting the class. It goes in a wrapper beside the card instead.
+
+     Open state is kept out here because render() rebuilds the whole stage, and
+     choosing a class re-renders — without this, opening Fighter's preview and
+     then picking Fighter would shut what you just opened. */
+  var synOpen = {}, synPairOpen = {};
+
+  function pairsForClass(name) {
+    return SY.pairs.filter(function (p) { return p.pair.indexOf(name) >= 0; });
+  }
+  function partnerOf(p, name) {
+    return p.pair[0] === name ? p.pair[1] : p.pair[0];
+  }
+
+  function synergyPreview(name) {
+    var pairs = pairsForClass(name);
+    var wrap = el("div", "syn-pv");
+    if (!pairs.length) return wrap;
+
+    var tog = el("button", "sec-toggle");
+    tog.setAttribute("aria-expanded", !!synOpen[name]);
+    tog.innerHTML = "Synergies" + '<span class="count">' + pairs.length + "</span>";
+    var panel = el("div", "syn-pv-body");
+    panel.hidden = !synOpen[name];
+    tog.onclick = function () {
+      synOpen[name] = !synOpen[name];
+      panel.hidden = !synOpen[name];
+      tog.setAttribute("aria-expanded", !!synOpen[name]);
+    };
+    wrap.appendChild(tog);
+
+    var roles = SY.classRoles[name] || [];
+    if (roles.length) {
+      var rr = el("div", "gm-chips tight");
+      roles.forEach(function (r) { rr.appendChild(el("span", "chip", esc(r))); });
+      panel.appendChild(rr);
+    }
+
+    pairs.forEach(function (p) {
+      var key = name + "|" + p.id;
+      var row = el("div", "syn-pv-row");
+      var t2 = el("button", "sec-toggle sub");
+      t2.setAttribute("aria-expanded", !!synPairOpen[key]);
+      // the partner is a separate node so the Spanish table can pass a class
+      // name through untranslated while translating the words around it
+      t2.innerHTML = "<b>" + esc(p.name) + "</b>" +
+        '<span class="count">with ' + esc(partnerOf(p, name)) + "</span>";
+      var det = el("div", "syn-pv-det");
+      det.hidden = !synPairOpen[key];
+      det.appendChild(el("div", "syn-pv-line", esc(p.line)));
+      if (p.wired) det.appendChild(el("div", "syn-pv-wired", esc(p.wired)));
+      t2.onclick = function () {
+        synPairOpen[key] = !synPairOpen[key];
+        det.hidden = !synPairOpen[key];
+        t2.setAttribute("aria-expanded", !!synPairOpen[key]);
+      };
+      row.appendChild(t2);
+      row.appendChild(det);
+      panel.appendChild(row);
+    });
+
+    wrap.appendChild(panel);
+    return wrap;
+  }
+
+  /* The card and its preview, as one grid cell. */
+  function classPick(c) {
+    var wrap = el("div", "pick-wrap");
+    wrap.appendChild(classCard(c));
+    wrap.appendChild(synergyPreview(c.name));
+    return wrap;
+  }
+
   function classCard(c) {
     var subs = subsFor(c.name);
     var b = el("button", "pick");
@@ -1606,7 +1685,7 @@
 
     s.appendChild(el("div", "eyebrow", "From the book · 13 classes"));
     var g = el("div", "grid");
-    D.classes.forEach(function (c) { g.appendChild(classCard(c)); });
+    D.classes.forEach(function (c) { g.appendChild(classPick(c)); });
     s.appendChild(g);
 
     if (X.classes.length) {
@@ -1616,7 +1695,7 @@
         '<span class="page-ref">original material, not from the PDF</span>';
       s.appendChild(h2);
       var g2 = el("div", "grid");
-      X.classes.forEach(function (c) { g2.appendChild(classCard(c)); });
+      X.classes.forEach(function (c) { g2.appendChild(classPick(c)); });
       s.appendChild(g2);
     }
 

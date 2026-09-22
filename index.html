@@ -139,6 +139,21 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .pick .stats{display:flex;gap:10px;flex-wrap:wrap;font-family:var(--f-mono);
   font-size:11px;color:var(--ink-dim)}
 .pick .stats b{color:var(--accent);font-weight:400}
+/* a class card plus its synergy preview, as one cell. align-self keeps an
+   expanded preview from stretching every other card in the row. */
+.pick-wrap{display:flex;flex-direction:column;align-self:start}
+.syn-pv{margin:0 2px}
+.syn-pv .sec-toggle{padding:7px 0;margin-bottom:0;border-bottom:0;font-size:9px;
+  letter-spacing:.14em}
+.syn-pv .sec-toggle.sub{color:var(--ink-dim);padding:5px 0 5px 13px}
+.syn-pv .sec-toggle.sub b{font-family:var(--f-body);font-size:12px;font-weight:600;
+  letter-spacing:.01em;text-transform:none;color:var(--ink)}
+.syn-pv-body{padding:2px 0 6px}
+.syn-pv-row{border-top:1px solid var(--line-soft)}
+.syn-pv-det{padding:0 0 8px 13px}
+.syn-pv-line{font-size:12.5px;color:var(--ink-dim);line-height:1.45}
+.syn-pv-wired{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.05em;
+  color:var(--gold);margin-top:5px}
 
 /* ---------- chips / badges ---------- */
 .chips{display:flex;flex-wrap:wrap;gap:6px}
