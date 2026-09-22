@@ -482,7 +482,8 @@ module.exports = async function (browser) {
       };
       localStorage.setItem("ttb.gm.party", JSON.stringify([
         mk("Vex", "Ranger", 5), mk("Nyx", "Rogue", 5),
-        mk("Doc", "Streetdoc", 4), mk("Ox", "Chromehound", 6)
+        mk("Doc", "Streetdoc", 4), mk("Ox", "Chromehound", 6),
+        mk("Brick", "Fighter", 5)
       ]));
       const p = JSON.parse(localStorage.getItem("ttb.gm.play") || "{}");
       p.mode = "table"; p.rep = 6;
@@ -532,6 +533,22 @@ module.exports = async function (browser) {
     R.check("so does the Rogue's", /Ambush Team/.test(party.rogue || ""), party.rogue);
     R.check("the Streetdoc's does not", !/Ambush Team/.test(party.medic || ""), party.medic);
     R.check("the Cred meter names the band", /Name/.test(party.credTier || ""), party.credTier);
+
+    /* per-character: what this one brings, and who they bring it with */
+    const pairs = await page.evaluate(() => {
+      const cardOf = n => [...document.querySelectorAll(".gm-card")]
+        .find(c => (c.querySelector(".gm-name") || {}).textContent === n);
+      const read = n => [...cardOf(n).querySelectorAll(".gm-pair")].map(r => ({
+        pair: r.querySelector(".n").textContent,
+        with: r.querySelector(".w").textContent,
+        live: r.classList.contains("live") }));
+      return { vex: read("Vex"), brick: read("Brick") };
+    });
+    R.eq("a live pair names the person, not the class",
+      pairs.vex, [{ pair: "Ambush Team", with: "Nyx", live: true }]);
+    R.eq("a pair whose other half is absent names the class and stays unlit",
+      pairs.brick, [{ pair: "Shield Wall", with: "Paladin", live: false },
+                    { pair: "Warband", with: "Barbarian", live: false }]);
 
     /* the number the GM moves is the number that persists */
     await page.evaluate(() => {

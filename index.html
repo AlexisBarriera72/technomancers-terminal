@@ -551,6 +551,14 @@ details.item .body p,details.item .body ul{max-width:70ch}
 .gm-syn-line{font-size:12.5px;color:var(--ink-dim);line-height:1.45}
 .gm-syn-wired{font-family:var(--f-mono);font-size:11px;letter-spacing:.05em;color:var(--gold);margin-top:6px}
 .gm-syn-cov{margin-top:9px;font-size:12.5px}
+/* what one character brings: their class's pairs, live ones lit */
+.gm-pairs{display:flex;flex-direction:column;gap:3px}
+.gm-pair{display:flex;gap:8px;align-items:baseline;font-size:12.5px;color:var(--ink-faint)}
+.gm-pair .w{margin-left:auto;font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase}
+.gm-pair.live{color:var(--ink)}
+.gm-pair.live .n{font-weight:600}
+.gm-pair.live .w{color:var(--gold)}
 
 /* the reaction roll */
 .gm-react{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);

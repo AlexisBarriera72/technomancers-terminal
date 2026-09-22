@@ -1271,6 +1271,29 @@ window.TTGM = (function () {
     sk.appendChild(skc);
     card.appendChild(sk);
 
+    /* What this one brings, as opposed to what the table is. The party-wide
+       panel above the cards answers the second question; this answers the
+       first, and shows what the table is one recruit short of. */
+    var mine = SY.pairs.filter(function (s) { return s.pair.indexOf(c.cls) >= 0; });
+    if (mine.length) {
+      var ps = el("div", "gm-strip");
+      ps.appendChild(txt("div", "gm-label", "Pairs with"));
+      var list = el("div", "gm-pairs");
+      mine.forEach(function (s) {
+        var other = s.pair[0] === c.cls ? s.pair[1] : s.pair[0];
+        // the GM can name the person; a player's own screen never can
+        var who = (party || []).filter(function (x) {
+          return x.c.cls === other && x.rec.id !== p.rec.id;
+        })[0];
+        var row = el("div", "gm-pair" + (who ? " live" : ""));
+        row.appendChild(txt("span", "n", s.name));
+        row.appendChild(txt("span", "w", who ? (who.c.name || "Unnamed") : other));
+        list.appendChild(row);
+      });
+      ps.appendChild(list);
+      card.appendChild(ps);
+    }
+
     /* actions */
     var tools = row("gm-row end");
     tools.appendChild(btn("Full sheet", "", function () {
