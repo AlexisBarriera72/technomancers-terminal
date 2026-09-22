@@ -218,7 +218,9 @@ link and it replaces the old one.
 
 Everything the GM stores lives in that one browser under `ttb.gm.*`. Clearing
 site data deletes the lot, so **Export GM vault** on the Party screen writes the
-whole thing to a `.json` file. Do it after a good prep session.
+whole thing to a `.json` file. Do it after a good prep session. **Import** merges
+it back: characters, NPCs and encounters by id, and the file's clocks and Street
+Cred replace the ones on screen.
 
 ## Offline
 

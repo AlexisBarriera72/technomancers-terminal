@@ -537,12 +537,31 @@ window.TTGM = (function () {
     if (mem.play === null) {
       var p = lsGet(K_PLAY, null);
       if (!p || typeof p !== "object") p = {};
-      if (!Array.isArray(p.clocks)) p.clocks = [];
+      p.clocks = cleanClocks(p.clocks);
       if (typeof p.scratch !== "string") p.scratch = "";
-      if (typeof p.rep !== "number" || p.rep < -10 || p.rep > 10) p.rep = 0;
+      if (typeof p.rep !== "number" || !(p.rep >= -10 && p.rep <= 10)) p.rep = 0;
+      p.rep = Math.round(p.rep);
       mem.play = p;
     }
     return mem.play;
+  }
+
+  /* Clocks arrive from a vault file a person can edit, and the card draws one
+     button per segment, so a bad count here froze the tab on every visit to
+     Clocks. Anything without an id can't be edited or deleted either. */
+  function cleanClocks(list) {
+    if (!Array.isArray(list)) return [];
+    return list.filter(function (c) {
+      return c && typeof c === "object" && typeof c.id === "string" && c.id;
+    }).map(function (c) {
+      var o = {};
+      Object.keys(c).forEach(function (k) { o[k] = c[k]; });
+      var seg = Math.round(+c.seg);
+      o.seg = seg >= 2 && seg <= 12 ? seg : 6;
+      o.filled = Math.max(0, Math.min(o.seg, Math.round(+c.filled) || 0));
+      o.name = c.name == null ? "" : String(c.name);
+      return o;
+    });
   }
 
   /* Memory first, then try to persist. The edit survives either way. */
@@ -560,6 +579,10 @@ window.TTGM = (function () {
 
   function lastMode() { return playState().mode || null; }
   function rememberMode(m) { playPatch(function (p) { p.mode = m; }); }
+
+  /* "1 characters" read wrong in English, and Spanish needs the singular and
+     plural as separate keys anyway. */
+  function count(n, one, many) { return n + " " + (n === 1 ? one : many); }
 
   function uid(prefix) {
     return (prefix || "g") + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
@@ -735,11 +758,11 @@ window.TTGM = (function () {
     return v;
   }
   function repState(rep) {
-    var r = Math.max(-10, Math.min(10, +rep || 0));
+    var r = Math.max(-10, Math.min(10, Math.round(+rep || 0)));
     var band = G.repBands.filter(function (b) { return r >= b.min && r <= b.max; })[0];
     return band ? { rep: r, tier: band.tier, mod: band.mod, tone: band.tone,
                     buys: band.buys, digging: band.digging, combat: band.combat }
-                : { rep: r, tier: "Nobody", mod: 0, tone: "alert", buys: "", digging: "", combat: "" };
+                : { rep: r, tier: "Nobody", mod: 0, tone: "gold", buys: "", digging: "", combat: "" };
   }
   function repMod() { return repState(repGet()).mod; }
 
@@ -836,7 +859,7 @@ window.TTGM = (function () {
         var mc = T.migrate(c);
         if (mc && mc.id) { partyPut(mc, "", "file"); added++; }
       });
-      toast(added ? "Added " + added + " character" + (added === 1 ? "" : "s") : "Nothing in that file");
+      toast(added ? "Added " + count(added, "character", "characters") : "Nothing in that file");
       redraw(); return;
     }
     if (!blob || blob.kind !== "ttb-gm-vault") { toast("Not a GM vault file"); return; }
@@ -844,13 +867,17 @@ window.TTGM = (function () {
     var n = mergeById(npcAll(), blob.npcs);    npcWrite(n.list);
     var e = mergeById(encAll(), blob.encounters); encWrite(e.list);
     if (blob.play && typeof blob.play === "object") {
+      var clocks = cleanClocks(blob.play.clocks), r = blob.play.rep;
       playPatch(function (cur) {
-        if (Array.isArray(blob.play.clocks) && blob.play.clocks.length) cur.clocks = blob.play.clocks;
-        if (blob.play.scratch) cur.scratch = blob.play.scratch;
+        if (clocks.length) cur.clocks = clocks;
+        if (typeof blob.play.scratch === "string" && blob.play.scratch) cur.scratch = blob.play.scratch;
         if (blob.play.enc && !cur.enc) cur.enc = blob.play.enc;
+        // The export always carried Street Cred; restoring used to drop it.
+        if (typeof r === "number" && isFinite(r)) cur.rep = Math.max(-10, Math.min(10, Math.round(r)));
       });
     }
-    toast("Merged " + p.n + " characters, " + n.n + " NPCs, " + e.n + " encounters");
+    toast("Merged " + count(p.n, "character", "characters") + ", " + count(n.n, "NPC", "NPCs") +
+          ", " + count(e.n, "encounter", "encounters"));
     redraw();
   }
   function readFile(accept, fn) {
@@ -899,7 +926,7 @@ window.TTGM = (function () {
             var mc = T.migrate(c);
             if (mc && mc.id && mc.cls) { partyPut(mc, "", "file"); n++; }
           });
-          toast(n ? "Added " + n : "Nothing usable in that file");
+          toast(n ? "Added " + count(n, "character", "characters") : "Nothing usable in that file");
           redraw();
         } catch (e) { toast("That file isn't JSON"); }
       });
@@ -914,7 +941,7 @@ window.TTGM = (function () {
             if (c && c.cls) { partyPut(c, "", "roster"); n++; }
           } catch (e) {}
         });
-        toast(n ? "Added " + n + " from the roster" : "Nothing usable");
+        toast(n ? "Added " + count(n, "character", "characters") + " from the roster" : "Nothing usable");
         redraw();
       }));
     }
@@ -1716,7 +1743,7 @@ window.TTGM = (function () {
           x.tags = ["campaign"];
           npcSave(x); n++;
         });
-        toast(n ? "Added " + n + " to stat up" : "Already have them all");
+        toast(n ? "Added " + count(n, "NPC", "NPCs") + " to stat up" : "Already have them all");
         redraw();
       }));
       pullRow.appendChild(txt("span", "gm-note", "Brings their names and notes over. You add the numbers."));
@@ -2360,6 +2387,7 @@ window.TTGM = (function () {
     rollExpr: rollExpr, roll: roll, d20: d20, ordered: ordered, turnOf: turnOf,
     synergiesFor: synergiesFor, ambushTeamBonus: ambushTeamBonus,
     repGet: repGet, repSet: repSet, repState: repState, repMod: repMod,
-    repSkillBonus: repSkillBonus, reactionBand: reactionBand, npcReaction: npcReaction
+    repSkillBonus: repSkillBonus, reactionBand: reactionBand, npcReaction: npcReaction,
+    importVault: importVault
   };
 })();

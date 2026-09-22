@@ -844,7 +844,20 @@ window.TTES.ui = {
   "Imported {0} campaigns": "Importadas {0} campañas",
   "Imported {0} character": "Importado {0} personaje",
   "Imported {0} characters": "Importados {0} personajes",
-  "Merged {0} characters, {1} NPCs, {2} encounters": "Fusionados {0} personajes, {1} PNJ y {2} encuentros",
+  "Added {0} character": "{0} personaje añadido",
+  "Added {0} characters": "{0} personajes añadidos",
+  "Added {0} character from the roster": "{0} personaje añadido desde el archivo",
+  "Added {0} characters from the roster": "{0} personajes añadidos desde el archivo",
+  "Added {0} NPC to stat up": "{0} PNJ añadido; faltan sus estadísticas",
+  "Added {0} NPCs to stat up": "{0} PNJ añadidos; faltan sus estadísticas",
+  // The pieces of "Merged …, …, …", which comes through the pattern below.
+  "character": "personaje",
+  "{0} character": "{0} personaje",
+  "{0} characters": "{0} personajes",
+  "{0} NPC": "{0} PNJ",
+  "{0} NPCs": "{0} PNJ",
+  "{0} encounter": "{0} encuentro",
+  "{0} encounters": "{0} encuentros",
   "−{0} HUM": "−{0} HUM"
 };
 
@@ -856,6 +869,8 @@ window.TTES.patterns = [
   ["Level {*} — gained {*} +{*} more", "Nivel {*}: obtienes {*} y {*} más"],
   ["Level {*} — gained {*}", "Nivel {*}: obtienes {*}"],
   ["Character set to level {*} for {*}", "Personaje ajustado al nivel {*} para {*}"],
+  ["Merged {*}, {*}, {*}", "Fusionados: {*}, {*} y {*}"],
+  ["Updated {*}", "{*} actualizado"],
   ["Added {*} to the encounter", "{*} añadido al encuentro"],
   ["Added {*}", "{*} añadido"],
   ["Meet {*}", "Te presento a {*}"],

@@ -837,6 +837,63 @@ module.exports = async function (browser) {
     R.eq("every plain toast message has a Spanish entry", missing, []);
   }
 
+  /* ===== counted toasts read as sentences in both languages =====
+     The static check above can't see these: they are built from a number. */
+  {
+    const { page, ctx } = await appPage(browser);
+    const es = await page.evaluate(() => {
+      window.TT.setLang("es");
+      const out = [
+        "Added 1 character", "Added 3 characters", "Added 2 characters from the roster",
+        "Added 1 NPC to stat up", "Updated Rook", "Merged 1 character, 0 NPCs, 2 encounters"
+      ].map(s => window.TT.T(s));
+      window.TT.setLang("en");
+      return out;
+    });
+    R.eq("counted toasts are whole Spanish sentences", es, [
+      "1 personaje añadido", "3 personajes añadidos", "2 personajes añadidos desde el archivo",
+      "1 PNJ añadido; faltan sus estadísticas", "Rook actualizado",
+      "Fusionados: 1 personaje, 0 PNJ y 2 encuentros"
+    ]);
+    await ctx.close();
+  }
+
+  /* ===== restoring a vault brings Street Cred back, and can't freeze Clocks =====
+     The export always carried rep; the import dropped it. And the clock card
+     draws one button per segment, so a hand-edited count hung the tab. */
+  {
+    const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+    await page.waitForTimeout(300);
+    const out = await page.evaluate(async () => {
+      window.TTGM.importVault(JSON.stringify({
+        kind: "ttb-gm-vault", version: 1, party: [], npcs: [], encounters: [],
+        play: { rep: -6, scratch: "notes", clocks: [
+          { id: "c1", name: "Huge", seg: 1e9, filled: 3 },
+          { name: "No id", seg: 4 },
+          { id: "c3", name: "Overfull", seg: "8", filled: 99 }
+        ] }
+      }));
+      const toast = (document.querySelector(".toast") || {}).textContent || "";
+      const stored = JSON.parse(localStorage.getItem("ttb.gm.play"));
+      const step = [...document.querySelectorAll(".rail .step")]
+        .find(x => x.textContent.indexOf("Clocks") >= 0);
+      if (step) step.click();
+      await new Promise(r => setTimeout(r, 250));
+      return {
+        toast, rep: stored.rep,
+        clocks: stored.clocks.map(c => [c.id, c.seg, c.filled]),
+        segs: document.querySelectorAll(".gm-seg").length
+      };
+    });
+    R.eq("a restored vault brings its Street Cred", out.rep, -6);
+    R.eq("clocks are cleaned on the way in", out.clocks, [["c1", 6, 3], ["c3", 8, 8]]);
+    R.eq("and the Clocks screen draws them", out.segs, 14);
+    R.check("the merge toast counts in English", /^Merged 0 characters, 0 NPCs, 0 encounters$/.test(out.toast),
+      JSON.stringify(out.toast));
+    R.eq("no page errors restoring a vault", errors, []);
+    await ctx.close();
+  }
+
     /* the retired per-character slider must not come back */
   {
     const { page, ctx } = await appPage(browser);

@@ -559,6 +559,8 @@ module.exports = async function (browser) {
         mods, tiers,
         // out of range must not fall off either end of the table
         low: G.repState(-99).tier, high: G.repState(99).tier,
+        // a hand-edited vault can carry 2.6; it used to fall between bands
+        frac: G.repState(2.6).tier,
         clampUp: G.repSet(99), clampDown: G.repSet(-99), round: G.repSet(3)
       };
     });
@@ -574,6 +576,7 @@ module.exports = async function (browser) {
        "Bad paper", "Bad paper", "Burned", "Burned"]);
     R.eq("below the track is still the bottom band", rep.low, "Blacklisted");
     R.eq("above the track is still the top band", rep.high, "Myth");
+    R.eq("a fractional value rounds into a band", rep.frac, "Somebody");
     R.eq("setting above 10 clamps", rep.clampUp, 10);
     R.eq("setting below -10 clamps there now, not at zero", rep.clampDown, -10);
     R.eq("setting in range is kept", rep.round, 3);
