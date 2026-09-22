@@ -28,10 +28,11 @@ with `npx serve .`.
 |---|---|
 | `index.html` | Shell markup and all the CSS. |
 | `app.js` | The player-facing application. Vanilla JS, one IIFE, no framework. |
-| `gm.js` | The GM tools — `window.TTBGM` (rulings, conditions, NPC templates, synergy pairs, Street Cred bands) and `window.TTGM` (the code). |
+| `gm.js` | The GM tools — `window.TTBGM` (rulings, conditions, NPC templates, Street Cred bands) and `window.TTGM` (the code). |
 | `data.js` | `window.TTB` — everything extracted from the Textbook. |
 | `expansion.js` | `window.TTBX` — the Neon Ledger expansion. |
 | `srd.js` | `window.TTSRD` — SRD 5.1 material, currently the Wild Magic Sorcerer. |
+| `synergy.js` | `window.TTSY` — the class roles and the named pairs. Read by both halves. |
 | `es-ui.js` | `window.TTES.ui` — Spanish for the application's own text. Always loaded. |
 | `es-book.js` | `window.TTES.book` — Spanish for the rules text. Fetched on demand. |
 | `campaigns.js` | `window.TTBC` — your campaigns. **This is the one you edit.** |
@@ -159,19 +160,29 @@ because a player's own sheet genuinely does not know. So both live in `gm.js`
 next to `partyChars()`, the one place the party is already in one array, and
 neither appears on a player's screen.
 
-**Street Cred** is one number for the table, 0–10, kept beside the clocks in
-`ttb.gm.play`. The expansion has always described it as "a shared track" that
+**Street Cred** is one number for the table, −10 to +10, kept beside the clocks
+in `ttb.gm.play`. The expansion has always described it as "a shared track" that
 adds to Charisma checks; until now it was a private slider on each sheet that
-nothing read. The bands, names and modifiers are the expansion's own table
-unchanged. Each band also carries a line for what it buys in a conversation,
-what it does when they go looking for something, and what happens when it turns
-ugly — the last two are new, because the book only ever covered the talking.
+nothing read. The positive half is the expansion's own table unchanged. Each
+band also carries a line for what it buys in a conversation, what it does when
+they go looking for something, and what happens when it turns ugly — the last
+two are new, because the book only ever covered the talking.
+
+The book only ever went up. The five negative bands — Burned, Bad paper, Marked,
+Poison, Blacklisted — mirror the five above, so infamy costs exactly what fame
+pays, down to −5. The meter is centre-anchored, growing right when the city
+likes them and left when it does not.
 
 The modifier is real: it goes through `bonusFor()`, so every Charisma check the
 Ruling Desk prices already has it, and the per-character skill chips show it
 too. It is the GM's to move — a point for a job the street saw, one back for
 folding in public. There is no quest log to infer it from, and inferring it
 would be worse than asking.
+
+Each character's card also lists their own class's pairs, so the GM can see
+what one person brings and what the table is one recruit short of. A pair that
+is live names the person — Vex pairs with Nyx, not "a Rogue" — because the GM's
+screen is the only one that can know that.
 
 **Synergies** are named class pairs — 18 of them, ten spanning both rulebooks,
 with all 21 classes appearing at least once. They are lines to read when both
@@ -181,6 +192,13 @@ the way `app.js`'s `initiative()` already hardcodes Chromehound and Firebrand.
 Under the pairs, every class carries one or two of six roles, and the party is
 told which it covers and which it does not. A narrow crew is a shape, not a
 fault — the coverage line says so rather than scoring it.
+
+Players see the same pairs while **choosing a class**: each card carries a
+disclosure listing what that class pairs with, and opening one shows its line.
+That is the moment the information can still change a decision. The card is a
+`<button>`, so the preview is a sibling rather than a child — a button cannot
+contain a button — and its open state is held outside the card because
+`render()` rebuilds the whole stage when you pick something.
 
 **The NPC reaction roll** is one d20 plus Street Cred plus whatever the moment
 is worth, read off a five-band table from Hostile to Ally. It is built once and
