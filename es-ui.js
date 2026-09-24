@@ -1341,6 +1341,7 @@ window.TTES.ui = {
   "Roll a complication for this round": "Tira una complicación para este asalto",
 
   // Player: inventory and credits
+  "AC from": "CA por",
   "Credits and carrying": "Créditos y carga",
   "Credits": "Créditos",
   "Pick a background first": "Elige antes un trasfondo",

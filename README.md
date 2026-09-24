@@ -133,6 +133,14 @@ data files; `node tools/book-coverage.js <group>` lists it. Every sentence of ru
 text is translated. What it still counts as missing is **names**, classes,
 archetypes, features, feats, gear, which stay English on purpose.
 
+**A test keeps new labels from shipping in English.** `test/untranslated.test.js`
+draws every Forge step, Codex section and GM screen in Spanish (with the demo table
+loaded and the Toolkit open) and collects any text that still looks English outside
+`data-nolang`. What's left today, mostly proper nouns and the book's own background
+flavour, is listed in `test/untranslated-baseline.txt`; anything new fails the suite
+and is printed. When a line gets translated the suite says so, and
+`node test/untranslated.test.js --write` rewrites the baseline.
+
 **The rules text is machine translated**, and the interface says so. The English is
 the reference and the **EN** button shows it. Nothing in `es-book.js` is ever read by
 the rules engine.
@@ -438,6 +446,7 @@ one side only would leave a line in English. CI runs both on every push.
 | `test/sw.test.js` | A failed update must not replace a working offline cache. |
 | `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale; the city's data (tables sized to their dice, districts climbing) and the City and Toolkit screens. |
 | `test/player.test.js` | The level-up panel, inventory and credits (weights, counts, custom items, old saves), the turn cards and the Puppeteer's frames. |
+| `test/untranslated.test.js` | Every screen drawn in Spanish; fails on English text that isn't in `untranslated-baseline.txt`. |
 | `test/story.test.js` | The story holds together (every scene complete, every reference resolves), the Story tab tracks, rolls and persists, the demo walkthrough adds up, and every synergy says what it does. |
 
 ## Deploying a change

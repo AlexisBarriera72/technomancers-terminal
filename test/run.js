@@ -11,7 +11,8 @@ const SUITES = {
   sw: require("./sw.test"),
   story: require("./story.test"),
   city: require("./city.test"),
-  player: require("./player.test")
+  player: require("./player.test"),
+  untranslated: require("./untranslated.test")
 };
 
 (async () => {

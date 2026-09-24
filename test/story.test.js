@@ -153,6 +153,21 @@ module.exports = async function (browser) {
     R.eq("the demo has one fragment of Doom ticked", top.doomOn, 1);
     R.check("the GM panel names the current scene", /The warm bleed/.test(top.dossier), top.dossier.slice(0, 200));
 
+    // the tab stays light: an act's scenes are built only when it is opened
+    const lazy = await page.evaluate(async () => {
+      const T = window.TT; T.setMode("table"); T.gmSec(5); T.render();
+      const before = document.querySelectorAll("details.st-scene").length;
+      const act = document.querySelector("details.st-act");
+      act.open = true; act.dispatchEvent(new Event("toggle"));
+      await new Promise(r => setTimeout(r, 30));
+      const after = document.querySelectorAll("details.st-scene").length;
+      const cats = document.querySelectorAll("details.st-cat").length;
+      act.open = false; act.dispatchEvent(new Event("toggle"));
+      return { before, after, cats };
+    });
+    R.eq("no scene is built until its act is opened", lazy.before, 0);
+    R.eq("opening Act I builds its three scenes, and no scene bodies yet", [lazy.after, lazy.cats], [3, 0]);
+
     // everything opens, nothing throws
     const all = await page.evaluate(async () => {
       [...document.querySelectorAll("#stage button")].find(b => /Expand everything/.test(b.textContent)).click();
