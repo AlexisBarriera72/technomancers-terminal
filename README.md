@@ -33,6 +33,9 @@ with `npx serve .`.
 | `expansion.js` | `window.TTBX`, the Neon Ledger expansion. |
 | `srd.js` | `window.TTSRD`, SRD 5.1 material, currently the Wild Magic Sorcerer. |
 | `city.js` | `window.TTCITY`, the City and Toolkit screens' tables: calendar, holy days, weather, street encounters, bounties. |
+| `mapdraw.js` | `window.TTMAPDRAW`, draws a map as an SVG string: noir or print, the 5-ft grid, key letters, fog, and the players' view. Runs in the browser and in Node. |
+| `maps.js` | `window.TTMAPS`, the battle maps as data: every story scene, streets, heists, chases and the city in cross-section. |
+| `maps/` | The same maps as files, written by `npm run maps` (`tools/render-maps.js`), with a gallery at `maps/index.html`. |
 | `synergy.js` | `window.TTSY`, the class roles and the named pairs. Read by both halves. |
 | `story.js` | `window.TTST`, "The Fourth Minute", the GM-only campaign behind the Story tab. |
 | `es-ui.js` | `window.TTES.ui`, Spanish for the application's own text. Always loaded. |
@@ -339,6 +342,40 @@ all rolling on `city.js` tables:
 The heist, the net and the chase live in `ttb.gm.play` (`heist`, `netrun`,
 `chase`), are cleaned on load and on import, and go out in the vault.
 
+### Maps
+
+`maps.js` holds 29 battle maps, drawn in code by `mapdraw.js` on a grid where
+one square is 5 ft (the city cross-section is 50 ft a square):
+
+- **The Fourth Minute**, 15 maps: every scene from S1 to S12 has at least one,
+  and some serve two (the Spine station is both S3's and S5's).
+- **Streets**, 5: the Gullet market, the Tallowgate rendering yards, the
+  Weepwater cistern stairs, a chapel on neutral ground, Lanternside's pilgrim street.
+- **Heists**, 4: a Crown manor party, Dr. Vhoss's black clinic, a Reliquary
+  repossession warehouse, Mother Slate's back room.
+- **Chases**, 4: gantries between the ribs, a Spine lift car, an AV pad, a
+  dead-end alley.
+- **The city**: every district at its real height, built from Cathedra's
+  districts in `campaigns.js`, so a renamed or moved district moves on the map.
+
+Each map is data: areas (a rectangle or a polygon, a floor, a key letter, what
+the GM reads out), doors, features, labels, start marks and notes. An area can
+be open ground (`walls: false`), always visible (`fog: false`), or named to the
+players once revealed (`pub: true`). Doors can be secret, and features and
+labels can be marked for the GM only; the players' view leaves all of that out.
+
+**Outside the app.** `npm run maps` writes every map three ways into `maps/`:
+
+- `maps/noir/`: the GM's copy, with key letters, secret doors and a title band.
+- `maps/player/`: no letters, no secrets, no title band, so the grid is exactly
+  50 px a square. Import it into Owlbear Rodeo, Foundry or Roll20 with the grid
+  set to 50 px.
+- `maps/print/`: black on white, with a title band and a scale bar, for paper.
+
+`maps/index.html` is a gallery of all of them (no scripts, so the site's CSP
+serves it as is); deployed, it is at `/maps/`. The maps test fails if `maps/` is
+older than `maps.js`, so run `npm run maps` after changing a map.
+
 ### Street Cred and what the party is
 
 Two things on the GM's side read the whole table at once, which nothing else in
@@ -448,6 +485,7 @@ one side only would leave a line in English. CI runs both on every push.
 | `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale; the city's data (tables sized to their dice, districts climbing) and the City and Toolkit screens. |
 | `test/player.test.js` | The level-up panel, inventory and credits (weights, counts, custom items, old saves), the turn cards and the Puppeteer's frames. |
 | `test/untranslated.test.js` | Every screen drawn in Spanish; fails on English text that isn't in `untranslated-baseline.txt`. |
+| `test/maps.test.js` | The maps as data (everything inside its map, keys unique, every scene covered, every feature drawable), the drawing (no NaN, fog, and a players' view that hides everything the GM's does), and that `maps/` is up to date. |
 | `test/story.test.js` | The story holds together (every scene complete, every reference resolves), the Story tab tracks, rolls and persists, the demo walkthrough adds up, and every synergy says what it does. |
 
 ## Deploying a change
