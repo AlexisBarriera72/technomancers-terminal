@@ -376,6 +376,41 @@ labels can be marked for the GM only; the players' view leaves all of that out.
 serves it as is); deployed, it is at `/maps/`. The maps test fails if `maps/` is
 older than `maps.js`, so run `npm run maps` after changing a map.
 
+**The Maps screen.** The tenth GM screen shows the same maps with fog of war:
+
+- Pick a map from the list, or one of the current scene's under it. A scene on
+  the Story screen, a street roll on the City screen, and the heist planner and
+  chase on the Toolkit all have buttons that open their maps here.
+- Drag to move, pinch or scroll to zoom, **Fit** to see it all. Tap an area to
+  show it to the players, tap again to hide it; the key below does the same,
+  one line per letter with what the GM reads out. **Reveal all**, **Hide all**,
+  and toggles for the grid, the letters and the fog itself.
+- The GM sees unrevealed areas under a hatched tint. The players see black
+  everywhere except the areas they have seen, so not even the outline of an
+  undiscovered room shows.
+- Downloads: the print SVG, what the players see right now as an SVG, and a
+  PNG for a VTT (no letters, no fog, 100 px a square).
+
+**On a TV.** **Open player screen** opens the site at `#mapview` in a second
+window: drag it onto the TV (or cast that window) and press **Full screen**. It
+draws only the map, and only what has been revealed. **Show players this map**
+decides which map it shows, so the GM can read ahead on another one; **Blank the
+TV** clears it. The player window never writes anything: it reads `play.maps`
+from storage and redraws on the browser's `storage` event whenever the GM's tab
+changes it.
+
+**On a tablet passed round the table.** **Show on this screen** covers the GM's
+tab with the players' view. Only holding the corner **GM** button for a second
+brings the GM screen back, so a player's tap can't.
+
+The player screen follows the GM only on the same device, because the site has
+no server. A second device can use the downloaded files instead.
+
+Fog, the chosen map and the toggles live in `ttb.gm.play` (`maps`), are cleaned
+on load and on import (`cleanMaps` drops maps and areas that don't exist), go out
+in the vault, and the demo table opens scene 4's map with the first three areas
+revealed.
+
 ### Street Cred and what the party is
 
 Two things on the GM's side read the whole table at once, which nothing else in
@@ -485,7 +520,7 @@ one side only would leave a line in English. CI runs both on every push.
 | `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale; the city's data (tables sized to their dice, districts climbing) and the City and Toolkit screens. |
 | `test/player.test.js` | The level-up panel, inventory and credits (weights, counts, custom items, old saves), the turn cards and the Puppeteer's frames. |
 | `test/untranslated.test.js` | Every screen drawn in Spanish; fails on English text that isn't in `untranslated-baseline.txt`. |
-| `test/maps.test.js` | The maps as data (everything inside its map, keys unique, every scene covered, every feature drawable), the drawing (no NaN, fog, and a players' view that hides everything the GM's does), and that `maps/` is up to date. |
+| `test/maps.test.js` | The maps as data (everything inside its map, keys unique, every scene covered, every feature drawable), the drawing (no NaN, fog, and a players' view that hides everything the GM's does), that `maps/` is up to date, and the Maps screen: tap to reveal, the player window following in a second page, hand-off, the Story link and the vault. |
 | `test/story.test.js` | The story holds together (every scene complete, every reference resolves), the Story tab tracks, rolls and persists, the demo walkthrough adds up, and every synergy says what it does. |
 
 ## Deploying a change

@@ -30,7 +30,7 @@ var esc = function (s) {
 /* Bumped by hand on every deploy, there is no build step, and a commit
    cannot contain its own hash. Shown in the masthead so "did my change go
    live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-var BUILD = "2026-09-25 10:00";
+var BUILD = "2026-09-25 11:00";
 var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
 var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                   Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -168,7 +168,7 @@ var STEPS = ["Class", "Archetype", "Background", "Abilities", "Proficiencies",
              "Level-Ups", "Chrome & Gear", "Play Sheet"];
 var CAMPSEC = ["Overview", "House Rules", "People", "Places", "Custom Gear", "Session Log", "Hooks"];
 var campSecIx = 0;
-var GMSEC = ["Party", "Encounter", "Rulings", "NPCs", "Clocks", "Story", "Campaign", "City", "Toolkit"];
+var GMSEC = ["Party", "Encounter", "Rulings", "NPCs", "Clocks", "Story", "Campaign", "City", "Toolkit", "Maps"];
 var gmSecIx = 0;
 var gmOn = false;
 try { gmOn = localStorage.getItem("ttb.gm") === "1"; } catch (e) {}

@@ -574,6 +574,11 @@ function init() {
   if (LANG === "es") loadEsBook();
   var unlocked = gmHash();
   if (window.TTGM && window.TTGM.boot) window.TTGM.boot(window.TT);
+  // The player screen for the TV: the map and nothing else. It only reads.
+  if (/^#mapview\b/.test(location.hash) && window.TTGM && window.TTGM.mountPlayerView) {
+    window.TTGM.mountPlayerView(false);
+    return;
+  }
   var shared = readShared();
   if (shared) {
     // Keep the hash: the visitor may reload, and we must not clobber whatever

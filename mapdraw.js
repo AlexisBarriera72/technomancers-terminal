@@ -449,13 +449,28 @@
         '<text x="' + n(m[0] * S) + '" y="' + n(m[1] * S - 16) + '" text-anchor="middle" font-size="12" font-weight="700" fill="' + col + '" font-family="Barlow, Arial, sans-serif">' + esc(m[2]) + "</text></g>");
     });
 
-    // fog
+    /* fog. The GM gets a hatched tint over each area the players haven't
+       seen. The players get the whole map blacked out with a hole for each
+       area they have seen (and its walls), so nothing shows between rooms,
+       not even the outline of a room nobody has found yet. */
     if (revealed) {
-      (map.areas || []).forEach(function (a) {
-        if (a.fog === false || revealed.indexOf(a.id) >= 0) return;
-        out.push('<polygon class="fog" data-fog="' + esc(a.id) + '" points="' + pts(areaPoints(a)) + '" fill="' + (player ? P.fogPlayer : P.fogGm) + '"' +
-          (player ? ' stroke="' + P.fogPlayer + '" stroke-width="' + (P.wallW + 6) + '" stroke-linejoin="round"' : ' stroke="none"') + "/>");
-      });
+      var seen = function (a) { return a.fog === false || revealed.indexOf(a.id) >= 0; };
+      if (player) {
+        var holes = (map.areas || []).filter(seen).map(function (a) {
+          return '<polygon data-seen="' + esc(a.id) + '" points="' + pts(areaPoints(a)) + '" fill="#000" stroke="#000" stroke-width="' +
+            (P.wallW + 6) + '" stroke-linejoin="round"/>';
+        });
+        out.push('<mask id="' + fid + '-seen" maskUnits="userSpaceOnUse" x="0" y="0" width="' + W + '" height="' + H + '">' +
+          '<rect width="' + W + '" height="' + H + '" fill="#fff"/>' + holes.join("") + "</mask>");
+        out.push('<rect class="fog" width="' + W + '" height="' + H + '" fill="' + P.fogPlayer + '" mask="url(#' + fid + '-seen)"/>');
+      } else {
+        out.push('<pattern id="' + fid + '-foggm" width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+          '<rect width="14" height="14" fill="' + P.fogGm + '"/><path d="M0 0V14" stroke="' + P.hot + '" stroke-opacity="0.35" stroke-width="2"/></pattern>');
+        (map.areas || []).forEach(function (a) {
+          if (seen(a)) return;
+          out.push('<polygon class="fog" data-fog="' + esc(a.id) + '" points="' + pts(areaPoints(a)) + '" fill="url(#' + fid + '-foggm)"/>');
+        });
+      }
     }
 
     // key letters, the GM's only

@@ -3,7 +3,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { Results } = require("./lib");
+const { Results, appPage, FILE_URL } = require("./lib");
 const tool = require("../tools/render-maps");
 
 const ROOT = path.join(__dirname, "..");
@@ -87,15 +87,24 @@ function dataChecks(R) {
     maps.some(m => (m.doors || []).some(d => d[3] === "secret")) &&
     maps.some(m => (m.f || []).some(f => f[5] && f[5].gm)), "");
 
-  // Fog: an unrevealed area is covered, a revealed one is not, fog:false never is.
+  /* Fog. The GM's view tints each unrevealed area; the players' view blacks
+     out the whole map and cuts a hole for each area they have seen. Either
+     way: covered until revealed, and fog:false is never covered. */
   const fogBad = [];
   maps.forEach(m => {
+    const gmHidden = D.render(m, { fog: { revealed: [] } });
+    const plHidden = D.render(m, { player: true, fog: { revealed: [] } });
+    if (!/<rect class="fog" [^>]*mask="url\(#[^)]+-seen\)"/.test(plHidden)) fogBad.push(m.id + " no player fog");
     (m.areas || []).forEach(a => {
-      const tag = 'data-fog="' + a.id + '"';
-      const hidden = D.render(m, { player: true, fog: { revealed: [] } });
-      const shown = D.render(m, { player: true, fog: { revealed: [a.id] } });
-      if (a.fog === false ? hidden.indexOf(tag) >= 0 : hidden.indexOf(tag) < 0) fogBad.push(m.id + " " + a.id + " hidden");
-      if (shown.indexOf(tag) >= 0) fogBad.push(m.id + " " + a.id + " revealed");
+      const tint = 'data-fog="' + a.id + '"', hole = 'data-seen="' + a.id + '"';
+      const gmShown = D.render(m, { fog: { revealed: [a.id] } });
+      const plShown = D.render(m, { player: true, fog: { revealed: [a.id] } });
+      if (a.fog === false) {
+        if (gmHidden.indexOf(tint) >= 0 || plHidden.indexOf(hole) < 0) fogBad.push(m.id + " " + a.id + " covered, but fog:false");
+        return;
+      }
+      if (gmHidden.indexOf(tint) < 0 || plHidden.indexOf(hole) >= 0) fogBad.push(m.id + " " + a.id + " not covered");
+      if (gmShown.indexOf(tint) >= 0 || plShown.indexOf(hole) < 0) fogBad.push(m.id + " " + a.id + " still covered once revealed");
     });
   });
   R.eq("fog covers each unrevealed area and lifts when it is revealed", fogBad, []);
@@ -122,8 +131,120 @@ function dataChecks(R) {
     fs.existsSync(idx) && !/<script/i.test(fs.readFileSync(idx, "utf8")), "");
 }
 
-module.exports = async function () {
+/* The Maps screen and the player screen, driven the way a GM would. */
+async function screenChecks(R, browser) {
+  const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+  const goMaps = () => page.evaluate(() => { const T = window.TT; T.setMode("table"); T.gmSec(9); T.render(); });
+  const shown = () => page.evaluate(() => JSON.stringify(window.TTGM.mapsState().revealed));
+  const tapArea = async (sel, id) => {
+    const view = sel.locator(".map-view");
+    await view.scrollIntoViewIfNeeded();
+    const b = await sel.locator('.map-view polygon[data-area="' + id + '"]').boundingBox();
+    await sel.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+    await sel.waitForTimeout(80);
+  };
+  await goMaps();
+
+  // With nothing chosen it opens on the first scene's map.
+  R.eq("the Maps screen draws the current scene's map",
+    await page.evaluate(() => document.querySelector(".map-view svg").getAttribute("data-map")), "s1-chapel");
+  R.check("the GM's view has key letters", await page.locator(".map-view g.key").count() > 5, "");
+  await page.selectOption(".map-pick select", "gullet-market");
+  await page.waitForTimeout(80);
+  R.eq("picking another map draws it",
+    await page.evaluate(() => document.querySelector(".map-view svg").getAttribute("data-map")), "gullet-market");
+  await page.selectOption(".map-pick select", "s1-chapel");
+  await page.waitForTimeout(80);
+
+  // The player window: blank until the GM sends a map.
+  const pv = await ctx.newPage();
+  pv.on("pageerror", e => errors.push("player screen: " + e.message));
+  await pv.goto(FILE_URL + "#mapview");
+  await pv.waitForSelector(".mapview");
+  R.check("the player screen waits for the GM", await pv.locator(".mapview-wait").count() === 1, "");
+  R.eq("the player screen draws none of the app", await pv.locator("#stage .stage-head").count(), 0);
+
+  await page.getByRole("button", { name: "Show players this map" }).click();
+  await pv.waitForSelector(".mapview svg", { timeout: 3000 });
+  const seen = () => pv.evaluate(() =>
+    [...document.querySelectorAll(".mapview [data-seen]")].map(x => x.getAttribute("data-seen")).sort().join(","));
+  R.eq("Show players this map puts it on the player screen",
+    await pv.evaluate(() => document.querySelector(".mapview svg").getAttribute("data-map")), "s1-chapel");
+  R.eq("the player screen has no key letters", await pv.locator(".mapview g.key").count(), 0);
+  R.eq("at first players see only the open ground", await seen(), "steps,terrace");
+
+  // A tap reveals an area; the player window follows without a reload.
+  await tapArea(page, "nave");
+  R.eq("a tap on an area reveals it", await shown(), '{"s1-chapel":["nave"]}');
+  await pv.waitForFunction(() => !!document.querySelector('.mapview [data-seen="nave"]'), null, { timeout: 3000 })
+    .catch(() => {});
+  R.eq("the player screen follows the reveal", await seen(), "nave,steps,terrace");
+  await tapArea(page, "nave");
+  R.eq("a second tap hides it again", await shown(), "{}");
+  await page.locator('.map-area[data-area="office"] button').click();
+  R.eq("Reveal in the key reveals the area", await shown(), '{"s1-chapel":["office"]}');
+  R.check("the key marks it seen", await page.locator('.map-area.shown[data-area="office"]').count() === 1, "");
+  await page.reload();
+  await page.waitForFunction(() => !!window.TT);
+  await goMaps();
+  R.eq("reveals survive a reload", await shown(), '{"s1-chapel":["office"]}');
+  await page.getByRole("button", { name: "Reveal all" }).click();
+  R.check("Reveal all shows every fogged area",
+    await page.evaluate(() => window.TTGM.mapsState().revealed["s1-chapel"].length === 8), await shown());
+  await pv.waitForTimeout(150);
+  R.eq("the player screen shows every area", (await seen()).split(",").length, 10);
+  await page.getByRole("button", { name: "Blank the TV" }).click();
+  await pv.waitForSelector(".mapview-wait", { timeout: 3000 }).catch(() => {});
+  R.check("Blank the TV clears the player screen", await pv.locator(".mapview svg").count() === 0, "");
+
+  // Fog off: the players see everything, and a tap reveals nothing.
+  await page.getByRole("button", { name: "Hide all" }).click();
+  await page.getByRole("button", { name: "Fog", exact: true }).click();
+  R.eq("fog off draws no fog on the GM's view", await page.locator(".map-view .fog").count(), 0);
+  await tapArea(page, "nave");
+  R.eq("with fog off a tap changes nothing", await shown(), "{}");
+  await page.getByRole("button", { name: "Fog", exact: true }).click();
+
+  // Hand-off: the players' view covers this tab until the GM holds the button.
+  await page.getByRole("button", { name: "Show on this screen" }).click();
+  R.check("Show on this screen covers the tab", await page.locator(".mapview.handoff svg").count() === 1, "");
+  await page.locator(".mapview-gm").click();
+  R.check("a quick tap on the GM button doesn't close it", await page.locator(".mapview.handoff").count() === 1, "");
+  const g = await page.locator(".mapview-gm").boundingBox();
+  await page.mouse.move(g.x + 4, g.y + 4);
+  await page.mouse.down();
+  await page.waitForTimeout(1150);
+  await page.mouse.up();
+  R.eq("holding it for a second brings the GM screen back", await page.locator(".mapview").count(), 0);
+
+  // From the Story screen: a scene's map button opens that map here.
+  await page.evaluate(() => { const T = window.TT; T.gmSec(5); T.render(); });
+  await page.getByRole("button", { name: "Expand everything" }).click();
+  await page.locator('details[data-scene="s4"] .map-chip').first().click();
+  R.eq("a scene's map button opens the Maps screen", await page.evaluate(() => window.TT.gmSec()), 9);
+  R.eq("on that scene's map",
+    await page.evaluate(() => document.querySelector(".map-view svg").getAttribute("data-map")), "s3-barracks");
+
+  // The vault carries the maps, and a hand-edited one is cleaned on the way in.
+  await page.evaluate(() => window.TTGM.importVault(JSON.stringify({
+    kind: "ttb-gm-vault", party: [], npcs: [], encounters: [],
+    play: { maps: { current: "s9-eye", live: "no-such-map", grid: false,
+      revealed: { "s9-eye": ["gallery", "nope", "gallery"], "gone": ["x"] } } }
+  })));
+  const back = await page.evaluate(() => window.TTGM.mapsState());
+  R.eq("importing a vault restores the maps and drops what doesn't exist",
+    [back.current, back.live, back.grid, JSON.stringify(back.revealed)],
+    ["s9-eye", null, false, '{"s9-eye":["gallery"]}']);
+  const exported = await page.evaluate(() => JSON.parse(localStorage.getItem("ttb.gm.play")).maps.current);
+  R.eq("the maps are saved with the rest of the table", exported, "s9-eye");
+
+  R.eq("no page errors on the Maps screen or the player screen", errors, []);
+  await ctx.close();
+}
+
+module.exports = async function (browser) {
   const R = new Results();
   dataChecks(R);
+  await screenChecks(R, browser);
   return R;
 };

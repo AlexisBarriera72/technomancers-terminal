@@ -702,6 +702,36 @@ window.TTBGM = {
         comp: "Roll a complication for this round"
       }
     },
+    maps: {
+      steps: [
+        "Pick a map, or one of this scene's under the picker. The Story screen, the street roll, the heist planner and the chase link here too.",
+        "Open player screen opens a second window for the TV: drag it there and press Full screen. It shows only what you reveal.",
+        "Show players this map sends the map you're looking at to that window. Read ahead on another map and the players see nothing of it.",
+        "Tap an area on the map, or Reveal in the key, to show it to the players; tap again to hide it. Reveal all and Hide all do the whole map.",
+        "Passing a tablet round instead? Show on this screen covers this tab with the players' view. Hold the GM button for a second to come back.",
+        "The letters are yours: the players never see them, the secret doors or anything marked for the GM."
+      ],
+      hints: {
+        players: "The player screen is a second window on this device, not a second device: the site has no server to send the map anywhere.",
+        viewer: "The dark tint is what the players can't see yet. Areas marked Always seen are open ground they see from the start.",
+        key: "Each letter's text is yours to read out or paraphrase. The DCs are suggestions; change them to suit your table."
+      },
+      tips: {
+        show: "Put this map on the player screen",
+        blank: "Clear the player screen",
+        open: "Open the players' window, for the TV",
+        handoff: "Cover this screen with the players' view, to pass the tablet round",
+        grid: "Show or hide the 5-ft grid, on both screens",
+        letters: "Show or hide the key letters (the players never see them)",
+        fog: "Turn the fog of war on or off, on both screens",
+        all: "Show every area to the players",
+        none: "Hide every area from the players",
+        area: "Show this area to the players, or hide it again",
+        print: "Download the map for paper, with the key letters",
+        tv: "Download what the players see right now",
+        png: "Download a PNG for a VTT: no letters, no fog, 100 px a square"
+      }
+    },
     dossier: {
       hints: { lock: "Lock before you hand the tablet to a player. The #gm address opens it again." }
     }
@@ -811,6 +841,7 @@ window.TTGM = (function () {
       if (p.heist != null) p.heist = cleanHeist(p.heist);
       if (p.netrun != null) p.netrun = cleanNet(p.netrun);
       if (p.chase != null) p.chase = cleanChase(p.chase);
+      p.maps = cleanMaps(p.maps);
       mem.play = p;
     }
     return mem.play;
@@ -1266,6 +1297,7 @@ window.TTGM = (function () {
         if (blob.play.heist && typeof blob.play.heist === "object") cur.heist = cleanHeist(blob.play.heist);
         if (blob.play.netrun && typeof blob.play.netrun === "object") cur.netrun = cleanNet(blob.play.netrun);
         if (blob.play.chase && typeof blob.play.chase === "object") cur.chase = cleanChase(blob.play.chase);
+        if (blob.play.maps && typeof blob.play.maps === "object") cur.maps = cleanMaps(blob.play.maps);
       });
     }
     toast("Merged " + count(p.n, "character", "characters") + ", " + count(n.n, "NPC", "NPCs") +
@@ -1416,6 +1448,9 @@ window.TTGM = (function () {
         "[20:35] Mother Slate: the Marrowworks crew hit something that bled warm.\n" +
         "[21:02] Fight in the Gullet. Brick owes Thorn 4,000₵ and a tooth.\n" +
         "Next time: the lifts arrive before they are called.",
+      // Scene 4's map on the TV, the party only as far as the catwalk
+      maps: { current: "s4-shaft", live: "s4-shaft", grid: true, keys: true, fog: true,
+              revealed: { "s4-shaft": ["landing", "gate", "catwalk"] } },
       enc: enc
     };
     return { party: party, npcs: npcs, encs: encs, play: play };
@@ -2490,7 +2525,7 @@ window.TTGM = (function () {
     if (st.branch[sc.id]) head.appendChild(txt("span", "chip st-br " + st.branch[sc.id],
       st.branch[sc.id] === "right" ? "Went right" : st.branch[sc.id] === "wrong" ? "Went wrong" : "Mixed"));
 
-    return lazyDetails("scene:" + sc.id, "st-scene" + (st.current === sc.id ? " now" : ""), head, function (body) {
+    var sd = lazyDetails("scene:" + sc.id, "st-scene" + (st.current === sc.id ? " now" : ""), head, function (body) {
       body.appendChild(stxt("div", "gm-note st-place", sc.place));
       var c = row("gm-row st-ctl");
       c.appendChild(btn(st.done[sc.id] ? "Played ✓" : "Mark played", st.done[sc.id] ? "tiny" : "tiny primary", function () {
@@ -2526,6 +2561,8 @@ window.TTGM = (function () {
         if (k && HELP.story.tips[k]) b.title = HELP.story.tips[k];
       });
       if (helpOn()) { var sh = hintEl("story", "scene"); if (sh) body.appendChild(sh); }
+      var smaps = mapChips("Maps", mapsForScene(sc.id));
+      if (smaps) body.appendChild(smaps);
 
       var note = field(st.notes[sc.id] || "", "Your notes for this scene, what happened, who they annoyed…",
         function (v) { storyPatch(function (x) { if (v) x.notes[sc.id] = v; else delete x.notes[sc.id]; }); }, "textarea");
@@ -2540,6 +2577,8 @@ window.TTGM = (function () {
         }));
       });
     });
+    sd.setAttribute("data-scene", sc.id);
+    return sd;
   }
 
   /* ---- the demo walkthrough: the whole campaign, one session at a time ----
@@ -2822,7 +2861,7 @@ window.TTGM = (function () {
     return b ? b.parentNode : null;
   }
   function decorate(s, sec) {
-    var key = ["party", "encounter", "rulings", "npcs", "clocks", "story", "campaign", "city", "toolkit"][sec] || "party";
+    var key = ["party", "encounter", "rulings", "npcs", "clocks", "story", "campaign", "city", "toolkit", "maps"][sec] || "party";
     guideBox(s, key);
     var q = function (sel) { return s.querySelector(sel); };
     if (key === "party") {
@@ -2894,6 +2933,14 @@ window.TTGM = (function () {
       if (tools && helpOn()) { var ht = hintEl("toolkit", "tools"); if (ht) tools.parentNode.insertBefore(ht, tools); }
       tips(s, "toolkit", [["Roll loot", "loot"], ["Five names", "names"], ["Work out the fall", "fall"],
         ["Roll a malfunction", "mal"], ["What went wrong", "wrong"], ["Generate", "net"], ["Complication", "comp"]]);
+    } else if (key === "maps") {
+      hintAt(q(".map-players"), "maps", "players");
+      hintAt(q(".map-howto"), "maps", "viewer");
+      hintAt(q(".map-key-list"), "maps", "key");
+      tips(s, "maps", [["Show players this map", "show"], ["Players see this map", "show"], ["Blank the TV", "blank"],
+        ["Open player screen", "open"], ["Show on this screen", "handoff"], ["Grid", "grid"], ["Letters", "letters"],
+        ["Fog", "fog"], ["Reveal all", "all"], ["Hide all", "none"], ["Reveal", "area"], ["Conceal", "area"],
+        ["Print SVG", "print"], ["Player SVG", "tv"], ["PNG for a VTT", "png"]]);
     } else if (key === "campaign") {
       hintAt(btnRow(s, "Use these settings"), "campaign", "use");
       tips(s, "campaign", [["+ New campaign", "newCamp"], ["Import", "importCamp"], ["Export this campaign", "exportCamp"],
@@ -2911,7 +2958,7 @@ window.TTGM = (function () {
     s.classList.add("gm");
     if (inDemo()) demoBanner(s);
     var fns = [renderParty, renderEncounter, renderRulings, renderNPCs, renderClocks, renderStory, renderCampaignGM,
-               renderCity, renderToolkit];
+               renderCity, renderToolkit, renderMaps];
     (fns[sec] || renderParty)(s);
     decorate(s, fns[sec] ? sec : 0);
   }
@@ -2967,6 +3014,19 @@ window.TTGM = (function () {
       dr.appendChild(txt("span", "k", "Doom"));
       dr.appendChild(txt("span", "v", doomCount(stst) + " / 7"));
       body.appendChild(dr);
+    }
+
+    if (mapList().length) {
+      var mst = mapsState(), lm = mapById(mst.live);
+      body.appendChild(txt("div", "gm-label", "Maps"));
+      var mr = el("div", "dos-row");
+      mr.appendChild(txt("span", "k", "Player screen"));
+      mr.appendChild(lm ? stxt("span", "v", lm.title) : txt("span", "v", "blank"));
+      body.appendChild(mr);
+      var mb = row("gm-row");
+      if (lm) mb.appendChild(btn("Open the map", "tiny", function () { openMap(lm.id); }));
+      mb.appendChild(btn("Open player screen", "tiny", openPlayerScreen));
+      body.appendChild(mb);
     }
 
     var party = partyAll();
@@ -4615,6 +4675,11 @@ window.TTGM = (function () {
           toast(n ? "Added to the encounter" : "No such template"); redraw();
         }));
       }
+      var dist = cityDistricts().filter(function (d) { return d.id === res.district; })[0];
+      var smap = mapChips("Maps", mapsFor(function (m) {
+        return (m.group === "street" || m.group === "chase") && dist && m.band === dist.band;
+      }));
+      if (smap) rc.appendChild(smap);
       se.appendChild(rc);
     }
     s.appendChild(se);
@@ -4941,6 +5006,8 @@ window.TTGM = (function () {
 
   function toolHeist(h) {
     var st = heistState(), party = partyChars();
+    var hm = mapChips("Maps", mapsFor(function (m) { return m.group === "heist"; }));
+    if (hm) h.appendChild(hm);
     var tr = el("div", "gm-field");
     tr.appendChild(txt("label", "gm-label", "Target"));
     var tin = field(st.target, "What they're after, and where", function (v) { heistPatch(function (x) { x.target = v; }); });
@@ -5072,6 +5139,8 @@ window.TTGM = (function () {
 
   function toolChase(h) {
     var c = chaseState(), mode = CITY.chaseModes[c.mode];
+    var cm = mapChips("Maps", mapsFor(function (m) { return m.group === "chase"; }));
+    if (cm) h.appendChild(cm);
     var seg = el("div", "seg");
     Object.keys(CITY.chaseModes).forEach(function (k) {
       var on = c.mode === k;
@@ -5130,6 +5199,493 @@ window.TTGM = (function () {
     s.appendChild(wrap);
   }
 
+  /* ===================================================== SECTION, MAPS ===
+     The battle maps in maps.js, drawn by mapdraw.js. The GM sees the whole
+     map with its key letters and a tint over what the players haven't seen;
+     the player screen sees only what has been revealed. Fog is kept per map
+     in play.maps, so a reload keeps it and the vault carries it.
+
+     The player screen is this page at #mapview in a second window on the
+     same device (the one on the TV). It never writes: it reads play.maps
+     from storage and redraws on the storage event. There is no server, so a
+     second device can't follow along; "Show on this screen" covers a tablet
+     passed round the table instead.                                        */
+  var MAPS = window.TTMAPS || null, MD = window.TTMAPDRAW || null;
+  var SEC_STORY = 5, SEC_MAPS = 9;          // places in GMSEC, app/core.js
+  function mapList() { return MAPS && MD ? MAPS.maps : []; }
+  function mapById(id) { return mapList().filter(function (m) { return m.id === id; })[0] || null; }
+  function mapsFor(pred) { return mapList().filter(pred); }
+  function mapsForScene(sid) { return mapsFor(function (m) { return (m.scenes || []).indexOf(sid) >= 0; }); }
+
+  /* Arrives from a vault file a person can edit: unknown maps and areas go. */
+  function cleanMaps(v) {
+    function obj(x) { return x && typeof x === "object" && !Array.isArray(x) ? x : {}; }
+    var o = obj(v), R = obj(o.revealed), rev = {};
+    var flags = { grid: o.grid !== false, keys: o.keys !== false, fog: o.fog !== false };
+    // With no maps loaded there is nothing to check against; keep it as it was.
+    if (!mapList().length) return { current: null, live: null, revealed: R, grid: flags.grid, keys: flags.keys, fog: flags.fog };
+    Object.keys(R).forEach(function (id) {
+      var m = mapById(id);
+      if (!m || !Array.isArray(R[id])) return;
+      var ok = (m.areas || []).map(function (a) { return a.id; });
+      var list = R[id].filter(function (a, i, arr) {
+        return typeof a === "string" && ok.indexOf(a) >= 0 && arr.indexOf(a) === i;
+      });
+      if (list.length) rev[id] = list;
+    });
+    return { current: mapById(o.current) ? o.current : null, live: mapById(o.live) ? o.live : null,
+             revealed: rev, grid: flags.grid, keys: flags.keys, fog: flags.fog };
+  }
+  function mapsState() { return cleanMaps(playState().maps); }
+  function mapsPatch(fn) { playPatch(function (p) { p.maps = cleanMaps(p.maps); fn(p.maps); }); }
+
+  /* The map the GM last looked at, else the current scene's, else the first. */
+  function mapCurrent() {
+    var m = mapById(mapsState().current);
+    if (m) return m;
+    var sc = ST ? sceneNow() : null, list = sc ? mapsForScene(sc.id) : [];
+    return list[0] || mapList()[0] || null;
+  }
+  function openMap(id) {
+    mapsPatch(function (x) { x.current = id; });
+    T.setMode("table"); T.gmSec(SEC_MAPS); redraw();
+    window.scrollTo(0, 0);
+  }
+  function openScene(sid) {
+    var act = ST ? ST.acts.filter(function (a) {
+      return a.scenes.some(function (x) { return x.id === sid; });
+    })[0] : null;
+    if (!act) return;
+    storyOpen["act:" + act.id] = true;
+    storyOpen["scene:" + sid] = true;
+    T.setMode("table"); T.gmSec(SEC_STORY); redraw();
+    var d = document.querySelector('details[data-scene="' + sid + '"]');
+    if (d && d.scrollIntoView) d.scrollIntoView({ block: "start" });
+  }
+  function mapChip(m) {
+    var b = btn(m.title, "tiny map-chip", function () { openMap(m.id); });
+    b.setAttribute("data-nolang", "");
+    b.title = m.place || "";
+    return b;
+  }
+  /* A row of map buttons for another screen: Story, the street, the heist. */
+  function mapChips(label, list) {
+    if (!list.length) return null;
+    var r = row("gm-row map-chips");
+    r.appendChild(txt("span", "gm-label", label));
+    list.forEach(function (m) { r.appendChild(mapChip(m)); });
+    return r;
+  }
+
+  function mapRevealed(ms, id) { return ms.revealed[id] || []; }
+  function toggleArea(mapId, areaId) {
+    var shown = false;
+    mapsPatch(function (x) {
+      var list = x.revealed[mapId] || (x.revealed[mapId] = []);
+      var i = list.indexOf(areaId);
+      if (i >= 0) list.splice(i, 1); else { list.push(areaId); shown = true; }
+    });
+    return shown;
+  }
+  function revealAll(mapId, on) {
+    var m = mapById(mapId);
+    if (!m) return;
+    mapsPatch(function (x) {
+      x.revealed[mapId] = on ? (m.areas || []).filter(function (a) { return a.fog !== false; })
+        .map(function (a) { return a.id; }) : [];
+    });
+  }
+  function fogOf(m, ms) { return ms.fog ? { revealed: mapRevealed(ms, m.id) } : null; }
+  function gmMapSvg(m, ms) {
+    return MD.render(m, { theme: "noir", grid: ms.grid, keys: ms.keys, fog: fogOf(m, ms) });
+  }
+  function playerMapSvg(m, ms) {
+    return MD.render(m, { theme: "noir", player: true, grid: ms.grid, fog: fogOf(m, ms) });
+  }
+  /* The drawing is our own string, but it still goes in through the SVG
+     parser rather than innerHTML: map text is data like any other. */
+  function svgNode(text) {
+    var doc = new DOMParser().parseFromString(text, "image/svg+xml");
+    var root = doc.documentElement;
+    if (!root || root.nodeName.toLowerCase() !== "svg" || doc.getElementsByTagName("parsererror").length) return null;
+    var n = document.importNode(root, true);
+    n.setAttribute("data-nolang", "");
+    return n;
+  }
+
+  /* ---- the GM's viewer: drag to pan, wheel or pinch to zoom, tap to reveal */
+  var mapView = { id: null, vb: null };      // zoom and pan, kept for this visit
+  function mapViewer(m, ms) {
+    var host = el("div", "map-view");
+    host.tabIndex = 0;
+    host.setAttribute("aria-label", "The map. Tap an area to show it to the players or hide it again.");
+    var svg = svgNode(gmMapSvg(m, ms));
+    var ctl = { zoom: function () {}, fit: function () {} };
+    if (!svg) { host.appendChild(txt("p", "gm-note", "This map didn't draw.")); return { host: host, ctl: ctl }; }
+    var W = m.w * MD.S, H = m.h * MD.S;
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", "100%");
+    if (mapView.id !== m.id) { mapView.id = m.id; mapView.vb = null; }
+    function vb() { return mapView.vb || [0, 0, W, H]; }
+    function apply() {
+      svg.setAttribute("viewBox", vb().map(function (v) { return Math.round(v * 10) / 10; }).join(" "));
+    }
+    apply();
+    host.appendChild(svg);
+
+    function toUser(cx, cy) {
+      var ctm = svg.getScreenCTM();
+      if (!ctm) return null;
+      var p = svg.createSVGPoint();
+      p.x = cx; p.y = cy;
+      return p.matrixTransform(ctm.inverse());
+    }
+    function zoomAt(cx, cy, f) {
+      var v = vb(), u = toUser(cx, cy);
+      if (!u || !(f > 0)) return;
+      var nw = Math.max(W * 0.08, Math.min(W * 2, v[2] / f));
+      f = v[2] / nw;
+      mapView.vb = [u.x - (u.x - v[0]) / f, u.y - (u.y - v[1]) / f, nw, v[3] / f];
+      apply();
+    }
+    function panBy(dx, dy) {
+      var ctm = svg.getScreenCTM();
+      if (!ctm || !ctm.a) return;
+      var v = vb().slice();
+      v[0] -= dx / ctm.a; v[1] -= dy / ctm.d;
+      mapView.vb = v; apply();
+    }
+    function middle() {
+      var r = host.getBoundingClientRect();
+      return [r.left + r.width / 2, r.top + r.height / 2];
+    }
+    ctl.zoom = function (f) { var c = middle(); zoomAt(c[0], c[1], f); };
+    ctl.fit = function () { mapView.vb = null; apply(); };
+
+    function tap(cx, cy) {
+      var u = toUser(cx, cy);
+      if (!u) return;
+      var a = MD.areaAt(m, u.x / MD.S, u.y / MD.S);
+      if (!a) return;
+      if (!mapsState().fog) { toast("Fog is off: the players see the whole map"); return; }
+      if (a.fog === false) { toast("The players always see this area"); return; }
+      var shown = toggleArea(m.id, a.id);
+      toast((shown ? "Players see " : "Hidden from players: ") + (a.key ? a.key + ", " : "") + a.name);
+      redraw();
+    }
+
+    // One finger drags, two pinch; a press that barely moves is a tap.
+    var pts = {}, start = null, moved = false, pinch = null;
+    function pinchOf() {
+      var ids = Object.keys(pts), a = pts[ids[0]], b = pts[ids[1]];
+      return { d: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    }
+    host.addEventListener("pointerdown", function (e) {
+      if (e.button > 0) return;
+      try { host.setPointerCapture(e.pointerId); } catch (x) {}
+      pts[e.pointerId] = { x: e.clientX, y: e.clientY };
+      var n = Object.keys(pts).length;
+      if (n === 1) { start = { x: e.clientX, y: e.clientY }; moved = false; }
+      else if (n === 2) { moved = true; pinch = pinchOf(); }
+    });
+    host.addEventListener("pointermove", function (e) {
+      var p = pts[e.pointerId];
+      if (!p) return;
+      var dx = e.clientX - p.x, dy = e.clientY - p.y;
+      p.x = e.clientX; p.y = e.clientY;
+      if (Object.keys(pts).length >= 2) {
+        var now = pinchOf();
+        if (pinch) { zoomAt(now.x, now.y, now.d / pinch.d); panBy(now.x - pinch.x, now.y - pinch.y); }
+        pinch = now;
+        return;
+      }
+      if (!moved && start && Math.abs(e.clientX - start.x) + Math.abs(e.clientY - start.y) > 6) moved = true;
+      if (moved) panBy(dx, dy);
+    });
+    function lift(e) {
+      if (!pts[e.pointerId]) return;
+      delete pts[e.pointerId];
+      var left = Object.keys(pts).length;
+      if (left < 2) pinch = null;
+      if (!left) {
+        if (!moved && e.type === "pointerup") tap(e.clientX, e.clientY);
+        start = null;
+      }
+    }
+    host.addEventListener("pointerup", lift);
+    host.addEventListener("pointercancel", lift);
+    host.addEventListener("wheel", function (e) {
+      e.preventDefault();
+      zoomAt(e.clientX, e.clientY, Math.pow(1.0015, -e.deltaY));
+    }, { passive: false });
+    host.addEventListener("keydown", function (e) {
+      var c = middle(), k = e.key;
+      if (k === "+" || k === "=") zoomAt(c[0], c[1], 1.25);
+      else if (k === "-") zoomAt(c[0], c[1], 0.8);
+      else if (k === "0") ctl.fit();
+      else if (k === "ArrowLeft") panBy(60, 0);
+      else if (k === "ArrowRight") panBy(-60, 0);
+      else if (k === "ArrowUp") panBy(0, 60);
+      else if (k === "ArrowDown") panBy(0, -60);
+      else return;
+      e.preventDefault();
+    });
+    return { host: host, ctl: ctl };
+  }
+
+  function mapKeyList(m, ms) {
+    var box = el("div", "map-key-list");
+    var rev = mapRevealed(ms, m.id);
+    (m.areas || []).forEach(function (a) {
+      var on = a.fog === false || !ms.fog || rev.indexOf(a.id) >= 0;
+      var line = el("div", "map-area" + (on ? " shown" : ""));
+      line.setAttribute("data-area", a.id);
+      var head = el("div", "map-area-head");
+      head.appendChild(txt("span", "map-letter", a.key || "·"));
+      head.appendChild(stxt("b", "map-area-name", a.name || a.id));
+      if (a.fog === false) head.appendChild(txt("span", "chip", "Always seen"));
+      else if (ms.fog) {
+        var b = btn(on ? "Conceal" : "Reveal", "tiny" + (on ? "" : " primary"), function () {
+          toggleArea(m.id, a.id); redraw();
+        });
+        b.setAttribute("aria-pressed", on ? "true" : "false");
+        head.appendChild(b);
+      }
+      line.appendChild(head);
+      if (a.text) line.appendChild(stxt("p", "map-area-text", a.text));
+      box.appendChild(line);
+    });
+    return box;
+  }
+
+  function openPlayerScreen() {
+    var w = null;
+    try { w = window.open(location.pathname + location.search + "#mapview", "ttb-mapview"); } catch (e) {}
+    if (!w) toast("The browser blocked the new window: allow pop-ups here, or open this page with #mapview at the end");
+  }
+  function showPlayers(id) {
+    mapsPatch(function (x) { x.live = id; });
+  }
+
+  function mapPng(m) {
+    var fail = function () { toast("This browser couldn't make a PNG; use the SVG"); };
+    var svg = MD.render(m, { theme: "noir", player: true });
+    var W = m.w * MD.S, H = m.h * MD.S, k = Math.min(2, Math.sqrt(16e6 / (W * H)));
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var c = document.createElement("canvas");
+        c.width = Math.round(W * k); c.height = Math.round(H * k);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(function (b) { if (b) T.saveAs(m.id + ".png", b, "image/png"); else fail(); }, "image/png");
+      } catch (e) { fail(); }
+    };
+    img.onerror = fail;
+    // a data: URL, not a blob: one, because the site's CSP allows img-src data:
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+
+  function renderMaps(s) {
+    sectionHead(s, "The table", "Maps",
+      "A battle map for every scene and the places between. Reveal it area by area; the player screen shows only what you've revealed.");
+    if (!mapList().length) {
+      empty(s, "The maps didn't load.", "Reload the page; maps.js and mapdraw.js sit next to gm.js.");
+      return;
+    }
+    var ms = mapsState(), m = mapCurrent(), scale = m.scale || 5;
+
+    var pick = row("gm-row map-pick");
+    var sel = document.createElement("select");
+    sel.setAttribute("aria-label", "Choose a map");
+    MAPS.groups.forEach(function (g) {
+      var list = mapsFor(function (x) { return x.group === g.id; });
+      if (!list.length) return;
+      var og = document.createElement("optgroup");
+      og.label = T.T ? T.T(g.name) : g.name;
+      list.forEach(function (x) {
+        var o = stxt("option", null, x.title);
+        o.value = x.id;
+        if (x.id === m.id) o.selected = true;
+        og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+    sel.onchange = function () { mapsPatch(function (x) { x.current = sel.value; }); redraw(); };
+    pick.appendChild(sel);
+    s.appendChild(pick);
+    var sc = ST ? sceneNow() : null;
+    if (sc) {
+      var chips = mapChips("This scene (S" + sc.session + ")", mapsForScene(sc.id));
+      if (chips) s.appendChild(chips);
+    }
+
+    var info = el("div", "map-info");
+    info.appendChild(stxt("h3", null, m.title));
+    var meta = el("div", "gm-note map-meta");
+    meta.appendChild(stxt("span", null, m.place));
+    meta.appendChild(txt("span", null, m.w * scale + " × " + m.h * scale + " ft, one square is " + scale + " ft"));
+    info.appendChild(meta);
+    if (m.blurb) info.appendChild(stxt("p", null, m.blurb));
+    var live = ms.live === m.id;
+    if (live) info.appendChild(txt("span", "chip tone-signal map-live", "On the player screen"));
+    s.appendChild(info);
+
+    // players: what the TV shows
+    var pl = row("gm-row map-players");
+    pl.appendChild(btn(live ? "Players see this map" : "Show players this map", live ? "" : "primary", function () {
+      showPlayers(m.id); toast("On the player screen"); redraw();
+    }));
+    if (ms.live) pl.appendChild(btn("Blank the TV", "", function () { showPlayers(null); redraw(); }));
+    pl.appendChild(btn("Open player screen", "", openPlayerScreen));
+    pl.appendChild(btn("Show on this screen", "", function () {
+      showPlayers(m.id);
+      mountPlayerView(true);
+    }));
+    s.appendChild(pl);
+
+    // the view: grid, letters, fog, zoom
+    var viewer = mapViewer(m, ms);
+    var vr = row("gm-row map-tools");
+    var seg = el("div", "seg");
+    [["grid", "Grid"], ["keys", "Letters"], ["fog", "Fog"]].forEach(function (o) {
+      var on = ms[o[0]];
+      var b = btn(o[1], on ? "on" : "", function () { mapsPatch(function (x) { x[o[0]] = !on; }); redraw(); });
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      seg.appendChild(b);
+    });
+    vr.appendChild(seg);
+    var z = el("div", "seg map-zoom");
+    [["−", 0.8, "Zoom out"], ["Fit", 0, "Fit the whole map"], ["+", 1.25, "Zoom in"]].forEach(function (o) {
+      var b = btn(o[0], "", function () { if (o[1]) viewer.ctl.zoom(o[1]); else viewer.ctl.fit(); });
+      b.setAttribute("aria-label", o[2]);
+      z.appendChild(b);
+    });
+    vr.appendChild(z);
+    if (ms.fog) {
+      vr.appendChild(btn("Reveal all", "tiny", function () { revealAll(m.id, true); redraw(); }));
+      vr.appendChild(btn("Hide all", "tiny", function () { revealAll(m.id, false); redraw(); }));
+    }
+    s.appendChild(vr);
+    s.appendChild(viewer.host);
+    s.appendChild(txt("div", "gm-note map-howto",
+      ms.fog ? "Drag to move, pinch or scroll to zoom, tap an area to show it to the players or hide it again."
+             : "Drag to move, pinch or scroll to zoom. Fog is off: the players see the whole map."));
+
+    s.appendChild(txt("div", "gm-label", "The key"));
+    s.appendChild(mapKeyList(m, ms));
+    if ((m.notes || []).length) {
+      s.appendChild(txt("div", "gm-label", "Running it"));
+      m.notes.forEach(function (n) { s.appendChild(stxt("p", "gm-note map-note", n)); });
+    }
+    if ((m.scenes || []).length && ST) {
+      var sr = row("gm-row map-scenes");
+      sr.appendChild(txt("span", "gm-label", "Scenes"));
+      m.scenes.forEach(function (sid) {
+        var x = sceneById(sid);
+        if (!x) return;
+        var b = btn("S" + x.session + " " + x.title, "tiny", function () { openScene(sid); });
+        b.setAttribute("data-nolang", "");
+        sr.appendChild(b);
+      });
+      s.appendChild(sr);
+    }
+    var dl = row("gm-row map-dl");
+    dl.appendChild(txt("span", "gm-label", "Download"));
+    dl.appendChild(btn("Print SVG", "tiny", function () {
+      T.saveAs(m.id + "-print.svg", MD.render(m, { theme: "print", title: true, grid: ms.grid, keys: ms.keys }), "image/svg+xml");
+    }));
+    dl.appendChild(btn("Player SVG", "tiny", function () {
+      T.saveAs(m.id + "-players.svg", playerMapSvg(m, ms), "image/svg+xml");
+    }));
+    dl.appendChild(btn("PNG for a VTT", "tiny", function () { mapPng(m); }));
+    s.appendChild(dl);
+  }
+
+  /* ---- the player screen ------------------------------------------------
+     handoff: false is the #mapview window, which reads storage and follows
+     the GM; true covers this tab until the GM holds the corner button, so a
+     player's tap can't land on the GM screen underneath.                    */
+  function mountPlayerView(handoff) {
+    var stage = el("div", "mapview" + (handoff ? " handoff" : ""));
+    var screen = el("div", "mapview-map");
+    var ctl = el("div", "mapview-ctl");
+    stage.appendChild(screen);
+    stage.appendChild(ctl);
+    var last = null;
+    function state() {
+      if (handoff) return mapsState();
+      var p = lsGet(K_PLAY, null);
+      return cleanMaps(p && typeof p === "object" ? p.maps : null);
+    }
+    function draw() {
+      var ms = state(), m = mapById(ms.live), text = m ? playerMapSvg(m, ms) : "";
+      if (text === last) return;          // the GM's tab writes often; most writes aren't the map
+      last = text;
+      while (screen.firstChild) screen.removeChild(screen.firstChild);
+      var svg = m && svgNode(text);
+      if (!svg) {
+        var w = el("div", "mapview-wait");
+        w.appendChild(txt("p", null, "Waiting for the GM"));
+        w.appendChild(txt("p", "hint", "The map shows here when the GM puts one on the player screen."));
+        screen.appendChild(w);
+        if (T.applyLang) T.applyLang(w);
+        return;
+      }
+      svg.setAttribute("width", "100%");
+      svg.setAttribute("height", "100%");
+      screen.appendChild(svg);
+    }
+
+    ctl.appendChild(btn("Full screen", "tiny mapview-fs", function () {
+      var d = document.documentElement;
+      try {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (d.requestFullscreen) { var pr = d.requestFullscreen(); if (pr && pr["catch"]) pr["catch"](function () {}); }
+      } catch (e) {}
+      // keep a TV or tablet from going to sleep mid-session, where it's supported
+      try { if (navigator.wakeLock) navigator.wakeLock.request("screen")["catch"](function () {}); } catch (e) {}
+    }));
+    var onStorage = function (e) { if (!e.key || e.key === K_PLAY) draw(); };
+    if (handoff) {
+      var gm = txt("button", "btn tiny mapview-gm", "GM");
+      gm.title = "Hold for a second to go back to the GM screen";
+      var timer = null;
+      var cancel = function () { clearTimeout(timer); timer = null; gm.classList.remove("holding"); };
+      gm.addEventListener("pointerdown", function (e) {
+        e.preventDefault();
+        gm.classList.add("holding");
+        timer = setTimeout(function () {
+          timer = null;
+          try { if (document.fullscreenElement) document.exitFullscreen(); } catch (x) {}
+          document.documentElement.classList.remove("mapview-on");
+          if (stage.parentNode) stage.parentNode.removeChild(stage);
+          redraw();
+        }, 1000);
+      });
+      ["pointerup", "pointerleave", "pointercancel"].forEach(function (ev) { gm.addEventListener(ev, cancel); });
+      gm.addEventListener("contextmenu", function (e) { e.preventDefault(); });
+      ctl.appendChild(gm);
+    } else {
+      window.addEventListener("storage", onStorage);
+      document.title = T.T ? T.T("Player screen") : "Player screen";
+    }
+    // the buttons fade when nobody is touching the screen
+    var idle = null;
+    var wake = function () {
+      stage.classList.remove("idle");
+      clearTimeout(idle);
+      idle = setTimeout(function () { stage.classList.add("idle"); }, 3000);
+    };
+    stage.addEventListener("pointermove", wake);
+    stage.addEventListener("pointerdown", wake);
+    wake();
+    document.documentElement.classList.add("mapview-on");
+    document.body.appendChild(stage);
+    if (T.applyLang) T.applyLang(ctl);
+    draw();
+    return stage;
+  }
+
   /* ---- the Humanity dashboard, on the Party screen --------------------- */
   function humanityBoard(party) {
     var rows = party.filter(function (p) { return p.d.hum; }).map(function (p) {
@@ -5173,6 +5729,8 @@ window.TTGM = (function () {
     dateOf: dateOf, advanceDay: advanceDay, rollWeather: rollWeather, postBoard: postBoard, takeJob: takeJob,
     rollLoot: rollLoot, rollNames: rollNames, longFall: longFall, rollMalfunction: rollMalfunction,
     rollMalfunctionFor: rollMalfunctionFor, generateNet: generateNet, cycleNode: cycleNode,
-    heistComplication: heistComplication, chaseComplication: chaseComplication, cleanChase: cleanChase
+    heistComplication: heistComplication, chaseComplication: chaseComplication, cleanChase: cleanChase,
+    cleanMaps: cleanMaps, mapsState: mapsState, openMap: openMap, toggleArea: toggleArea,
+    mountPlayerView: mountPlayerView
   };
 })();
