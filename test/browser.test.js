@@ -171,7 +171,7 @@ module.exports = async function (browser) {
       stage: document.querySelector("#stage").children.length,
       gmHidden: document.querySelector("#mTable").hidden
     }));
-    R.eq("player still sees three tabs", st.tabs, ["Forge", "Codex", "Campaign"]);
+    R.eq("players see two tabs; Campaign lives in the GM tools now", st.tabs, ["Forge", "Codex"]);
     R.check("Table tab still hidden by default", st.gmHidden === true);
     R.check("Forge still renders", st.stage > 0 && st.rail === "Build order", JSON.stringify(st));
     R.check("no console errors on a normal load", errors.length === 0, errors.join(" | "));
@@ -1132,6 +1132,76 @@ module.exports = async function (browser) {
     R.eq("and your Street Cred, clocks and notes", [pl.rep, pl.clocks, pl.scratch],
       [mine[3].rep, mine[3].clocks, mine[3].scratch]);
     R.eq("no page errors running the demo", errors, []);
+    await ctx.close();
+  }
+
+  /* ===== the GM screens explain themselves; Campaign is GM-only =====
+     A guide box on every GM screen and hints under its controls while the ?
+     guide is on, none while it's off; tooltips either way; and every line of
+     it in Spanish. */
+  {
+    const fs = require("fs"), path = require("path");
+    const root = path.join(__dirname, "..");
+    const win = {};
+    new Function("window", fs.readFileSync(path.join(root, "gm.js"), "utf8"))(win);
+    const win2 = {};
+    new Function("window", fs.readFileSync(path.join(root, "es-ui.js"), "utf8"))(win2);
+    const H = win.TTBGM.help, ui = win2.TTES.ui, missing = [];
+    Object.keys(H).forEach(k => {
+      (H[k].steps || []).concat(Object.values(H[k].hints || {}), Object.values(H[k].tips || {}))
+        .forEach(t => { if (!ui[t]) missing.push(k + ": " + t.slice(0, 50)); });
+    });
+    R.eq("every GM guide line, hint and tooltip has Spanish", missing, []);
+
+    const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+    await page.waitForTimeout(250);
+    const players = await page.evaluate(() => ({ camp: !!document.querySelector("#mCamp") }));
+    R.check("the players' header has no Campaign button", !players.camp, "");
+
+    const on = await page.evaluate(() => {
+      window.TTGM.loadDemo();
+      const T = window.TT, out = [];
+      T.setHelp(true);
+      for (let i = 0; i < 7; i++) {
+        T.setMode("table"); T.gmSec(i); T.render();
+        out.push({ guide: !!document.querySelector("#stage .gm-guide"),
+                   hints: document.querySelectorAll("#stage .gm-hint").length,
+                   titled: [...document.querySelectorAll("#stage button")].filter(b => b.title).length });
+      }
+      const rail = [...document.querySelectorAll(".rail .step")].map(x => x.textContent.replace(/^[\s·\d]+/, "").trim());
+      T.gmSec(6); T.render();
+      const camp = { h2: (document.querySelector("#stage h2") || {}).textContent,
+        people: [...document.querySelectorAll("#stage button")].some(b => b.textContent === "People") };
+      T.gmSec(0); T.render();
+      const add = [...document.querySelectorAll("#stage button")].find(b => b.textContent === "Add to party");
+      return { out, rail, camp, addTip: add ? add.title : "" };
+    });
+    R.check("every GM screen has a guide box while the guide is on", on.out.every(x => x.guide), JSON.stringify(on.out));
+    R.check("and hints under its controls", on.out.every(x => x.hints >= 1), JSON.stringify(on.out));
+    R.check("and tooltips on its buttons", on.out.every(x => x.titled >= 1), JSON.stringify(on.out));
+    R.check("the GM rail has Campaign", on.rail.indexOf("Campaign") >= 0, JSON.stringify(on.rail));
+    R.check("and it shows Cathedra with its sections", /Cathedra/.test(on.camp.h2 || "") && on.camp.people, JSON.stringify(on.camp));
+    R.check("a button says what it does on hover", /party/.test(on.addTip), on.addTip);
+
+    const off = await page.evaluate(() => {
+      const T = window.TT;
+      [...document.querySelectorAll("#stage .gm-guide button")].find(b => /Hide guide/.test(b.textContent)).click();
+      const out = { guide: !!document.querySelector("#stage .gm-guide"), hints: document.querySelectorAll(".gm-hint").length,
+        tips: [...document.querySelectorAll("#stage button")].filter(b => b.title).length };
+      document.querySelector("#guideBtn").click();
+      out.back = !!document.querySelector("#stage .gm-guide");
+      T.setLang("es"); T.render();
+      out.es = (document.querySelector("#stage .gm-guide h5") || {}).textContent || "";
+      out.esStep = (document.querySelector("#stage .gm-guide li") || {}).textContent || "";
+      T.setLang("en");
+      return out;
+    });
+    R.check("Hide guide takes the guide and every hint away", !off.guide && off.hints === 0, JSON.stringify(off));
+    R.check("tooltips stay when the guide is off", off.tips >= 1, JSON.stringify(off));
+    R.check("the ? button brings it back", off.back, "");
+    R.check("in Spanish the guide reads in Spanish", /Cómo usar esta pantalla/.test(off.es) && /^Pide a cada jugador/.test(off.esStep),
+      JSON.stringify([off.es, off.esStep]));
+    R.eq("no page errors with the guides", errors, []);
     await ctx.close();
   }
 

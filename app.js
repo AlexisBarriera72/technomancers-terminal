@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy — there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-24 12:00";
+  var BUILD = "2026-09-24 14:00";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -159,7 +159,7 @@
                "Level-Ups", "Chrome & Gear", "Play Sheet"];
   var CAMPSEC = ["Overview", "House Rules", "People", "Places", "Custom Gear", "Session Log", "Hooks"];
   var campSecIx = 0;
-  var GMSEC = ["Party", "Encounter", "Rulings", "NPCs", "Clocks", "Story"];
+  var GMSEC = ["Party", "Encounter", "Rulings", "NPCs", "Clocks", "Story", "Campaign"];
   var gmSecIx = 0;
   var gmOn = false;
   try { gmOn = localStorage.getItem("ttb.gm") === "1"; } catch (e) {}
@@ -3898,17 +3898,6 @@
 
     if (!c) return;
 
-    if (helpMode) {
-      var hb = el("div", "help");
-      hb.innerHTML = "<h5>What a campaign is for</h5>" +
-        "<p>Everything here belongs to one table, not to one character: the rules your DM " +
-        "changed, the people you've met, the gear that only exists in this city. " +
-        (c.builtIn ? "This one ships with the site and is read-only — hit <em>+ New campaign</em> " +
-         "to make one you can edit, or import a .json someone sent you." :
-         "Type straight into the fields; it saves as you go.") + "</p>";
-      s.appendChild(hb);
-    }
-
     var seg = el("div", "toolbar");
     CAMPSEC.forEach(function (name, i) {
       var b = el("button", "chip" + (i === campSecIx ? " on" : ""), esc(name));
@@ -4041,8 +4030,6 @@
                 get: function () { return step; },      set: function (i) { step = i; } },
     codex:    { title: "Sections",    list: CODEX,
                 get: function () { return codexSec; },  set: function (i) { codexSec = i; codexQ = ""; } },
-    campaign: { title: "Campaign",    list: CAMPSEC,
-                get: function () { return campSecIx; }, set: function (i) { campSecIx = i; } },
     table:    { title: "The table",   list: GMSEC,
                 get: function () { return gmSecIx; },   set: function (i) { gmSecIx = i; } }
   };
@@ -4397,7 +4384,8 @@
     var s = $("#stage");
     s.innerHTML = "";
     if (mode === "table") return window.TTGM.renderStage(s, gmSecIx);
-    if (mode === "campaign") return renderCampaign(s);
+    // The Campaign screen lives in the GM tools now; players never reach it.
+    if (mode === "campaign") mode = "forge";
     if (mode === "codex") return renderCodex(s);
     if (step === 0 && !C.cls && helpMode) {
       var w = el("div", "welcome");
@@ -4457,7 +4445,6 @@
     }
     $("#mForge").setAttribute("aria-pressed", mode === "forge");
     $("#mCodex").setAttribute("aria-pressed", mode === "codex");
-    if ($("#mCamp")) $("#mCamp").setAttribute("aria-pressed", mode === "campaign");
     var mt = $("#mTable");
     if (mt) { mt.hidden = !gmOn; mt.setAttribute("aria-pressed", mode === "table"); }
     var lb = $("#langBtn");
@@ -4544,6 +4531,14 @@
     tableByTitle: tableByTitle, subsFor: subsFor, paras: paras,
     sourceName: sourceName, isBook: isBook,
     T: T, applyLang: applyLang, setLang: setLang, roleChip: roleChip,
+    // the GM tools share the player side's ? guide, and host the Campaign screen
+    renderCampaign: function (s) { return renderCampaign(s); },
+    helpOn: function () { return helpMode; },
+    setHelp: function (v) {
+      helpMode = !!v;
+      try { localStorage.setItem("ttb.help", helpMode ? "1" : "0"); } catch (e) {}
+      render();
+    },
     getLang: function () { return LANG; }, esHasBook: esHasBook,
     ABIL: ABIL, ABIL_FULL: ABIL_FULL, HSTATE: HSTATE, CLASS_DC: CLASS_DC,
     // dom helpers
@@ -4601,7 +4596,6 @@
         window.TTGM.lastMode() === "table") mode = "table";
     $("#mForge").onclick = function () { mode = "forge"; render(); window.scrollTo(0, 0); };
     $("#mCodex").onclick = function () { mode = "codex"; render(); window.scrollTo(0, 0); };
-    if ($("#mCamp")) $("#mCamp").onclick = function () { mode = "campaign"; render(); window.scrollTo(0, 0); };
     if ($("#mTable")) $("#mTable").onclick = function () { mode = "table"; render(); window.scrollTo(0, 0); };
     var gbtn = $("#guideBtn");
     gbtn.onclick = function () {

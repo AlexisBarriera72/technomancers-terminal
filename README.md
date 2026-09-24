@@ -142,8 +142,9 @@ Open `campaigns.js` and edit the `campaigns` array. The schema is documented in
 a comment at the top of that file — every field except `id` and `name` is
 optional. Commit, push, done.
 
-You can also build campaigns inside the app itself (Campaign → New campaign).
-Those live in the visitor's own browser. Export one to `.json` and paste it into
+The Campaign screen is part of the GM tools (Table → Campaign); players no
+longer see it, since whatever they need is told to them at the table. You can
+build campaigns there too (+ New campaign). Those live in that browser. Export one to `.json` and paste it into
 `campaigns.js` to make it part of the site for everybody.
 
 The current campaign is **Cathedra** — a city grown inside the ribcage of a god
@@ -205,7 +206,15 @@ first copied aside to `ttb.gm.demo`; **Exit demo** puts it back exactly, and a
 banner on every GM screen says you are in the demo until then. The demo itself
 is `demoTable()` in `gm.js`.
 
-Five screens:
+**Every GM screen explains itself.** While the **?** guide is on (the same
+switch as the players' beginner guide, on by default), each screen opens with a
+"How to use this screen" box — what to add, in what order, and when — and a
+one-line hint sits under each group of controls. Every button also says what it
+does on hover, guide or no guide. The text lives in one place, `TTBGM.help` in
+`gm.js`, and a test holds every line of it to having a Spanish translation.
+**Hide guide** (or **?**) turns it all off once you know it.
+
+Seven screens — the first five below, then Story and Campaign:
 
 | Screen | What it does |
 |---|---|

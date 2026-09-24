@@ -854,6 +854,15 @@ input[type=range]{accent-color:var(--accent)}
 .gm-demo span{font-size:13.5px;color:var(--ink-dim)}
 .gm-demo .gm-row{margin:0}
 
+/* ---- the GM screens explain themselves while the ? guide is on */
+.gm-guide{margin:4px 0 20px}
+.gm-guide h5{display:flex;align-items:center;gap:10px}
+.gm-guide ol li{margin-bottom:5px}
+.gm-hint{position:relative;font-size:13px;line-height:1.45;color:var(--ink-dim);max-width:78ch;
+  margin:2px 0 14px;padding-left:18px}
+.gm-hint::before{content:"?";position:absolute;left:0;top:0;font-family:var(--f-mono);font-weight:700;
+  color:var(--accent)}
+
 /* ---- the Story tab */
 .st-title{margin:0 0 14px}
 .st-title h3{font-size:22px;text-transform:uppercase;letter-spacing:.05em;color:var(--hot);margin-bottom:4px}
@@ -1050,7 +1059,6 @@ body.previewing .print-root .sheet-block{background:#fff;margin:0 auto 22px;box-
       <div class="modes" role="group" aria-label="Mode">
         <button id="mForge" aria-pressed="true">Forge</button>
         <button id="mCodex" aria-pressed="false">Codex</button>
-        <button id="mCamp" aria-pressed="false">Campaign</button>
         <button id="mTable" aria-pressed="false" hidden>Table</button>
       </div>
       <button class="icon-btn" id="langBtn" data-nolang title="Cambiar a español" aria-label="Cambiar a español" aria-pressed="false">ES</button>

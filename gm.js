@@ -463,6 +463,175 @@ window.TTBGM = {
             "still has surgical tape on their neck", "laughs at the wrong end of sentences",
             "won't touch anything with their left hand", "smells of ichor and antiseptic",
             "chews stims and denies it", "flinches at comms chatter no one else hears"]
+  },
+
+  /* ---- how each GM screen works, shown while the ? guide is on ----------
+     Steps are the order to do things in; hints sit under the controls they
+     name; tips are the hover text on buttons. Data rather than inline strings
+     so a test can hold every line to having a Spanish translation. */
+  help: {
+    party: {
+      steps: [
+        "Ask each player to open their Play Sheet and press Copy share link, then send it to you.",
+        "Paste the link below, type the player's name if you like, and press Add to party. Paste it again after they level up — cards are snapshots.",
+        "At the start of every session, press Roll the god's attention once.",
+        "Move Street Cred with −1 / +1 when the street sees them do something: a job done well, folding in public.",
+        "After every session, press Export GM vault so a cleared browser can't lose your table."
+      ],
+      hints: {
+        import: "Paste the whole share link or just the code after #c=. Adding the same character again updates their card instead of making a second one.",
+        fromFile: "From a file takes a player's Download backup (.json) or a roster export. From this browser adds characters saved on this device.",
+        god: "Once per session. On a 20 the god notices one character until dawn: advantage on one roll, and anything with ichor treats them as important.",
+        cred: "Street Cred is the whole table's reputation. It is already added to every Charisma check on the Ruling desk and to the reaction roll.",
+        card: "Full sheet shows their whole character as text for rules questions. Remove takes them off this device's party only — their own sheet is untouched.",
+        vault: "Export writes everything on these screens to one file. Import merges a file back: characters, NPCs and encounters by id; clocks, Street Cred and story progress are replaced.",
+        demo: "Fills every screen with a made-up game so you can see how it all looks. Your own table is set aside and comes back when you exit."
+      },
+      tips: {
+        add: "Add this character to your party",
+        file: "Import characters from a .json file",
+        browser: "Import characters saved on this device",
+        god: "Roll a d20; on a 20 the god notices someone",
+        credDown: "The street saw them fold: Street Cred −1",
+        credUp: "The street saw them do well: Street Cred +1",
+        full: "Show their whole sheet as text",
+        remove: "Remove from this device's party",
+        export: "Save everything on the GM screens to a file",
+        importVault: "Load a GM vault file and merge it in",
+        demo: "Load a made-up game to look around"
+      }
+    },
+    encounter: {
+      steps: [
+        "Press + Party to put every character in, with initiative already rolled.",
+        "Add enemies: pick an NPC from the list, set how many, press Add to encounter. Use + Ad-hoc for someone you haven't statted yet.",
+        "Press Next turn ▶ when someone finishes; ◀ Back if you moved on too early.",
+        "Damage and healing: tap −10 … +10 on a combatant, or type a number in the box and press − (damage) or + (heal). tmp sets temporary hit points.",
+        "Add conditions from the + condition menu; tap a condition to clear it.",
+        "Press Save as template to reuse this fight later, and End encounter when it's over."
+      ],
+      hints: {
+        bar: "Reaction check asks whether a meeting turns violent and whether anyone steps in — Street Cred is included. Reroll initiative gives everyone a new order.",
+        hp: "Red buttons hurt, green heal. For a big hit, type the number and press −. Anyone Concentrating gets their save reminder when they take damage.",
+        library: "Run it loads a saved fight fresh: full hit points, no conditions."
+      },
+      tips: {
+        party: "Add every party member with rolled initiative",
+        adhoc: "Add a combatant with no statblock",
+        next: "Pass the turn to the next in order",
+        back: "Go back one turn",
+        reroll: "Roll new initiative for everyone",
+        react: "Roll how an NPC reacts to the party",
+        template: "Save this fight to reuse later",
+        end: "Clear the encounter",
+        run: "Load this prepared fight"
+      }
+    },
+    rulings: {
+      steps: [
+        "A player says what they're doing.",
+        "Find it in the catalogue below, or use Any situation and pick the skill or save yourself.",
+        "Read the Say line out loud and pick a DC — Moderate (15) is the default; Hard (20) is a specialist's day at work.",
+        "The table shows each character's real bonus and chance, Street Cred included.",
+        "Press Roll it secretly for everyone when they shouldn't know how well they did."
+      ],
+      hints: {
+        picker: "Check for skills, Save for saving throws. The DC buttons run from Trivial (5) to Near-impossible (30).",
+        react: "Use the reaction roll when the party meets someone whose attitude isn't obvious: pick what's in their favour or against them, then roll.",
+        catalog: "Search for what they're doing — “climb”, “lie”, “hack” — and open it for the roll, the DC and what failure costs."
+      },
+      tips: {
+        secret: "Roll this check for every character without telling them",
+        react: "Roll the NPC's reaction"
+      }
+    },
+    npcs: {
+      steps: [
+        "+ Blank NPC for someone who matters, + Quick mook for someone who's there to fall down, Improvise someone for a name and a secret on the spot.",
+        "From a template gives you a ready statblock — rename it and it's yours.",
+        "Pull from Cathedra brings the campaign's cast in as names and notes; you add the numbers.",
+        "Open an NPC to edit it. Add to encounter drops them into the fight; Duplicate makes a second; Delete removes them.",
+        "Search by name, role or tag when the list gets long."
+      ],
+      hints: {
+        make: "Mooks are one line in a fight; NPCs get the full statblock. Improvise someone gives a name, a want, a secret and a tell.",
+        templates: "Templates are starting points. Change anything after you add one.",
+        row: "Open an NPC to see and edit everything. Add to encounter uses the count you set on the Encounter screen."
+      },
+      tips: {
+        blank: "Make a new NPC from scratch",
+        mook: "Make a one-line mook",
+        improvise: "Make someone up on the spot",
+        addEnc: "Put this NPC in the current fight",
+        dup: "Make a copy of this NPC",
+        del: "Delete this NPC"
+      }
+    },
+    clocks: {
+      steps: [
+        "Start a clock when a threat begins: 4 segments for soon, 6 for the usual, 8 for a slow burn.",
+        "Name it after what happens when it fills — “House Thorn calls the debt”.",
+        "Tap a segment whenever the party spends time, makes noise or gets unlucky. Tap the last filled one to undo.",
+        "When it's full, it happens. No roll.",
+        "The scratchpad is for this session's notes; Stamp the time adds the time so you can find things later."
+      ],
+      hints: {
+        add: "Pick the size by how soon it should land. You can have as many clocks running as you like.",
+        clock: "Tap a segment to fill up to it. × deletes the clock.",
+        scratch: "Names you made up, promises the party made, how to open next session. It's saved as you type."
+      },
+      tips: {
+        add4: "A short clock: it lands soon",
+        add6: "The usual clock",
+        add8: "A slow-burn clock",
+        stamp: "Add the current time to your notes",
+        del: "Delete this clock"
+      }
+    },
+    story: {
+      steps: [
+        "Before the campaign: open The truth and Running the doom below and read them once.",
+        "Before each session: open that session's scene and press Set as current, then Start clocks and Add NPCs.",
+        "During play: read the Read aloud boxes, press Roll for a vision at the scene's “Roll when” moments, press Apply when they make one of the listed calls, and use the Street Cred buttons.",
+        "After the session: Mark played, pick Right, Mixed or Wrong, write a note, tick the fragment if it came true, and mark keystones Kept or Broken."
+      ],
+      hints: {
+        dials: "Doom: tap a segment when a fragment of the vision comes true. Salvage: who gets out — the scenes say how much. Feed: + when they feed the god mercy, violence, lies or questions. The 1% path closes the moment one keystone breaks.",
+        vision: "Press it at a key moment. Tell the chosen player privately. If someone finds the Eye-chrome, pick them here — it lowers the roll to 16.",
+        expand: "Everything is a drop-down. Expand everything opens it all at once; Collapse everything tidies up.",
+        scene: "Set as current before the session. Start clocks and Add NPCs put this scene's clocks and people on the other screens, once. Afterwards: Mark played and pick how it went.",
+        apply: "Apply adds that call's Salvage, Feed and Doom to the dials at the top."
+      },
+      tips: {
+        vision: "Roll a d20 for a vision; on a hit it picks someone at the table",
+        played: "Mark this scene as played",
+        current: "Make this the scene you're running now",
+        clocks: "Add this scene's clocks to the Clocks screen",
+        npcs: "Add this scene's NPCs to the NPC screen",
+        apply: "Add this call's Salvage, Feed and Doom",
+        cred: "Change the table's Street Cred"
+      }
+    },
+    campaign: {
+      steps: [
+        "This is reference for your table: house rules, people, places, custom gear, the session log and hooks.",
+        "The sections run along the top — tap one to open it.",
+        "Cathedra comes with the site and is read-only. + New campaign makes one you can type into; it saves as you go.",
+        "Export this campaign writes it to a file you can keep or share; Import loads one."
+      ],
+      hints: {
+        use: "Use these settings on my character sets the character open in the Forge on this device to this campaign's starting level."
+      },
+      tips: {
+        newCamp: "Start an empty campaign you can type into",
+        importCamp: "Load a campaign from a .json file",
+        exportCamp: "Save this campaign to a file",
+        use: "Apply this campaign's starting level to the character open on this device"
+      }
+    },
+    dossier: {
+      hints: { lock: "Lock before you hand the tablet to a player. The #gm address opens it again." }
+    }
   }
 };
 
@@ -1928,6 +2097,7 @@ window.TTGM = (function () {
       toast("Applied to the story");
       redraw();
     });
+    ap.title = HELP.story && HELP.story.tips.apply || "";
     r.appendChild(ap);
     bits.forEach(function (b) { r.appendChild(txt("span", "chip", b)); });
     d.appendChild(r);
@@ -2011,7 +2181,9 @@ window.TTGM = (function () {
           host.appendChild(d);
         });
         break;
-      case "right": sc.right.forEach(function (c) { callLine(host, c, sc); }); break;
+      case "right":
+        if (helpOn()) { var ah = hintEl("story", "apply"); if (ah) host.appendChild(ah); }
+        sc.right.forEach(function (c) { callLine(host, c, sc); }); break;
       case "wrong": sc.wrong.forEach(function (c) { callLine(host, c, sc); }); break;
       case "goesWrong":
         var ul = el("ul", "st-list");
@@ -2068,11 +2240,13 @@ window.TTGM = (function () {
       case "cred":
         sc.cred.forEach(function (c) {
           var r = row("gm-row tight st-cred");
-          r.appendChild(btn("Street Cred " + T.sgn(c.delta), "tiny", function () {
+          var cb2 = btn("Street Cred " + T.sgn(c.delta), "tiny", function () {
             var v = repSet(repGet() + c.delta);
             toast("Street Cred is now " + T.sgn(v));
             redraw();
-          }));
+          });
+          cb2.title = HELP.story && HELP.story.tips.cred || "";
+          r.appendChild(cb2);
           r.appendChild(stxt("span", "st-p", c.event));
           host.appendChild(r);
         });
@@ -2161,6 +2335,13 @@ window.TTGM = (function () {
         toast(n ? "Added " + count(n, "NPC", "NPCs") + " to your NPCs" : "They're already in your NPCs");
       }));
       body.appendChild(c);
+      [].forEach.call(c.querySelectorAll("button"), function (b) {
+        var l = b.textContent;
+        var k = /^Mark played|^Played/.test(l) ? "played" : /current/i.test(l) ? "current" :
+          /^Start clocks/.test(l) ? "clocks" : /^Add NPCs/.test(l) ? "npcs" : null;
+        if (k && HELP.story.tips[k]) b.title = HELP.story.tips[k];
+      });
+      if (helpOn()) { var sh = hintEl("story", "scene"); if (sh) body.appendChild(sh); }
 
       var note = field(st.notes[sc.id] || "", "Your notes for this scene — what happened, who they annoyed…",
         function (v) { storyPatch(function (x) { if (v) x.notes[sc.id] = v; else delete x.notes[sc.id]; }); }, "textarea");
@@ -2323,13 +2504,130 @@ window.TTGM = (function () {
     });
   }
 
+  /* ----------------------------------------------------- the ? guide ---
+     Every GM screen explains itself while the ? guide is on (the same switch
+     the player side uses): a "How to use this screen" box under the heading,
+     and a one-line hint under the controls it names. Tooltips stay on either
+     way. The screens themselves don't know any of this exists: decorate()
+     finds its places after a screen is drawn, so the help can be read, edited
+     and translated in one place (TTBGM.help). */
+  var HELP = G.help || {};
+  function helpOn() { return T.helpOn ? T.helpOn() : true; }
+  function guideBox(s, key) {
+    var h = HELP[key];
+    if (!helpOn() || !h || !h.steps) return;
+    var box = el("div", "help gm-guide");
+    var head = el("h5");
+    head.appendChild(txt("span", null, "How to use this screen"));
+    var hide = btn("Hide guide", "tiny", function () { if (T.setHelp) T.setHelp(false); });
+    hide.style.marginLeft = "auto";
+    hide.title = "Hide every guide. The ? button at the top brings them back.";
+    head.appendChild(hide);
+    box.appendChild(head);
+    var ol = el("ol");
+    h.steps.forEach(function (t) { ol.appendChild(txt("li", null, t)); });
+    box.appendChild(ol);
+    var at = s.querySelector(".stage-head");
+    if (at && at.parentNode === s) s.insertBefore(box, at.nextSibling); else s.insertBefore(box, s.firstChild);
+  }
+  function hintEl(key, which) {
+    var h = HELP[key], t = h && h.hints && h.hints[which];
+    return t ? txt("div", "gm-hint", t) : null;
+  }
+  // after = true puts it after the node; false puts it inside, at the end
+  function hintAt(node, key, which, inside) {
+    if (!node || !helpOn()) return;
+    var n = hintEl(key, which);
+    if (!n) return;
+    if (inside) node.appendChild(n);
+    else if (node.parentNode) node.parentNode.insertBefore(n, node.nextSibling);
+  }
+  function tips(s, key, map) {
+    var t = (HELP[key] && HELP[key].tips) || {};
+    [].forEach.call(s.querySelectorAll("button"), function (b) {
+      if (b.title) return;
+      var label = b.textContent.trim();
+      for (var i = 0; i < map.length; i++) {
+        if (label.indexOf(map[i][0]) === 0 && t[map[i][1]]) { b.title = t[map[i][1]]; return; }
+      }
+    });
+  }
+  function btnRow(s, label) {
+    var b = [].filter.call(s.querySelectorAll("button"), function (x) {
+      return x.textContent.trim().indexOf(label) === 0;
+    })[0];
+    return b ? b.parentNode : null;
+  }
+  function decorate(s, sec) {
+    var key = ["party", "encounter", "rulings", "npcs", "clocks", "story", "campaign"][sec] || "party";
+    guideBox(s, key);
+    var q = function (sel) { return s.querySelector(sel); };
+    if (key === "party") {
+      hintAt(q(".gm-import textarea"), "party", "import");
+      hintAt(q(".gm-import .gm-row"), "party", "fromFile");
+      hintAt(q(".gm-god"), "party", "god");
+      hintAt(q(".gm-rep"), "party", "cred");
+      var firstCard = q(".gm-party .gm-card");
+      if (firstCard) hintAt(firstCard, "party", "card", true);
+      hintAt(btnRow(s, "Export GM vault"), "party", "vault");
+      hintAt(btnRow(s, "Load a demo table") || btnRow(s, "Or load a demo table"), "party", "demo");
+      tips(s, "party", [["Add to party", "add"], ["From a file", "file"], ["From this browser", "browser"],
+        ["Roll the god", "god"], ["−1", "credDown"], ["+1", "credUp"], ["Full sheet", "full"], ["Remove", "remove"],
+        ["Export GM vault", "export"], ["Import", "importVault"], ["Load a demo", "demo"], ["Or load a demo", "demo"]]);
+    } else if (key === "encounter") {
+      hintAt(btnRow(s, "+ Party"), "encounter", "bar");
+      var cb = q(".gm-cb .gm-pad");
+      if (cb) hintAt(cb, "encounter", "hp");
+      hintAt(btnRow(s, "Run it"), "encounter", "library");
+      tips(s, "encounter", [["+ Party", "party"], ["+ Ad-hoc", "adhoc"], ["Next turn", "next"], ["◀ Back", "back"],
+        ["Reroll initiative", "reroll"], ["Reaction check", "react"], ["Save as template", "template"],
+        ["End encounter", "end"], ["Run it", "run"]]);
+    } else if (key === "rulings") {
+      hintAt(q(".gm-picker"), "rulings", "picker", true);
+      hintAt(q(".gm-react"), "rulings", "react");
+      var cat = q(".gm-catalog");
+      if (cat) cat.parentNode.insertBefore(hintEl("rulings", "catalog") || document.createTextNode(""), cat);
+      tips(s, "rulings", [["Roll it secretly", "secret"], ["Roll the reaction", "react"]]);
+    } else if (key === "npcs") {
+      hintAt(btnRow(s, "+ Blank NPC"), "npcs", "make");
+      var tpl = [].filter.call(s.querySelectorAll(".gm-strip"), function (x) {
+        return /From a template/.test(x.textContent);
+      })[0];
+      if (tpl) hintAt(tpl, "npcs", "templates", true);
+      var firstNpc = q(".gm-npc");
+      if (firstNpc && helpOn()) { var hn = hintEl("npcs", "row"); if (hn) firstNpc.parentNode.insertBefore(hn, firstNpc); }
+      tips(s, "npcs", [["+ Blank NPC", "blank"], ["+ Quick mook", "mook"], ["Improvise", "improvise"],
+        ["Add to encounter", "addEnc"], ["Duplicate", "dup"], ["Delete", "del"]]);
+    } else if (key === "clocks") {
+      hintAt(btnRow(s, "+ 4-segment"), "clocks", "add");
+      hintAt(q(".gm-clocks"), "clocks", "clock");
+      hintAt(q(".gm-scratch"), "clocks", "scratch");
+      tips(s, "clocks", [["+ 4-segment", "add4"], ["+ 6-segment", "add6"], ["+ 8-segment", "add8"],
+        ["Stamp the time", "stamp"], ["×", "del"]]);
+    } else if (key === "story") {
+      hintAt(q(".st-dials"), "story", "dials");
+      hintAt(q(".st-vision"), "story", "vision");
+      hintAt(btnRow(s, "Expand everything"), "story", "expand");
+      tips(s, "story", [["Roll for a vision", "vision"]]);
+    } else if (key === "campaign") {
+      hintAt(btnRow(s, "Use these settings"), "campaign", "use");
+      tips(s, "campaign", [["+ New campaign", "newCamp"], ["Import", "importCamp"], ["Export this campaign", "exportCamp"],
+        ["Use these settings", "use"]]);
+    }
+  }
+  function renderCampaignGM(s) {
+    if (T.renderCampaign) T.renderCampaign(s);
+    else empty(s, "The campaign screen didn't load.");
+  }
+
   /* ---------------------------------------------------------- dispatch --- */
   function renderStage(s, sec) {
     rememberMode("table");
     s.classList.add("gm");
     if (inDemo()) demoBanner(s);
-    var fns = [renderParty, renderEncounter, renderRulings, renderNPCs, renderClocks, renderStory];
+    var fns = [renderParty, renderEncounter, renderRulings, renderNPCs, renderClocks, renderStory, renderCampaignGM];
     (fns[sec] || renderParty)(s);
+    decorate(s, fns[sec] ? sec : 0);
   }
 
   function renderDossier(host) {
@@ -2386,7 +2684,9 @@ window.TTGM = (function () {
       if (window.confirm("Hide the Table tab on this device? Re-open it with the #gm address.")) T.gmLock();
     });
     lock.style.marginTop = "14px";
+    lock.title = HELP.dossier && HELP.dossier.hints.lock || "";
     body.appendChild(lock);
+    if (helpOn()) { var lh = hintEl("dossier", "lock"); if (lh) body.appendChild(lh); }
     host.appendChild(body);
   }
 
@@ -3364,6 +3664,6 @@ window.TTGM = (function () {
     repSkillBonus: repSkillBonus, reactionBand: reactionBand, npcReaction: npcReaction,
     importVault: importVault, loadDemo: loadDemo, exitDemo: exitDemo, inDemo: inDemo,
     storyState: storyState, rollVision: rollVision, storyStartClocks: storyStartClocks,
-    storyAddNpcs: storyAddNpcs, cleanStory: cleanStory
+    storyAddNpcs: storyAddNpcs, cleanStory: cleanStory, help: HELP
   };
 })();
