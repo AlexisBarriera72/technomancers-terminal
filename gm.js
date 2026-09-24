@@ -680,6 +680,28 @@ window.TTBGM = {
         street: "Roll what the party runs into here"
       }
     },
+    toolkit: {
+      steps: [
+        "Each tool is a drop-down; open the one the moment needs. What you roll stays on screen until you roll again.",
+        "Loot: pick where they are and, if it was someone's, whose. Copy to notes puts it in the session notes.",
+        "Names: pick a House or a walk of life for five names. Make NPC turns one into a real NPC.",
+        "The Long Fall: pick where they fell from, then Off the edge (to the district below) or a set distance.",
+        "Chrome malfunctions: pick a character and it picks one of their implants, or pick a tier yourself.",
+        "The heist planner, the netrun map and the chase remember where you left them, so they carry on next session."
+      ],
+      hints: {
+        tools: "Rolls use the city's own tables, written for Cathedra. Anything you'd rather decide yourself, decide."
+      },
+      tips: {
+        loot: "Roll one to three finds for this place and House",
+        names: "Roll five names from this pool",
+        fall: "Work out the damage and where they land",
+        mal: "Roll what goes wrong with this chrome",
+        wrong: "Roll a complication for this approach",
+        net: "Build a new net architecture at this security rating",
+        comp: "Roll a complication for this round"
+      }
+    },
     dossier: {
       hints: { lock: "Lock before you hand the tablet to a player. The #gm address opens it again." }
     }
@@ -786,6 +808,9 @@ window.TTGM = (function () {
       p.rep = Math.round(p.rep);
       p.repLog = cleanRepLog(p.repLog);
       p.city = cleanCity(p.city);
+      if (p.heist != null) p.heist = cleanHeist(p.heist);
+      if (p.netrun != null) p.netrun = cleanNet(p.netrun);
+      if (p.chase != null) p.chase = cleanChase(p.chase);
       mem.play = p;
     }
     return mem.play;
@@ -1238,9 +1263,9 @@ window.TTGM = (function () {
         }
         if (blob.play.story && typeof blob.play.story === "object") cur.story = cleanStory(blob.play.story);
         if (blob.play.city && typeof blob.play.city === "object") cur.city = cleanCity(blob.play.city);
-        if (blob.play.heist && typeof blob.play.heist === "object") cur.heist = blob.play.heist;
-        if (blob.play.netrun && typeof blob.play.netrun === "object") cur.netrun = blob.play.netrun;
-        if (blob.play.chase && typeof blob.play.chase === "object") cur.chase = blob.play.chase;
+        if (blob.play.heist && typeof blob.play.heist === "object") cur.heist = cleanHeist(blob.play.heist);
+        if (blob.play.netrun && typeof blob.play.netrun === "object") cur.netrun = cleanNet(blob.play.netrun);
+        if (blob.play.chase && typeof blob.play.chase === "object") cur.chase = cleanChase(blob.play.chase);
       });
     }
     toast("Merged " + count(p.n, "character", "characters") + ", " + count(n.n, "NPC", "NPCs") +
@@ -2864,6 +2889,11 @@ window.TTGM = (function () {
       tips(s, "city", [["Advance a day", "advance"], ["◀ Back a day", "back"], ["Roll today's weather", "weather"],
         ["Reroll the weather", "weather"], ["Rename", "rename"], ["Post", "post"], ["Take it", "take"],
         ["Roll the street", "street"]]);
+    } else if (key === "toolkit") {
+      var tools = q(".gm-tools");
+      if (tools && helpOn()) { var ht = hintEl("toolkit", "tools"); if (ht) tools.parentNode.insertBefore(ht, tools); }
+      tips(s, "toolkit", [["Roll loot", "loot"], ["Five names", "names"], ["Work out the fall", "fall"],
+        ["Roll a malfunction", "mal"], ["What went wrong", "wrong"], ["Generate", "net"], ["Complication", "comp"]]);
     } else if (key === "campaign") {
       hintAt(btnRow(s, "Use these settings"), "campaign", "use");
       tips(s, "campaign", [["+ New campaign", "newCamp"], ["Import", "importCamp"], ["Export this campaign", "exportCamp"],
@@ -2881,7 +2911,7 @@ window.TTGM = (function () {
     s.classList.add("gm");
     if (inDemo()) demoBanner(s);
     var fns = [renderParty, renderEncounter, renderRulings, renderNPCs, renderClocks, renderStory, renderCampaignGM,
-               renderCity];
+               renderCity, renderToolkit];
     (fns[sec] || renderParty)(s);
     decorate(s, fns[sec] ? sec : 0);
   }
@@ -4590,6 +4620,516 @@ window.TTGM = (function () {
     s.appendChild(se);
   }
 
+  /* ================================================= SECTION, TOOLKIT === */
+  var tkLast = { loot: null, names: null, fall: null, mal: null };
+  var tkPick = { lootBand: "below", lootHouse: "", names: "street", fallFrom: "nave", fallFeet: 80,
+                 fallEdge: true, malWho: "", malTier: "2" };
+  function rowOf(tbl) { return tbl.rows[roll(1, tbl.die, 0).total - 1]; }
+
+  /* ---- loot: one find for where they are, maybe one for whose it was --- */
+  function rollLoot(bandKey, houseId) {
+    var L = CITY.loot, items = [];
+    var bt = L.band[bandKey] || L.band.below;
+    var first = rowOf(bt);
+    items.push({ item: first.item, grams: first.grams, src: bt.name });
+    if (houseId && L.house[houseId]) {
+      var h = rowOf(L.house[houseId]);
+      items.push({ item: h.item, grams: h.grams, src: L.house[houseId].name });
+    }
+    if (roll(1, 6, 0).total >= 5) {
+      var extra = rowOf(bt), guard = 0;
+      while (extra.item === first.item && guard++ < 10) extra = rowOf(bt);
+      if (extra.item !== first.item) items.push({ item: extra.item, grams: extra.grams, src: bt.name });
+    }
+    var total = items.reduce(function (a, x) { return a + (x.grams || 0); }, 0);
+    return { items: items, total: total };
+  }
+
+  /* ---- names ------------------------------------------------------------ */
+  function rollNames(poolKey, n) {
+    var pool = CITY.names[poolKey] || CITY.names.street, out = [], guard = 0;
+    while (out.length < (n || 5) && guard++ < 100) {
+      var nm = pick(pool.first) + " " + pick(pool.last);
+      if (out.indexOf(nm) < 0) out.push(nm);
+    }
+    return out;
+  }
+  function npcNamed(name) {
+    var n = improviseNPC();
+    n.name = name;
+    npcWrite(npcAll().concat([n]));
+    return n;
+  }
+
+  /* ---- the Long Fall ---------------------------------------------------- */
+  function longFall(fromId, feet, edge) {
+    var ds = cityDistricts();
+    var from = ds.filter(function (d) { return d.id === fromId; })[0] || ds[0];
+    var below = ds.filter(function (d) { return d.height < from.height; }).pop();
+    var distance = edge ? (below ? from.height - below.height : 30) : Math.max(0, Math.round(+feet || 0));
+    var dice = Math.min(20, Math.floor(distance / 10));
+    var dmg = dice ? roll(dice, 6, 0) : { total: 0, dice: [] };
+    var dropped = distance > 60;
+    var landAt = from.height - distance;
+    var land = from;
+    if (dropped) {
+      land = ds.filter(function (d) { return d.height <= landAt; }).pop() || ds[0];
+      if (land.id === from.id && below) land = below;
+    }
+    var chrome = [];
+    partyChars().forEach(function (p) {
+      (p.c.cyber || []).forEach(function (x) {
+        var hit = CITY.fallChrome.filter(function (f) { return f.name === x.name; })[0];
+        if (hit) chrome.push({ who: p.c.name || "Unnamed", name: hit.name, text: hit.text });
+      });
+    });
+    return { from: from, distance: distance, dice: dice, damage: dmg.total, dropped: dropped,
+             land: land, landing: dropped ? rowOf(CITY.landing) : null, chrome: chrome };
+  }
+
+  /* ---- chrome malfunctions ---------------------------------------------- */
+  function rollMalfunction(tier) {
+    var t = CITY.malfunctions[String(tier)] || CITY.malfunctions["1"];
+    return { tier: String(tier), row: rowOf(t) };
+  }
+  function rollMalfunctionFor(recId) {
+    var p = partyChars().filter(function (x) { return x.rec.id === recId; })[0];
+    if (!p || !(p.c.cyber || []).length) return null;
+    var implant = pick(p.c.cyber);
+    var tier = String(implant.tier || "1");
+    if (!CITY.malfunctions[tier]) tier = "1";
+    var r = rollMalfunction(tier);
+    return { who: p.c.name || "Unnamed", implant: implant.name, tier: tier, row: r.row };
+  }
+
+  /* ---- the heist planner, kept in play.heist ----------------------------- */
+  function cleanHeist(h) {
+    var o = h && typeof h === "object" ? h : {};
+    var approaches = ["quiet", "social", "loud", "inside"];
+    return {
+      target: typeof o.target === "string" ? o.target.slice(0, 200) : "",
+      approach: approaches.indexOf(o.approach) >= 0 ? o.approach : "quiet",
+      roles: o.roles && typeof o.roles === "object" ? o.roles : {},
+      steps: (Array.isArray(o.steps) ? o.steps : []).filter(function (x) { return typeof x === "string"; }).slice(0, 30),
+      heat: Math.max(0, Math.min(6, Math.round(+o.heat) || 0)),
+      log: (Array.isArray(o.log) ? o.log : []).filter(function (x) { return x && typeof x.text === "string"; }).slice(-20)
+    };
+  }
+  function heistState() { return cleanHeist(playState().heist); }
+  function heistPatch(fn) { playPatch(function (p) { p.heist = cleanHeist(p.heist); fn(p.heist); }); }
+  function heistComplication() {
+    var h = heistState(), row = rowOf(CITY.heist[h.approach]);
+    heistPatch(function (x) { x.log.push({ text: row.text, approach: x.approach }); x.log = x.log.slice(-20); });
+    return row;
+  }
+
+  /* ---- the netrun map, kept in play.netrun ------------------------------- */
+  function iceStats(rating, kind) {
+    return { name: kind.name, text: kind.text, ac: 12 + rating, hp: 10 * rating,
+             atk: 3 + rating, dmg: rating + "d10 psychic", dc: 11 + rating };
+  }
+  function generateNet(rating) {
+    rating = Math.max(1, Math.min(5, Math.round(+rating) || 1));
+    var floors = [], id = 0;
+    for (var f = 0; f < rating + 1; f++) {
+      var nodes = [], count = roll(1, 3, 0).total;
+      for (var i = 0; i < count; i++) {
+        var r = roll(1, 10, 0).total, node = { id: "n" + (id++), state: "" };
+        // deeper floors are more likely to hold ICE
+        if (r + f >= 9) { node.type = "ice"; node.ice = iceStats(rating, rowOf(CITY.net.ice)); }
+        else if (r <= 3) { node.type = "password"; node.dc = 10 + 2 * rating + (f > rating / 2 ? 2 : 0); }
+        else if (r <= 5) { node.type = "file"; node.label = rowOf(CITY.net.files).text; }
+        else { node.type = "control"; node.label = rowOf(CITY.net.controls).text; }
+        nodes.push(node);
+      }
+      floors.push(nodes);
+    }
+    var net = { rating: rating, floors: floors, root: { id: "root", state: "" } };
+    playPatch(function (p) { p.netrun = net; });
+    return net;
+  }
+  function cleanNet(n) {
+    if (!n || typeof n !== "object" || !Array.isArray(n.floors)) return null;
+    return { rating: Math.max(1, Math.min(5, Math.round(+n.rating) || 1)),
+             floors: n.floors.filter(Array.isArray).slice(0, 8).map(function (fl) {
+               return fl.filter(function (x) { return x && typeof x === "object" && typeof x.type === "string"; }).slice(0, 4);
+             }),
+             root: n.root && typeof n.root === "object" ? n.root : { id: "root", state: "" } };
+  }
+  function netState() { return cleanNet(playState().netrun); }
+  var NODE_STATES = ["", "cleared", "tripped"];
+  function cycleNode(nodeId) {
+    playPatch(function (p) {
+      var n = cleanNet(p.netrun);
+      if (!n) return;
+      var all = [n.root];
+      n.floors.forEach(function (fl) { fl.forEach(function (x) { all.push(x); }); });
+      all.forEach(function (x) {
+        if (x.id === nodeId) x.state = NODE_STATES[(NODE_STATES.indexOf(x.state || "") + 1) % NODE_STATES.length];
+      });
+      p.netrun = n;
+    });
+  }
+
+  /* ---- the chase, kept in play.chase ------------------------------------- */
+  function cleanChase(c) {
+    var o = c && typeof c === "object" ? c : {};
+    return { mode: CITY && CITY.chaseModes[o.mode] ? o.mode : "foot",
+             gap: typeof o.gap === "number" && isFinite(o.gap) ? Math.max(0, Math.min(10, Math.round(o.gap))) : 5,
+             round: Math.max(1, Math.round(+o.round) || 1),
+             log: (Array.isArray(o.log) ? o.log : []).filter(function (x) { return x && typeof x.text === "string"; }).slice(-12) };
+  }
+  function chaseState() { return cleanChase(playState().chase); }
+  function chasePatch(fn) { playPatch(function (p) { p.chase = cleanChase(p.chase); fn(p.chase); p.chase = cleanChase(p.chase); }); }
+  function chaseComplication() {
+    var c = chaseState(), tbl = c.mode === "foot" ? CITY.chase.street : CITY.chase.vehicle, row = rowOf(tbl);
+    chasePatch(function (x) { x.log.push({ text: row.text, round: x.round }); });
+    return row;
+  }
+
+  /* ---- drawing the Toolkit --------------------------------------------- */
+  function tkSelect(options, value, onchange, nolang) {
+    var sel = document.createElement("select");
+    options.forEach(function (o) {
+      var op = nolang ? stxt("option", null, o[1]) : txt("option", null, o[1]);
+      op.value = o[0];
+      if (o[0] === value) op.selected = true;
+      sel.appendChild(op);
+    });
+    sel.onchange = function () { onchange(sel.value); };
+    return sel;
+  }
+  function tkResult(cls) { return el("div", "gm-tk-result " + (cls || "")); }
+
+  function toolLoot(h) {
+    var r = row("gm-row");
+    r.appendChild(tkSelect([["below", "Below the Nave"], ["middle", "The Nave to the Seventh Rib"], ["above", "Lanternside to the Crown"]],
+      tkPick.lootBand, function (v) { tkPick.lootBand = v; }));
+    r.appendChild(tkSelect([["", "No House"]].concat(cityHouses().map(function (x) { return [x.id, x.name]; })),
+      tkPick.lootHouse, function (v) { tkPick.lootHouse = v; }));
+    r.appendChild(btn("Roll loot", "primary", function () { tkLast.loot = rollLoot(tkPick.lootBand, tkPick.lootHouse); redraw(); }));
+    h.appendChild(r);
+    var L = tkLast.loot;
+    if (!L) return;
+    var box = tkResult("gm-tk-loot");
+    var ul = el("ul");
+    L.items.forEach(function (x) {
+      var li = el("li");
+      li.appendChild(stxt("span", null, x.item));
+      li.appendChild(stxt("b", null, x.grams ? fmtNum(x.grams) + " grams" : "priceless, or worthless"));
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    var tot = el("div", "gm-tk-total");
+    tot.appendChild(txt("span", "gm-label", "Worth"));
+    tot.appendChild(stxt("b", null, fmtNum(L.total) + " grams"));
+    box.appendChild(tot);
+    box.appendChild(btn("Copy to notes", "tiny", function () {
+      playPatch(function (p) {
+        p.scratch = (p.scratch ? p.scratch.replace(/\s*$/, "") + "\n" : "") + "Loot: " +
+          L.items.map(function (x) { return x.item + (x.grams ? " (" + fmtNum(x.grams) + " grams)" : ""); }).join("; ");
+      });
+      toast("Added to the session notes");
+    }));
+    h.appendChild(box);
+  }
+
+  function toolNames(h) {
+    var r = row("gm-row");
+    r.appendChild(tkSelect(Object.keys(CITY.names).map(function (k) {
+      var hs = cityHouses().filter(function (x) { return x.id === k; })[0];
+      return [k, hs ? hs.name : CITY.names[k].name];
+    }), tkPick.names, function (v) { tkPick.names = v; }, true));
+    r.appendChild(btn("Five names", "primary", function () { tkLast.names = rollNames(tkPick.names, 5); redraw(); }));
+    h.appendChild(r);
+    if (!tkLast.names) return;
+    var box = tkResult("gm-tk-names");
+    tkLast.names.forEach(function (nm) {
+      var line = el("div", "gm-tk-name");
+      line.appendChild(stxt("b", null, nm));
+      line.appendChild(btn("Make NPC", "tiny", function () {
+        npcNamed(nm); toast("Added " + nm + " to your NPCs");
+        tkLast.names = tkLast.names.filter(function (x) { return x !== nm; }); redraw();
+      }));
+      box.appendChild(line);
+    });
+    h.appendChild(box);
+  }
+
+  function toolFall(h) {
+    var ds = cityDistricts();
+    var r = row("gm-row");
+    r.appendChild(tkSelect(ds.slice().reverse().map(function (d) { return [d.id, d.name + " (" + d.height + " ft)"]; }),
+      tkPick.fallFrom, function (v) { tkPick.fallFrom = v; }, true));
+    var seg = el("div", "seg");
+    [["edge", "Off the edge"], ["feet", "A set distance"]].forEach(function (o) {
+      var on = (o[0] === "edge") === tkPick.fallEdge;
+      var b = btn(o[1], on ? "on" : "", function () { tkPick.fallEdge = o[0] === "edge"; redraw(); });
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      seg.appendChild(b);
+    });
+    r.appendChild(seg);
+    if (!tkPick.fallEdge) {
+      var ft = numField(tkPick.fallFeet, function (v) { tkPick.fallFeet = Number(v) || 0; }, "86px");
+      ft.setAttribute("aria-label", "Feet fallen");
+      r.appendChild(ft);
+      r.appendChild(txt("span", "gm-note", "ft"));
+    }
+    r.appendChild(btn("Work out the fall", "primary", function () {
+      tkLast.fall = longFall(tkPick.fallFrom, tkPick.fallFeet, tkPick.fallEdge); redraw();
+    }));
+    h.appendChild(r);
+    var F = tkLast.fall;
+    if (!F) return;
+    var box = tkResult("gm-tk-fall");
+    var top = el("div", "gm-tk-fall-top");
+    top.appendChild(txt("b", "gm-tk-big", String(F.damage)));
+    top.appendChild(txt("span", "gm-note", F.dice ? "bludgeoning (" + F.dice + "d6 for " + F.distance + " ft)" : "no damage"));
+    box.appendChild(top);
+    var where = el("p");
+    if (F.dropped) {
+      where.appendChild(txt("span", null, "They drop out of "));
+      where.appendChild(stxt("b", null, F.from.name));
+      where.appendChild(txt("span", null, " and land in "));
+      where.appendChild(stxt("b", null, F.land.name));
+    } else {
+      where.appendChild(txt("span", null, "60 feet or less: they stay in "));
+      where.appendChild(stxt("b", null, F.from.name));
+    }
+    box.appendChild(where);
+    if (F.landing) box.appendChild(stxt("p", "gm-tk-landing", F.landing.text));
+    if (F.chrome.length) {
+      box.appendChild(txt("div", "gm-label", "Chrome in the party that helps"));
+      F.chrome.forEach(function (c) {
+        var line = el("div", "gm-tk-chrome");
+        line.appendChild(stxt("b", null, c.who + ": " + c.name));
+        line.appendChild(stxt("span", null, c.text));
+        box.appendChild(line);
+      });
+    }
+    h.appendChild(box);
+  }
+
+  function toolMalfunction(h) {
+    var party = partyChars().filter(function (p) { return (p.c.cyber || []).length; });
+    var r = row("gm-row");
+    r.appendChild(tkSelect([["", "Pick a tier yourself"]].concat(party.map(function (p) { return [p.rec.id, p.c.name || "Unnamed"]; })),
+      tkPick.malWho, function (v) { tkPick.malWho = v; redraw(); }, true));
+    if (!tkPick.malWho) {
+      r.appendChild(tkSelect([["1", "Tier 1"], ["2", "Tier 2"], ["3", "Tier 3"], ["4", "Tier 4"]],
+        tkPick.malTier, function (v) { tkPick.malTier = v; }));
+    }
+    r.appendChild(btn("Roll a malfunction", "primary", function () {
+      tkLast.mal = tkPick.malWho ? rollMalfunctionFor(tkPick.malWho) : rollMalfunction(tkPick.malTier);
+      redraw();
+    }));
+    h.appendChild(r);
+    var trig = el("div", "gm-note gm-tk-triggers");
+    trig.appendChild(txt("span", null, "Roll when: "));
+    trig.appendChild(stxt("span", null, CITY.malfunctionTriggers.join("; ") + "."));
+    h.appendChild(trig);
+    var M = tkLast.mal;
+    if (!M) return;
+    var box = tkResult("gm-tk-mal");
+    var head = el("div", "gm-tk-mal-head");
+    if (M.implant) head.appendChild(stxt("b", null, M.who + ": " + M.implant));
+    head.appendChild(txt("span", "chip", "Tier " + M.tier));
+    box.appendChild(head);
+    box.appendChild(stxt("p", null, M.row.text));
+    h.appendChild(box);
+  }
+
+  function toolHeist(h) {
+    var st = heistState(), party = partyChars();
+    var tr = el("div", "gm-field");
+    tr.appendChild(txt("label", "gm-label", "Target"));
+    var tin = field(st.target, "What they're after, and where", function (v) { heistPatch(function (x) { x.target = v; }); });
+    tin.setAttribute("aria-label", "Target");
+    tr.appendChild(tin);
+    h.appendChild(tr);
+
+    h.appendChild(txt("div", "gm-label", "Approach"));
+    var seg = el("div", "seg gm-tk-approach");
+    [["quiet", "Quiet"], ["social", "Social"], ["loud", "Loud"], ["inside", "Inside man"]].forEach(function (o) {
+      var on = st.approach === o[0];
+      var b = btn(o[1], on ? "on" : "", function () { heistPatch(function (x) { x.approach = o[0]; }); redraw(); });
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      seg.appendChild(b);
+    });
+    h.appendChild(seg);
+
+    if (party.length) {
+      h.appendChild(txt("div", "gm-label", "The crew"));
+      var crew = el("div", "gm-tk-crew");
+      party.forEach(function (p) {
+        var line = el("div", "gm-tk-crew-line");
+        line.appendChild(txt("b", null, p.c.name || "Unnamed"));
+        line.appendChild(tkSelect([["", "No role"]].concat(CITY.heistRoles.map(function (x) { return [x, x]; })),
+          st.roles[p.rec.id] || "", function (v) { heistPatch(function (x) { x.roles[p.rec.id] = v; }); }));
+        crew.appendChild(line);
+      });
+      h.appendChild(crew);
+    }
+
+    h.appendChild(txt("div", "gm-label", "The plan"));
+    var ol = el("ol", "gm-tk-steps");
+    st.steps.forEach(function (stp, i) {
+      var li = el("li");
+      var f = field(stp, "A step", function (v) { heistPatch(function (x) { x.steps[i] = v; }); });
+      f.setAttribute("aria-label", "Step " + (i + 1));
+      li.appendChild(f);
+      li.appendChild(btn("×", "tiny", function () { heistPatch(function (x) { x.steps.splice(i, 1); }); redraw(); }));
+      ol.appendChild(li);
+    });
+    h.appendChild(ol);
+    var sr = row("gm-row");
+    sr.appendChild(btn("+ Step", "tiny", function () { heistPatch(function (x) { x.steps.push(""); }); redraw(); }));
+    h.appendChild(sr);
+
+    var heat = el("div", "gm-tk-heat");
+    heat.appendChild(txt("span", "gm-label", "Heat"));
+    var segs = el("div", "gm-segs");
+    for (var i = 0; i < 6; i++) {
+      (function (i) {
+        var b = txt("button", "gm-seg" + (i < st.heat ? " on" : ""), "");
+        b.setAttribute("aria-label", "Heat " + (i + 1) + " of 6");
+        b.onclick = function () { heistPatch(function (x) { x.heat = (i + 1 === x.heat) ? i : i + 1; }); redraw(); };
+        segs.appendChild(b);
+      })(i);
+    }
+    heat.appendChild(segs);
+    if (st.heat >= 6) heat.appendChild(txt("span", "tone-alert", "Blown"));
+    h.appendChild(heat);
+
+    var wr = row("gm-row");
+    wr.appendChild(btn("What went wrong", "primary", function () { heistComplication(); redraw(); }));
+    wr.appendChild(btn("Clear the plan", "tiny", function () {
+      if (!window.confirm("Clear the heist plan?")) return;
+      playPatch(function (p) { p.heist = cleanHeist({}); }); redraw();
+    }));
+    h.appendChild(wr);
+    if (st.log.length) {
+      var lg = el("ol", "gm-tk-log");
+      st.log.slice().reverse().forEach(function (x) { lg.appendChild(stxt("li", null, x.text)); });
+      h.appendChild(lg);
+    }
+  }
+
+  function toolNet(h) {
+    var n = netState();
+    var r = row("gm-row");
+    var rating = numField(n ? n.rating : 2, null, "62px");
+    rating.min = "1"; rating.max = "5";
+    rating.setAttribute("aria-label", "Security rating");
+    r.appendChild(txt("span", "gm-label", "Security"));
+    r.appendChild(rating);
+    r.appendChild(btn(n ? "Generate a new one" : "Generate", "primary", function () {
+      generateNet(Math.max(1, Math.min(5, Number(rating.value) || 2))); redraw();
+    }));
+    h.appendChild(r);
+    if (!n) return;
+    h.appendChild(txt("div", "gm-note", "Tap a node to mark it cleared, tap again for tripped, once more to reset."));
+    var map = el("div", "gm-net");
+    function nodeBtn(x, label, extra) {
+      var b = el("button", "gm-net-node " + x.type + (x.state ? " " + x.state : ""));
+      b.appendChild(txt("span", "t", label));
+      if (extra) b.appendChild(extra);
+      if (x.state) b.appendChild(txt("span", "s", x.state));
+      b.onclick = function () { cycleNode(x.id); redraw(); };
+      return b;
+    }
+    n.floors.forEach(function (fl, fi) {
+      var line = el("div", "gm-net-floor");
+      line.appendChild(txt("span", "gm-net-label", fi === 0 ? "Entry" : "Floor " + (fi + 1)));
+      var nodes = el("div", "gm-net-nodes");
+      fl.forEach(function (x) {
+        if (x.type === "ice" && x.ice) {
+          var d = el("span", "d");
+          d.appendChild(stxt("b", null, x.ice.name));
+          d.appendChild(txt("span", null, "AC " + x.ice.ac + " · " + x.ice.hp + " HP · +" + x.ice.atk + " · " + x.ice.dmg + " · DC " + x.ice.dc));
+          d.appendChild(stxt("i", null, x.ice.text));
+          nodes.appendChild(nodeBtn(x, "ICE", d));
+        } else if (x.type === "password") {
+          nodes.appendChild(nodeBtn(x, "Password", txt("span", "d", "DC " + x.dc)));
+        } else if (x.type === "file") {
+          nodes.appendChild(nodeBtn(x, "File", stxt("span", "d", x.label || "")));
+        } else {
+          nodes.appendChild(nodeBtn(x, "Control", stxt("span", "d", x.label || "")));
+        }
+      });
+      line.appendChild(nodes);
+      map.appendChild(line);
+    });
+    var rl = el("div", "gm-net-floor root");
+    rl.appendChild(txt("span", "gm-net-label", "Root"));
+    var rn = el("div", "gm-net-nodes");
+    rn.appendChild(nodeBtn({ id: "root", type: "root", state: n.root.state }, "Root",
+      txt("span", "d", "Full control of the architecture")));
+    rl.appendChild(rn);
+    map.appendChild(rl);
+    h.appendChild(map);
+  }
+
+  function toolChase(h) {
+    var c = chaseState(), mode = CITY.chaseModes[c.mode];
+    var seg = el("div", "seg");
+    Object.keys(CITY.chaseModes).forEach(function (k) {
+      var on = c.mode === k;
+      var b = btn(CITY.chaseModes[k].name, on ? "on" : "", function () { chasePatch(function (x) { x.mode = k; }); redraw(); });
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+      seg.appendChild(b);
+    });
+    h.appendChild(seg);
+    var info = el("div", "gm-note gm-tk-mode");
+    info.appendChild(stxt("span", null, mode.handling + ". " + mode.note));
+    h.appendChild(info);
+
+    var track = el("div", "gm-chase");
+    track.appendChild(txt("span", "gm-chase-end", "Caught"));
+    var cells = el("div", "gm-chase-cells");
+    for (var i = 0; i <= 10; i++) {
+      var cell = el("span", "gm-chase-cell" + (i === c.gap ? " on" : "") + (i === 0 ? " caught" : i === 10 ? " lost" : ""));
+      cell.textContent = String(i);
+      cells.appendChild(cell);
+    }
+    track.appendChild(cells);
+    track.appendChild(txt("span", "gm-chase-end", "Lost them"));
+    h.appendChild(track);
+    var status = c.gap <= 0 ? "Caught." : c.gap >= 10 ? "They're gone." : "Round " + c.round + ", gap " + c.gap + ".";
+    h.appendChild(txt("div", "gm-chase-status" + (c.gap <= 0 ? " tone-alert" : c.gap >= 10 ? " tone-signal" : ""), status));
+    var r = row("gm-row");
+    r.appendChild(btn("Pursuers gain", "", function () { chasePatch(function (x) { x.gap -= 1; }); redraw(); }));
+    r.appendChild(btn("Quarry gains", "", function () { chasePatch(function (x) { x.gap += 1; }); redraw(); }));
+    r.appendChild(btn("Next round", "", function () { chasePatch(function (x) { x.round += 1; }); redraw(); }));
+    r.appendChild(btn("Complication", "primary", function () { chaseComplication(); redraw(); }));
+    r.appendChild(btn("Reset", "tiny", function () { playPatch(function (p) { p.chase = cleanChase({ mode: c.mode }); }); redraw(); }));
+    h.appendChild(r);
+    if (c.log.length) {
+      var lg = el("ol", "gm-tk-log");
+      c.log.slice().reverse().forEach(function (x) {
+        var li = el("li");
+        li.appendChild(txt("span", "gm-note", "Round " + x.round + ": "));
+        li.appendChild(stxt("span", null, x.text));
+        lg.appendChild(li);
+      });
+      h.appendChild(lg);
+    }
+  }
+
+  var TOOLS = [
+    ["loot", "Loot", toolLoot], ["names", "Names", toolNames], ["fall", "The Long Fall", toolFall],
+    ["mal", "Chrome malfunctions", toolMalfunction], ["heist", "Heist planner", toolHeist],
+    ["net", "Netrun map", toolNet], ["chase", "Chase", toolChase]
+  ];
+  function renderToolkit(s) {
+    sectionHead(s, "The table", "Toolkit",
+      "For the moments you didn't prepare: loot, names, falls, broken chrome, heists, the net and chases.");
+    if (!CITY) { empty(s, "The city's tables didn't load.", "Reload the page; city.js sits next to gm.js."); return; }
+    var wrap = el("div", "gm-tools");
+    TOOLS.forEach(function (t) { wrap.appendChild(lazyDetails("tk:" + t[0], "gm-tool gm-tool-" + t[0], t[1], t[2])); });
+    s.appendChild(wrap);
+  }
+
   /* ---- the Humanity dashboard, on the Party screen --------------------- */
   function humanityBoard(party) {
     var rows = party.filter(function (p) { return p.d.hum; }).map(function (p) {
@@ -4629,6 +5169,10 @@ window.TTGM = (function () {
     storyAddNpcs: storyAddNpcs, cleanStory: cleanStory, help: HELP,
     walkState: walkState, showWalk: showWalk, storyPatch: storyPatch,
     moveCombatant: moveCombatant, rollNpcInitiative: rollNpcInitiative, stepTurn: stepTurn,
-    encounterDifficulty: encounterDifficulty, moraleState: moraleState, rollMorale: rollMorale, crXp: crXp
+    encounterDifficulty: encounterDifficulty, moraleState: moraleState, rollMorale: rollMorale, crXp: crXp,
+    dateOf: dateOf, advanceDay: advanceDay, rollWeather: rollWeather, postBoard: postBoard, takeJob: takeJob,
+    rollLoot: rollLoot, rollNames: rollNames, longFall: longFall, rollMalfunction: rollMalfunction,
+    rollMalfunctionFor: rollMalfunctionFor, generateNet: generateNet, cycleNode: cycleNode,
+    heistComplication: heistComplication, chaseComplication: chaseComplication, cleanChase: cleanChase
   };
 })();

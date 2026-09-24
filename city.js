@@ -215,5 +215,316 @@ window.TTCITY = {
       { job: "Retrieve a drill head from the new bore", who: "House Lathe", pay: "12,000 grams", catch: "It isn't a drill head any more.", seg: 8 },
       { job: "Find the people who keep singing the city to sleep", who: "House Reliquary", pay: "9,000 grams", catch: "They are the Hush, and they are right.", seg: 8 }
     ] }
+  },
+
+  /* ============================================================ TOOLKIT */
+
+  /* ---- loot: one find for where they are, one for whose it was ------- */
+  loot: {
+    band: {
+      below: { name: "Loot below the Nave", die: 10, rows: [
+        { item: "A driller's shift token, good for one hot meal in the Marrowworks", grams: 15 },
+        { item: "A cracked ichor ampule, a quarter full", grams: 400 },
+        { item: "A bone charm carved from a real rib splinter", grams: 60 },
+        { item: "A Gullet stallholder's ledger, in a private code", grams: 150 },
+        { item: "A rebreather mask stamped with House Lathe's mark", grams: 220 },
+        { item: "A pouch of loose grams, sticky with marrow", grams: 90 },
+        { item: "A pawn ticket for an implant nobody came back for", grams: 300 },
+        { item: "A scav's multitool, one blade still sharp", grams: 45 },
+        { item: "A wax tablet with a debt written on it, and a signature", grams: 0 },
+        { item: "A second-hand cyberclaw, unkeyed, warm to the touch", grams: 1800 }
+      ] },
+      middle: { name: "Loot from the Nave to the Seventh Rib", die: 10, rows: [
+        { item: "A Watch patrol's route card for this week", grams: 500 },
+        { item: "A clerk's stamp from the Counting Rib", grams: 750 },
+        { item: "Lift passes for the Spine, six days' worth", grams: 180 },
+        { item: "A pilgrim's mask, the wards' marks still bright", grams: 1200 },
+        { item: "A folded foreclosure notice for a tenement that hasn't been served yet", grams: 0 },
+        { item: "A purse of grams and a prayer card", grams: 260 },
+        { item: "A ward-key blank, uncut", grams: 900 },
+        { item: "An operator's lift key, stolen", grams: 1400 },
+        { item: "A sealed petition to the Cantor, not yet asked", grams: 0 },
+        { item: "A clean smartlink, still in its House packaging", grams: 4500 }
+      ] },
+      above: { name: "Loot from Lanternside to the Crown", die: 10, rows: [
+        { item: "A pilgrim hostel's donation box, full", grams: 700 },
+        { item: "A House heir's signet, which opens doors and closes others", grams: 3000 },
+        { item: "A bottle of the Crown's clear air, sealed", grams: 350 },
+        { item: "An indulgence certificate, transferable", grams: 2500 },
+        { item: "A minute at the Eye, prepaid, with someone else's name on it", grams: 5000 },
+        { item: "Jewellery with a House crest, hard to sell below the Nave", grams: 1800 },
+        { item: "A Reliquary shunt, recently repossessed", grams: 4000 },
+        { item: "A choir coin", grams: 0 },
+        { item: "A manor servant's key ring", grams: 600 },
+        { item: "A bone-carved pistol inlaid with ichor filigree", grams: 7500 }
+      ] }
+    },
+    house: {
+      reliquary: { name: "Something of House Reliquary's", die: 6, rows: [
+        { item: "A blessed candle that does not burn down", grams: 120 },
+        { item: "A page from an indulgence ledger", grams: 300 },
+        { item: "A vial of holy water that hums near chrome", grams: 250 },
+        { item: "An Archdeacon's letter of passage", grams: 1500 },
+        { item: "A relic in a glass case: a finger bone, very old", grams: 2200 },
+        { item: "A minute-glass from the Eye's chapel", grams: 900 }
+      ] },
+      thorn: { name: "Something of House Thorn's", die: 6, rows: [
+        { item: "A collector's writ, unsigned", grams: 400 },
+        { item: "A debt ledger page naming someone the crew knows", grams: 0 },
+        { item: "A thorn pin: a collector's badge of office", grams: 650 },
+        { item: "A strongbox of seized goods", grams: 1700 },
+        { item: "A duelling glove, House-marked", grams: 300 },
+        { item: "A deed to a Seventh Rib tenement", grams: 3500 }
+      ] },
+      lathe: { name: "Something of House Lathe's", die: 6, rows: [
+        { item: "A carver's licence, blank", grams: 2000 },
+        { item: "A drill bit that bleeds a little when it's cold", grams: 800 },
+        { item: "A flask of raw ichor", grams: 1200 },
+        { item: "Surgical tools in a bone case", grams: 950 },
+        { item: "A shift roster for the new bore", grams: 0 },
+        { item: "An implant blank carved from fresh marrow", grams: 4200 }
+      ] },
+      vigil: { name: "Something of House Vigil's", die: 6, rows: [
+        { item: "A Watch badge", grams: 500 },
+        { item: "A ward-key, one night's use", grams: 1600 },
+        { item: "A lift operator's licence", grams: 1100 },
+        { item: "A census roll for one rib", grams: 0 },
+        { item: "A stun baton, charged", grams: 350 },
+        { item: "A map of which wards are failing", grams: 2400 }
+      ] }
+    }
+  },
+
+  /* ---- names, by who they belong to ----------------------------------- */
+  names: {
+    reliquary: { name: "House Reliquary", first: ["Uln", "Seraphine", "Oswin", "Candor", "Ilsabet", "Mattias", "Vesna", "Aurel"],
+                 last: ["Sarrow", "Vellum", "Ashcombe", "Halloway", "Censer", "Reliquary", "Abbet", "Myrrh"] },
+    thorn: { name: "House Thorn", first: ["Ambrel", "Cassia", "Dorran", "Isolde", "Marcus", "Petra", "Soren", "Theda"],
+             last: ["Dace", "Thorn", "Tallis", "Bramble", "Ledger", "Coyne", "Brakewell", "Tithe"] },
+    lathe: { name: "House Lathe", first: ["Bram", "Greta", "Hollis", "Ivo", "Maud", "Rook", "Sten", "Wilhelmina"],
+             last: ["Lathe", "Carver", "Bore", "Anvel", "Grist", "Marrowby", "Keel", "Chisel"] },
+    vigil: { name: "House Vigil", first: ["Alder", "Brisa", "Corin", "Dagny", "Evander", "Faye", "Garrick", "Hester"],
+             last: ["Vigil", "Wardell", "Lanthorn", "Keyes", "Watchley", "Spindle", "Bellman", "Sentry"] },
+    street: { name: "Street", first: ["Kip", "Jinx", "Mags", "Rook", "Scab", "Tally", "Vee", "Wick", "Nox", "Pell"],
+              last: ["Nine-Fingers", "of the Stair", "Quick", "Two-Coin", "the Gullet", "Bonesaw", "Lampblack", "Rust"] },
+    corpo: { name: "Corpo", first: ["Adrienne", "Benedict", "Celeste", "Darius", "Evelyn", "Julian", "Lucienne", "Victor"],
+             last: ["Arkwright", "Beaumont", "Castellan", "Delacroix", "Everard", "Montague", "Sterling", "Vane"] },
+    priest: { name: "Priest", first: ["Brother", "Sister", "Deacon", "Mother", "Father", "Cantor-Adept", "Pilgrim", "Acolyte"],
+              last: ["Anselm", "Bede", "Clement", "Dunstan", "Ephrem", "Hilde", "Lioba", "Wulfstan"] }
+  },
+
+  /* ---- the Long Fall: where a body comes down -------------------------- */
+  landing: { name: "Where they land", die: 8, rows: [
+    { text: "Through a market awning. Half damage, and a very angry stallholder." },
+    { text: "On a lift car's roof, which keeps going. The operator has questions." },
+    { text: "Into an ichor main. The pipe dents, the alarm goes off, and they are soaked gold." },
+    { text: "Into a cistern, deep and cold. No damage, but everything they carry is wet." },
+    { text: "Onto a gantry that holds, just. DC 12 Dexterity save or it gives way and they fall another 20 feet." },
+    { text: "Into a crowd. Someone breaks their fall, and someone else is now owed a great deal." },
+    { text: "Through a chapel roof onto holy ground: sanctuary static, and a very surprised priest." },
+    { text: "Onto a rooftop garden in a better district than they deserve, watched by the owner." }
+  ] },
+  /* chrome that stops or softens a fall, by name */
+  fallChrome: [
+    { name: "Hydraulic Jacks", text: "As a reaction, take no damage from the fall." },
+    { name: "Integrated Grapple Gun", text: "As a reaction, fire at anything within 200 feet and stop the fall." },
+    { name: "Cyberclaws", text: "Can dig into the bone on the way down: a DC 15 Athletics check stops the fall." }
+  ],
+
+  /* ---- chrome malfunctions, by tier ------------------------------------
+     When chrome misbehaves: an EMP, a critical hit, Fraying, sanctuary
+     static, second-hand ware on its first night. */
+  malfunctionTriggers: [
+    "An EMP, or an Emp Projector, hits them",
+    "They take a critical hit",
+    "They cross into Fraying or worse",
+    "Their active chrome goes onto consecrated ground",
+    "Ichor rain or a static squall soaks them",
+    "Second-hand ware on its first night"
+  ],
+  malfunctions: {
+    "1": { name: "Tier 1 malfunction", die: 12, rows: [
+      { text: "A twitch. The implant fires once on its own; nothing happens, but someone saw." },
+      { text: "It goes cold for a minute and does nothing." },
+      { text: "It hums a note from the choir's key until they hit it." },
+      { text: "A status light that shouldn't exist blinks under the skin." },
+      { text: "It reports a fault that isn't there. They believe it for an hour." },
+      { text: "A spark and a smell of burnt marrow. 1 fire damage." },
+      { text: "It works, but slowly: disadvantage on the next check that uses it." },
+      { text: "It picks up a stray signal and plays it in their inner ear." },
+      { text: "A Remnant stirs: a habit of its last wearer shows, briefly." },
+      { text: "It locks in place for a round." },
+      { text: "It needs a minute of recalibration before it works again." },
+      { text: "Nothing, and that's what's worrying." }
+    ] },
+    "2": { name: "Tier 2 malfunction", die: 12, rows: [
+      { text: "It shuts down until they finish a short rest." },
+      { text: "It fires at the wrong moment: they lose their reaction this round." },
+      { text: "Feedback: 1d6 lightning damage and they drop what they're holding." },
+      { text: "It broadcasts their position to anything listening for 1 minute." },
+      { text: "It works backwards for a minute: its bonus becomes a penalty." },
+      { text: "Blinding pain: disadvantage on attacks until the end of their next turn." },
+      { text: "It pulls power from the next implant along; that one stops too until a short rest." },
+      { text: "A Remnant surfaces: they speak a sentence in the last wearer's voice." },
+      { text: "It seizes: they are restrained until they succeed on a DC 12 Strength save." },
+      { text: "It overheats: 1d8 fire damage, and it can't be used for an hour." },
+      { text: "It sheds ichor: a gold trail anyone can follow for a day." },
+      { text: "It needs a Streetdoc: it doesn't work until someone spends an hour on it (DC 13)." }
+    ] },
+    "3": { name: "Tier 3 malfunction", die: 12, rows: [
+      { text: "It shuts down until a long rest." },
+      { text: "Full seizure: stunned until the end of their next turn." },
+      { text: "It fights them: they make their next attack against the nearest creature." },
+      { text: "Ichor bleed: 2d8 necrotic damage and 1 Humanity." },
+      { text: "It screams on every channel: comms and netrunning within 60 feet fail for a minute." },
+      { text: "It burns out a nerve: disadvantage on Dexterity checks until a long rest." },
+      { text: "A Remnant takes the wheel for a round: the GM decides what the last wearer would do." },
+      { text: "It dumps its charge: 2d10 lightning to them and 1d10 to anyone touching them." },
+      { text: "It locks their body in the position it's in until someone makes a DC 15 Medicine check." },
+      { text: "It needs a clinic: it won't work until 500 grams and a day are spent on it." },
+      { text: "It shows them something through their own eyes that isn't there. DC 13 Wisdom save or frightened." },
+      { text: "It works perfectly, too well: they can't stop it for a minute." }
+    ] },
+    "4": { name: "Tier 4 malfunction", die: 12, rows: [
+      { text: "Catastrophic shutdown: it's dead until a clinic spends 5,000 grams on it." },
+      { text: "Ichor flood: 4d10 necrotic damage and 2 Humanity." },
+      { text: "It takes them: they fall unconscious for 1d4 rounds while it reboots." },
+      { text: "It fires every function at once, at the nearest creature." },
+      { text: "It detonates in its housing: 4d6 fire damage to them and 2d6 to everyone within 10 feet." },
+      { text: "A Remnant wakes fully. For a minute they are someone else, and that person has a grudge." },
+      { text: "It burns a hole in their memory: they lose the last day entirely." },
+      { text: "It calls home: whoever carved it knows exactly where it is, and comes." },
+      { text: "It takes 1d4 levels of exhaustion out of them to keep running." },
+      { text: "It goes quiet, then the god notices them until dawn, whether they like it or not." },
+      { text: "It rewrites itself: it works, but as something slightly different from now on." },
+      { text: "It cracks: 1 Humanity now and every long rest until it's replaced." }
+    ] }
+  },
+
+  /* ---- the heist planner ------------------------------------------------ */
+  heistRoles: ["Face", "Tech", "Muscle", "Infiltrator", "Wheel", "Overwatch"],
+  heist: {
+    quiet: { name: "Quiet: in and out unseen", die: 10, rows: [
+      { text: "A guard changes their route tonight, and nobody told the crew." },
+      { text: "The lock is new, and a model the Tech has never seen." },
+      { text: "A ward hums awake as they pass. It hasn't raised the alarm yet." },
+      { text: "Someone else is breaking in tonight, from the other side." },
+      { text: "A child is hiding exactly where they need to be." },
+      { text: "The target has been moved, and is one floor further in." },
+      { text: "A dog, or a drone that thinks it's a dog." },
+      { text: "Their exit route is blocked by a Watch checkpoint." },
+      { text: "The lights come on. It's only a cleaner. The cleaner sees them." },
+      { text: "It goes perfectly, which means the inside man set them up." }
+    ] },
+    social: { name: "Social: talked in, walked out", die: 10, rows: [
+      { text: "Someone at the party knows the Face from somewhere else." },
+      { text: "The host takes a personal interest and won't leave them alone." },
+      { text: "Their cover's employer is here in person." },
+      { text: "A House heir starts a duel, and the crew is in the way." },
+      { text: "The invitation list is checked twice, and they're only on it once." },
+      { text: "They're offered the thing they came to steal, as a gift, with strings." },
+      { text: "A rival crew is working the same room." },
+      { text: "The target leaves early." },
+      { text: "Someone recognises a piece of their chrome: it was theirs once." },
+      { text: "The Face is too convincing: they're hired, on the spot, for something worse." }
+    ] },
+    loud: { name: "Loud: kick the door in", die: 10, rows: [
+      { text: "The Watch arrives two minutes early." },
+      { text: "The vault door is thicker than the plan said." },
+      { text: "House security has a Hunter-Killer on call." },
+      { text: "A hostage no one planned for." },
+      { text: "The getaway route floods, collapses or is blocked." },
+      { text: "Someone on their side goes down and can't walk." },
+      { text: "The target is heavier, larger or more alive than expected." },
+      { text: "A civilian films the whole thing on implant." },
+      { text: "The alarm calls a House, not the Watch. That's worse." },
+      { text: "Everything goes right until the Wheel's ride is stolen." }
+    ] },
+    inside: { name: "Inside man: someone lets them in", die: 10, rows: [
+      { text: "The inside man gets cold feet at the worst moment." },
+      { text: "The inside man was caught yesterday and is being made to play along." },
+      { text: "The inside man wants a bigger cut, now, at the door." },
+      { text: "The inside man's shift was swapped. The replacement is loyal." },
+      { text: "The inside man brought a friend." },
+      { text: "The inside man was never on their side." },
+      { text: "The inside man is recognised by his own boss, mid-job." },
+      { text: "The inside man's access code has been rotated." },
+      { text: "The inside man gets hurt and has to be carried out." },
+      { text: "The inside man asks them to steal something else too, and won't say why." }
+    ] }
+  },
+
+  /* ---- the chase --------------------------------------------------------
+     No vehicle rules in the book, so these are small and invented: speed
+     and handling are a nudge to the check, not a statblock. */
+  chaseModes: {
+    foot: { name: "On foot", speed: "30 ft", handling: "Athletics or Acrobatics", note: "Stairs, crowds and gantries: the city is built for this." },
+    bike: { name: "Bike", speed: "fast", handling: "Dex + proficiency with land vehicles, or Dex", note: "Fits down alleys and along the Spine's service ledges." },
+    car: { name: "Car", speed: "fast on the wide streets", handling: "Dex, disadvantage in the lower districts", note: "Only the upper districts have roads it fits on." },
+    av: { name: "AV", speed: "very fast", handling: "Dex (AV pilots only)", note: "Flies between the ribs. The Watch shoots at unlicensed AVs." }
+  },
+  chase: {
+    street: { name: "Chase complications, on foot", die: 12, rows: [
+      { text: "A crowd: DC 12 Athletics to push through, or lose 1 on the gap." },
+      { text: "A gap between ribs: DC 13 Athletics to jump it, or find another way (lose 1)." },
+      { text: "A lift door closing: whoever makes it through gains 2." },
+      { text: "Market stalls to knock over behind them: the pursuer makes a DC 12 Dex save or loses 1." },
+      { text: "A dead end, with a drain cover and a ladder down." },
+      { text: "A Watch patrol, who don't know who to stop." },
+      { text: "A slick of ichor on the stairs: DC 12 Acrobatics or fall prone." },
+      { text: "A shortcut through a chapel: sanctuary static, no chrome for a round." },
+      { text: "A ledge: DC 14 Acrobatics to run it, and a Long Fall below." },
+      { text: "Someone they owe money to steps into their path." },
+      { text: "A pilgrim procession: Stealth to vanish into it, DC 13." },
+      { text: "Laundry lines and gantries overhead: climb up (DC 12) and gain 2." }
+    ] },
+    vehicle: { name: "Chase complications, in vehicles", die: 12, rows: [
+      { text: "Oncoming traffic: DC 13 Dex to weave through, or lose 1 on the gap." },
+      { text: "A lift platform descending across the road: floor it (DC 14) to make it under." },
+      { text: "A Watch roadblock ahead. Ram it (damage) or turn (lose 1)." },
+      { text: "A tight turn into an alley: bikes gain 2, cars lose 1." },
+      { text: "The road ends at the edge of the rib: jump the gap (DC 15) or stop." },
+      { text: "Gunfire from the pursuer: each passenger makes a DC 12 Dex save or takes 2d6." },
+      { text: "A market spills into the road: DC 12 or hit a stall (and lose 1)." },
+      { text: "The engine stutters: DC 12 Tech check or lose 1." },
+      { text: "A shortcut through a tunnel: dark, narrow, and something lives in it." },
+      { text: "Ichor rain on the road surface: disadvantage on the next handling check." },
+      { text: "A second pursuer joins from a side street." },
+      { text: "A clean straight: whoever is faster gains 2." }
+    ] }
+  },
+
+  /* ---- the netrun map --------------------------------------------------- */
+  net: {
+    ice: { name: "ICE", die: 8, rows: [
+      { name: "Hellhound", text: "Chases a runner through the floors. Fire damage in meat space." },
+      { name: "Wisp", text: "Doesn't attack: follows, and reports every move to the architect." },
+      { name: "Killer", text: "Pure harm. Psychic damage, and it doesn't stop until one of you does." },
+      { name: "Raven", text: "Steals a program: on a hit the runner loses one program until they rest." },
+      { name: "Liche", text: "Rewrites the runner's memory: on a hit they forget the last floor." },
+      { name: "Sabertooth", text: "Shreds the deck: on a hit, lose 2 Bandwidth." },
+      { name: "Asp", text: "Poison in the code: on a hit, disadvantage on Interface checks until the end of the run." },
+      { name: "Choir-ICE", text: "A fragment of the Cantor, singing. On a hit the runner answers its question truthfully unless they make the save." }
+    ] },
+    files: { name: "Files", die: 8, rows: [
+      { text: "Payroll: who's paid, and who's paid off." },
+      { text: "A security roster with names and shifts." },
+      { text: "A debt ledger, and someone the crew knows is on it." },
+      { text: "Blueprints of the physical building, with the lift shafts marked." },
+      { text: "Private messages that would end a career." },
+      { text: "A recording of something the Houses paid to forget." },
+      { text: "Encrypted and worthless, unless you know who wants it." },
+      { text: "The architect's own notes about what they're hiding." }
+    ] },
+    controls: { name: "Controls", die: 8, rows: [
+      { text: "Doors on one floor" },
+      { text: "Cameras for the whole building" },
+      { text: "A turret, or a drone bay" },
+      { text: "The building's lift" },
+      { text: "Alarms, and who they call" },
+      { text: "Lights and the air system" },
+      { text: "A ward, with a House's key on it" },
+      { text: "The vault's time lock" }
+    ] }
   }
 };

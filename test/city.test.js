@@ -189,6 +189,21 @@ module.exports = async function (browser) {
     R.check("holy days fall on real dates",
       CITY.holyDays.every(h => h.month >= 1 && h.month <= 12 && h.day >= 1 && h.day <= CITY.calendar.days && h.name && h.effect), "");
     R.check("the standing ladder runs -3 to +3", CITY.standing.map(x => x.n).join() === "-3,-2,-1,0,1,2,3", "");
+    const tk = [];
+    Object.keys(CITY.loot.band).forEach(k => tk.push(["loot " + k, CITY.loot.band[k]]));
+    Object.keys(CITY.loot.house).forEach(k => tk.push(["loot " + k, CITY.loot.house[k]]));
+    Object.keys(CITY.malfunctions).forEach(k => tk.push(["malfunction tier " + k, CITY.malfunctions[k]]));
+    Object.keys(CITY.heist).forEach(k => tk.push(["heist " + k, CITY.heist[k]]));
+    Object.keys(CITY.chase).forEach(k => tk.push(["chase " + k, CITY.chase[k]]));
+    Object.keys(CITY.net).forEach(k => tk.push(["net " + k, CITY.net[k]]));
+    tk.push(["landing", CITY.landing]);
+    R.eq("every Toolkit table has one row per face of its die",
+      tk.filter(t => t[1].rows.length !== t[1].die).map(t => t[0] + " " + t[1].rows.length + "/" + t[1].die), []);
+    R.eq("loot for every House, and names for every House", [Object.keys(CITY.loot.house), CATH.houses.every(h => CITY.names[h.id])],
+      [CATH.houses.map(h => h.id), true]);
+    const book = load("data.js").TTB;
+    R.eq("the chrome that softens a Long Fall is real cyberware",
+      CITY.fallChrome.filter(f => !book.cyberware.some(c => c.name === f.name)).map(f => f.name), []);
     R.check("every bounty has a job, a payer, pay, a catch and a clock size",
       Object.keys(CITY.bounties).every(b => CITY.bounties[b].rows.every(j => j.job && j.who && j.pay && j.catch && j.seg >= 2 && j.seg <= 12)), "");
   }
@@ -352,6 +367,97 @@ module.exports = async function (browser) {
     R.check("but the city's own words stay English", /Marrowtide/.test(es.date), es.date);
 
     R.eq("no page errors on the City screen", errors, []);
+    await ctx.close();
+  }
+
+  /* ============================ the Toolkit screen ============================ */
+  {
+    const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+    await page.waitForTimeout(250);
+    const top = await page.evaluate(() => {
+      window.TTGM.loadDemo();
+      const T = window.TT; T.setMode("table"); T.gmSec(8); T.render();
+      return { h2: document.querySelector("#stage h2").textContent,
+               tools: [...document.querySelectorAll(".gm-tool summary")].map(x => x.textContent) };
+    });
+    R.eq("the Toolkit has its seven tools", [top.h2, top.tools],
+      ["Toolkit", ["Loot", "Names", "The Long Fall", "Chrome malfunctions", "Heist planner", "Netrun map", "Chase"]]);
+
+    const calc = await page.evaluate(() => {
+      const G = window.TTGM, out = {};
+      out.edge = G.longFall("nave", 0, true);
+      out.short = G.longFall("nave", 40, false);
+      out.huge = G.longFall("crown", 5000, false);
+      const loot = [];
+      for (let i = 0; i < 40; i++) loot.push(G.rollLoot("middle", "vigil"));
+      out.loot = { min: Math.min(...loot.map(l => l.items.length)), max: Math.max(...loot.map(l => l.items.length)),
+                   sums: loot.every(l => l.total === l.items.reduce((a, x) => a + x.grams, 0)) };
+      out.names = G.rollNames("reliquary", 5);
+      const mals = [];
+      for (let i = 0; i < 20; i++) mals.push(G.rollMalfunctionFor("demo-brick"));
+      out.mals = mals.map(m => [m.implant, m.tier]);
+      out.noChrome = G.rollMalfunctionFor("demo-vesper");
+      return out;
+    });
+    R.eq("off the edge of the Nave drops 180 ft into Tallowgate",
+      [calc.edge.distance, calc.edge.dice, calc.edge.dropped, calc.edge.land.id], [180, 18, true, "tallowgate"]);
+    R.check("with damage from 18d6 and a landing rolled", calc.edge.damage >= 18 && calc.edge.damage <= 108 && !!calc.edge.landing, JSON.stringify(calc.edge.damage));
+    R.eq("40 ft is a fall, not a Long Fall: they stay put", [calc.short.dropped, calc.short.land.id, calc.short.dice], [false, "nave", 4]);
+    R.check("damage caps at 20d6, and 5,000 ft from the Crown reaches the Marrowworks", calc.huge.dice === 20 && calc.huge.damage <= 120 && calc.huge.land.id === "marrowworks",
+      JSON.stringify([calc.huge.dice, calc.huge.damage, calc.huge.land.id]));
+    R.eq("the party's fall-stopping chrome is listed", calc.edge.chrome.map(c => c.name).sort(), ["Cyberclaws", "Hydraulic Jacks"]);
+    R.check("loot finds one to three things and adds up their worth", calc.loot.min >= 1 && calc.loot.max <= 3 && calc.loot.sums, JSON.stringify(calc.loot));
+    R.check("five different names", calc.names.length === 5 && new Set(calc.names).size === 5, JSON.stringify(calc.names));
+    const brick = { "Dermal Barrier": "2", "Muscle Reinforcement": "3", "Hydraulic Jacks": "2", "Cyberclaws": "2" };
+    R.check("a malfunction picks an implant the character actually has, at its tier",
+      calc.mals.every(m => brick[m[0]] === m[1]), JSON.stringify(calc.mals));
+    R.eq("and a character with no chrome has nothing to malfunction", calc.noChrome, null);
+
+    // the heist plan, the net and the chase remember where you left them
+    await page.evaluate(() => {
+      const T = window.TT, G = window.TTGM;
+      T.setMode("table"); T.gmSec(8); T.render();
+      document.querySelectorAll(".gm-tool").forEach(d => { d.open = true; d.dispatchEvent(new Event("toggle")); });
+      const find = t => [...document.querySelectorAll("#stage button")].find(b => b.textContent === t);
+      const tgt = document.querySelector(".gm-tool-heist input");
+      tgt.value = "The Reliquary vault"; tgt.dispatchEvent(new Event("input"));
+      find("Loud").click();
+      find("+ Step").click();
+      const stp = document.querySelector(".gm-tk-steps input");
+      stp.value = "Brick opens the door"; stp.dispatchEvent(new Event("input"));
+      find("What went wrong").click();
+      G.generateNet(2);
+      T.render();
+      document.querySelector(".gm-net-node").click();
+      for (let i = 0; i < 7; i++) find("Pursuers gain").click();
+    });
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT);
+    await page.waitForTimeout(250);
+    const kept = await page.evaluate(() => {
+      const T = window.TT; T.setMode("table"); T.gmSec(8); T.render();
+      document.querySelectorAll(".gm-tool").forEach(d => { d.open = true; d.dispatchEvent(new Event("toggle")); });
+      const p = JSON.parse(localStorage.getItem("ttb.gm.play"));
+      return { heist: p.heist, first: p.netrun.floors[0][0].state, floors: p.netrun.floors.length,
+               chase: p.chase.gap, status: (document.querySelector(".gm-chase-status") || {}).textContent,
+               log: (document.querySelectorAll(".gm-tool-heist .gm-tk-log li") || []).length };
+    });
+    R.eq("the heist plan survives a reload", [kept.heist.target, kept.heist.approach, kept.heist.steps, kept.heist.log.length],
+      ["The Reliquary vault", "loud", ["Brick opens the door"], 1]);
+    R.check("and What went wrong rolls from the Loud table", /Watch|vault|Hunter|hostage|getaway|down|heavier|films|alarm|Wheel/.test(kept.heist.log[0].text), kept.heist.log[0].text);
+    R.eq("a generated net keeps its floors and a tapped node stays cleared", [kept.floors, kept.first], [3, "cleared"]);
+    R.eq("the chase gap stops at 0: caught", [kept.chase, kept.status], [0, "Caught."]);
+
+    const es = await page.evaluate(() => {
+      const T = window.TT; T.setLang("es"); T.setMode("table"); T.gmSec(8); T.render();
+      const out = { h2: document.querySelector("#stage h2").textContent,
+                    tools: [...document.querySelectorAll(".gm-tool summary")].map(x => x.textContent) };
+      T.setLang("en");
+      return out;
+    });
+    R.eq("in Spanish the Toolkit translates", [es.h2, es.tools[0], es.tools[6]], ["Caja de herramientas", "Botín", "Persecución"]);
+
+    R.eq("no page errors on the Toolkit", errors, []);
     await ctx.close();
   }
 

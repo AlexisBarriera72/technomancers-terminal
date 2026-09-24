@@ -226,7 +226,7 @@ does on hover, guide or no guide. The text lives in one place, `TTBGM.help` in
 `gm.js`, and a test holds every line of it to having a Spanish translation.
 **Hide guide** (or **?**) turns it all off once you know it.
 
-Eight screens: the five below, then Story, Campaign and City (and, next, Toolkit):
+Nine screens: the five below, then Story, Campaign, City and Toolkit:
 
 | Screen | What it does |
 |---|---|
@@ -269,6 +269,38 @@ The screen tracks:
 
 All of it lives in `ttb.gm.play` (`city`, `repLog`), goes out in the vault
 export, comes back on import through `cleanCity`, and the demo table seeds it.
+
+### The Toolkit screen
+
+Generators and calculators for the moments nobody prepared, each a drop-down,
+all rolling on `city.js` tables:
+
+- **Loot**: one find for where they are (below the Nave, the middle ribs, or
+  Lanternside up), one for whose it was if you pick a House, sometimes a
+  second find; values in grams, and **Copy to notes** appends it to the session
+  scratchpad.
+- **Names**: five at a time from each House's pool or the street, corpo and
+  priest pools. **Make NPC** turns one into a real NPC on the NPC screen.
+- **The Long Fall**: pick the district and either *Off the edge* (down to the
+  district below) or a distance. It rolls 1d6 per 10 ft (capped at 20d6), works
+  out which district they land in from the heights, rolls where they land, and
+  lists any party chrome that stops a fall (Hydraulic Jacks, Integrated Grapple
+  Gun, Cyberclaws).
+- **Chrome malfunctions**: a d12 table per tier. Pick a character and it picks
+  one of their installed implants and rolls at that implant's tier.
+- **Heist planner**: target, approach (quiet, social, loud, inside man), a crew
+  role per party member, the plan as steps, a six-segment heat clock, and
+  **What went wrong** from the approach's table.
+- **Netrun map**: a security rating from 1 to 5 builds an architecture of
+  passwords, files, control nodes and ICE (with AC, HP, attack, damage and DC
+  scaled to the rating) down to the root. Tap a node for cleared, again for
+  tripped.
+- **Chase**: on foot, bike, car or AV; a 0 to 10 gap (0 is caught, 10 is gone)
+  with a complication table for feet and one for wheels. The book has no
+  vehicle rules, so the modes are a nudge to the check, not statblocks.
+
+The heist, the net and the chase live in `ttb.gm.play` (`heist`, `netrun`,
+`chase`), are cleaned on load and on import, and go out in the vault.
 
 ### Street Cred and what the party is
 
@@ -376,7 +408,7 @@ one side only would leave a line in English. CI runs both on every push.
 | `test/rules.test.js` | Ability scores, feats, per-class ASI levels, AC, proficiency, the import validator. |
 | `test/browser.test.js` | Injection, save failures, the GM vault export, share-link transitions, and that the app still works. |
 | `test/sw.test.js` | A failed update must not replace a working offline cache. |
-| `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale; the city's data (tables sized to their dice, districts climbing) and the City screen. |
+| `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale; the city's data (tables sized to their dice, districts climbing) and the City and Toolkit screens. |
 | `test/story.test.js` | The story holds together (every scene complete, every reference resolves), the Story tab tracks, rolls and persists, the demo walkthrough adds up, and every synergy says what it does. |
 
 ## Deploying a change
