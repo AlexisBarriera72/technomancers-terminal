@@ -33,6 +33,7 @@ with `npx serve .`.
 | `expansion.js` | `window.TTBX` — the Neon Ledger expansion. |
 | `srd.js` | `window.TTSRD` — SRD 5.1 material, currently the Wild Magic Sorcerer. |
 | `synergy.js` | `window.TTSY` — the class roles and the named pairs. Read by both halves. |
+| `story.js` | `window.TTST` — "The Fourth Minute", the GM-only campaign behind the Story tab. |
 | `es-ui.js` | `window.TTES.ui` — Spanish for the application's own text. Always loaded. |
 | `es-book.js` | `window.TTES.book` — Spanish for the rules text. Fetched on demand. |
 | `campaigns.js` | `window.TTBC` — your campaigns. **This is the one you edit.** |
@@ -167,6 +168,35 @@ before handing the tablet to a player.
 > not a determined one. The real guarantee is that nothing the GM keeps ever
 > leaves the device. Change `TTBGM.unlock` to change the address.
 
+### The Story tab
+
+A sixth GM screen holds **"The Fourth Minute"**, a twelve-session campaign for
+Cathedra (levels 3→12). The crew fail a heist, see the end of the city in a
+stolen vision, and spend the campaign trying to stop it; every attempt helps it
+happen, and the "gifts from the gods" that help them turn out to be from their
+own future selves. The city always falls — the fall is a birth — except on a
+1% path that needs all twelve keystones kept.
+
+Everything is a drop-down: reference sections (the truth, running the doom,
+the seven fragments, keystones, visions, the secret Eye-chrome, loop scars,
+the Hush, cast, random tables with roll buttons, an off-script kit, endings),
+then four acts of scenes. Every scene has the same categories — what's really
+happening, read-aloud, ways in by role, questions worth asking, if they don't
+ask, details they can miss, right calls, wrong calls, when it goes wrong
+anyway, checks and DCs, visions, loop scars, Street Cred, clocks and NPCs, its
+fragment and keystones.
+
+It tracks and it's wired in: mark scenes played, the branch taken and a note;
+tick Doom, move Salvage and Feed, mark keystones kept or broken; **Roll for a
+vision** picks someone from the party (17+, or 16+ with the Eye-chrome) and logs
+it for the finale; **Start clocks**, **Add NPCs** and the Street Cred buttons
+feed the other GM screens. Role hooks name whoever in the imported party fits
+them. Progress lives in `ttb.gm.play` beside the clocks, so the vault export
+carries it. The story text is English only; the tab's labels are translated.
+
+> Like the unlock token, `story.js` is a public file. It keeps the story out
+> of a player's way, not out of a determined player's hands.
+
 **Load a demo table** (on the Party screen, under Backup) fills every screen
 with a made-up Cathedra game in progress: five level-5 characters with three
 live synergy pairs, their NPCs, a fight in round two, three clocks, Street Cred
@@ -284,6 +314,7 @@ on every push.
 | `test/rules.test.js` | Ability scores, feats, per-class ASI levels, AC, proficiency, the import validator. |
 | `test/browser.test.js` | Injection, save failures, the GM vault export, share-link transitions, and that the app still works. |
 | `test/sw.test.js` | A failed update must not replace a working offline cache. |
+| `test/story.test.js` | The story holds together (every scene complete, every reference resolves) and the Story tab tracks, rolls and persists. |
 
 ## Deploying a change
 

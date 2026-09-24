@@ -538,6 +538,7 @@ window.TTGM = (function () {
       var p = lsGet(K_PLAY, null);
       if (!p || typeof p !== "object") p = {};
       p.clocks = cleanClocks(p.clocks);
+      p.story = cleanStory(p.story);
       if (typeof p.scratch !== "string") p.scratch = "";
       if (typeof p.rep !== "number" || !(p.rep >= -10 && p.rep <= 10)) p.rep = 0;
       p.rep = Math.round(p.rep);
@@ -562,6 +563,27 @@ window.TTGM = (function () {
       o.name = c.name == null ? "" : String(c.name);
       return o;
     });
+  }
+
+  /* The Story tab's progress lives in play, so the vault carries it. Same
+     caution as the clocks: it can arrive from a hand-edited file. */
+  function cleanStory(st) {
+    function obj(v) { return v && typeof v === "object" && !Array.isArray(v) ? v : {}; }
+    var o = obj(st), feed = obj(o.feed), out = {
+      current: typeof o.current === "string" ? o.current : null,
+      done: obj(o.done), branch: obj(o.branch), notes: obj(o.notes),
+      doom: obj(o.doom), keys: obj(o.keys),
+      salvage: Math.max(-99, Math.min(99, Math.round(+o.salvage) || 0)),
+      feed: {},
+      eyeChrome: typeof o.eyeChrome === "string" ? o.eyeChrome : "",
+      echoes: (Array.isArray(o.echoes) ? o.echoes : []).filter(function (e) {
+        return e && typeof e === "object" && typeof e.text === "string";
+      }).slice(-300)
+    };
+    ["mercy", "violence", "lies", "questions"].forEach(function (k) {
+      out.feed[k] = Math.max(0, Math.round(+feed[k]) || 0);
+    });
+    return out;
   }
 
   /* Memory first, then try to persist. The edit survives either way. */
@@ -909,6 +931,7 @@ window.TTGM = (function () {
         if (blob.play.enc && !cur.enc) cur.enc = blob.play.enc;
         // The export always carried Street Cred; restoring used to drop it.
         if (typeof r === "number" && isFinite(r)) cur.rep = Math.max(-10, Math.min(10, Math.round(r)));
+        if (blob.play.story && typeof blob.play.story === "object") cur.story = cleanStory(blob.play.story);
       });
     }
     toast("Merged " + count(p.n, "character", "characters") + ", " + count(n.n, "NPC", "NPCs") +
@@ -1032,6 +1055,20 @@ window.TTGM = (function () {
         { id: "demo-c2", name: "House Thorn calls the debt", seg: 8, filled: 5, notes: "" },
         { id: "demo-c3", name: "The god turns its head", seg: 4, filled: 1, notes: "" }
       ],
+      story: {
+        current: "s4", done: { s1: true, s2: true, s3: true },
+        branch: { s1: "mixed", s2: "right", s3: "wrong" },
+        notes: { s3: "They ambushed the quieters on the Spine before anyone asked a thing. Pell saw it all." },
+        doom: { 1: true }, salvage: 4, feed: { mercy: 2, violence: 1, lies: 0, questions: 2 },
+        keys: { k1: "kept", k2: "kept", k3: "broken" }, eyeChrome: "",
+        echoes: [
+          { at: now, scene: "s1", who: "everyone", fixed: true, clue: "",
+            text: "THE FOURTH MINUTE: the Eye weeps; the Cantor misses a note; the Marrowworks fills with light; a ledger burns; the Spine snaps; the Eye closes; four figures in the ruins." },
+          { at: now, scene: "s2", who: "Jax Oriel", fixed: false,
+            clue: "“You'll want him later” is a phrase one of the players uses.",
+            text: "Gold light, a warm hand over their ears, and a voice they almost know: “Don't kill the singer. You'll want him later.”" }
+        ]
+      },
       scratch: "Session 4 — Collections in the Gullet\n" +
         "[20:10] Jax lifted the ichor vial from Dace's courier. Dace knows.\n" +
         "[20:35] Mother Slate: the Marrowworks crew hit something that bled warm.\n" +
@@ -1604,12 +1641,694 @@ window.TTGM = (function () {
     s.appendChild(wrap);
   }
 
+  /* =================================================== SECTION 6 — STORY
+     "The Fourth Minute", from story.js. Everything the story says is English
+     and marked data-nolang, so the Spanish overlay never half-translates a
+     sentence; the tab's own labels translate as usual.
+
+     Drop-downs build their contents the first time they open: twelve scenes
+     of sixteen categories each is a lot of DOM to make for a tab you may only
+     glance at. Open state is kept out here because render() rebuilds the
+     stage, the same reason app.js keeps synOpen. */
+  var ST = window.TTST || null;
+  var storyOpen = {};
+  var FEEDS = [["mercy", "Mercy"], ["violence", "Violence"], ["lies", "Lies"], ["questions", "Questions"]];
+
+  function storyState() { return playState().story; }
+  function storyPatch(fn) { playPatch(function (p) { p.story = cleanStory(p.story); fn(p.story); }); }
+  function storyScenes() {
+    if (!ST) return [];
+    return ST.acts.reduce(function (a, act) { return a.concat(act.scenes); }, []);
+  }
+  function sceneById(id) { return storyScenes().filter(function (x) { return x.id === id; })[0] || null; }
+  function sceneNow() {
+    var st = storyState();
+    return sceneById(st.current) ||
+      storyScenes().filter(function (x) { return !st.done[x.id]; })[0] || null;
+  }
+  /* story text: never run through the Spanish overlay */
+  function stxt(tag, cls, text) {
+    var n = txt(tag, cls, text);
+    n.setAttribute("data-nolang", "");
+    return n;
+  }
+  function band(salvage) {
+    return salvage >= 18 ? "Witnesses" : salvage >= 12 ? "Exodus" : salvage >= 6 ? "Embers" : "Ash";
+  }
+  function keysKept(st) {
+    var kept = 0, broken = 0;
+    (ST ? ST.keystones : []).forEach(function (k) {
+      if (st.keys[k.id] === "kept") kept++;
+      else if (st.keys[k.id] === "broken") broken++;
+    });
+    return { kept: kept, broken: broken, total: ST ? ST.keystones.length : 0 };
+  }
+  function doomCount(st) {
+    return Object.keys(st.doom).filter(function (k) { return st.doom[k]; }).length;
+  }
+
+  /* A drop-down whose body is made on first open and remembered across renders. */
+  function lazyDetails(id, cls, head, fill) {
+    var d = el("details", "item st-d " + (cls || ""));
+    var sum = el("summary");
+    if (typeof head === "string") sum.appendChild(txt("h4", null, head)); else sum.appendChild(head);
+    d.appendChild(sum);
+    var body = el("div", "body");
+    d.appendChild(body);
+    var built = false;
+    function build() {
+      if (built) return;
+      built = true;
+      fill(body);
+      if (T.applyLang) T.applyLang(body);
+    }
+    if (storyOpen[id]) { d.open = true; build(); }
+    d.addEventListener("toggle", function () {
+      storyOpen[id] = d.open;
+      if (d.open) build();
+    });
+    return d;
+  }
+  function paras(host, list) {
+    (list || []).forEach(function (x) {
+      if (typeof x === "string") { host.appendChild(stxt("p", "st-p", x)); return; }
+      var b = el("div", "st-block");
+      b.appendChild(stxt("b", "st-h", x.h));
+      b.appendChild(stxt("p", "st-p", x.t));
+      host.appendChild(b);
+    });
+  }
+
+  /* ---- the dials the tab keeps: doom, salvage, feed, keystones ---- */
+  function storyDials(s) {
+    var st = storyState(), box = el("div", "st-dials");
+
+    var doom = el("div", "st-dial");
+    doom.appendChild(txt("div", "gm-label", "Doom"));
+    var segs = el("div", "gm-segs st-doom");
+    ST.fragments.forEach(function (f) {
+      var on = !!st.doom[f.n];
+      var b = txt("button", "gm-seg" + (on ? " on" : ""), "");
+      b.setAttribute("aria-label", "Fragment " + f.n);
+      b.setAttribute("aria-pressed", on);
+      b.title = f.image;
+      b.onclick = function () { storyPatch(function (x) { x.doom[f.n] = !x.doom[f.n]; }); redraw(); };
+      segs.appendChild(b);
+    });
+    doom.appendChild(segs);
+    doom.appendChild(txt("div", "gm-note", doomCount(st) + " / 7"));
+    box.appendChild(doom);
+
+    var sal = el("div", "st-dial");
+    sal.appendChild(txt("div", "gm-label", "Salvage"));
+    var sr = row("gm-row tight");
+    sr.appendChild(btn("−1", "tiny", function () { storyPatch(function (x) { x.salvage--; }); redraw(); }));
+    sr.appendChild(txt("b", "st-big", String(st.salvage)));
+    sr.appendChild(btn("+1", "tiny", function () { storyPatch(function (x) { x.salvage++; }); redraw(); }));
+    sal.appendChild(sr);
+    sal.appendChild(stxt("div", "gm-note", band(st.salvage)));
+    box.appendChild(sal);
+
+    var feed = el("div", "st-dial");
+    feed.appendChild(txt("div", "gm-label", "Feed"));
+    var fr = el("div", "gm-chips tight");
+    var top = Math.max.apply(null, FEEDS.map(function (f) { return st.feed[f[0]]; }));
+    FEEDS.forEach(function (f) {
+      var c = el("span", "st-feed" + (top > 0 && st.feed[f[0]] === top ? " top" : ""));
+      c.appendChild(txt("span", null, f[1]));
+      c.appendChild(txt("b", null, " " + st.feed[f[0]]));
+      c.appendChild(btn("+", "tiny", function () { storyPatch(function (x) { x.feed[f[0]]++; }); redraw(); }));
+      c.appendChild(btn("−", "tiny", function () { storyPatch(function (x) { x.feed[f[0]] = Math.max(0, x.feed[f[0]] - 1); }); redraw(); }));
+      fr.appendChild(c);
+    });
+    feed.appendChild(fr);
+    box.appendChild(feed);
+
+    var k = keysKept(st);
+    var path = el("div", "st-dial");
+    path.appendChild(txt("div", "gm-label", "The 1% path"));
+    path.appendChild(txt("b", "st-path " + (k.broken ? "closed" : "open"), k.broken ? "Closed" : "Still open"));
+    path.appendChild(txt("div", "gm-note", k.kept + " / " + k.total + " keystones kept"));
+    box.appendChild(path);
+
+    s.appendChild(box);
+  }
+
+  /* ---- the vision roll: the "gift from the gods" ---- */
+  function rollVision() {
+    var st = storyState(), sc = sceneNow();
+    var need = st.eyeChrome ? 16 : 17;
+    var r = roll(1, 20, 0).total;
+    var out = { roll: r, need: need, hit: r >= need, scene: sc ? sc.id : null, who: null, echo: null };
+    if (!out.hit) return out;
+    var party = partyChars();
+    out.who = party.length ? (pick(party).c.name || "Unnamed") : "one of them";
+    var pool = sc && sc.echoes && sc.echoes.length ? sc.echoes : null;
+    if (!pool) return out;
+    out.echo = pick(pool);
+    storyPatch(function (x) {
+      x.echoes.push({ at: Date.now(), scene: sc.id, who: out.who, text: out.echo.text, clue: out.echo.clue, fixed: false });
+    });
+    return out;
+  }
+  function logFixed(sc) {
+    storyPatch(function (x) {
+      x.echoes.push({ at: Date.now(), scene: sc.id, who: "everyone", text: sc.fixedEcho, clue: "", fixed: true });
+    });
+  }
+  function storyVisions(s) {
+    var st = storyState(), sc = sceneNow();
+    var wrap = el("div", "gm-god st-vision");
+    wrap.appendChild(btn("Roll for a vision", "primary", function () {
+      var v = rollVision();
+      out.innerHTML = "";
+      out.appendChild(txt("span", "gm-god-die" + (v.hit ? " hit" : ""), String(v.roll)));
+      var says = el("div", "st-vision-out");
+      if (!v.hit) {
+        says.appendChild(txt("div", "gm-god-says", "Nothing this time."));
+        says.appendChild(txt("div", "gm-note", "Needs " + v.need + "+."));
+      } else if (!v.echo) {
+        says.appendChild(txt("div", "gm-god-says", "A vision — but this scene's vision is a fixed one."));
+      } else {
+        says.appendChild(stxt("div", "gm-god-says", v.who + " sees:"));
+        says.appendChild(stxt("div", "st-p", v.echo.text));
+        if (v.echo.clue) says.appendChild(stxt("div", "gm-note st-clue", "Clue: " + v.echo.clue));
+      }
+      out.appendChild(says);
+      if (T.applyLang) T.applyLang(out);
+      refreshDossier();
+    }));
+    var info = el("div", "st-vision-info");
+    info.appendChild(txt("span", "gm-note", "d20 at a key moment · 17+, or 16+ with the Eye-chrome · scene: "));
+    info.appendChild(stxt("span", "gm-note", sc ? "S" + sc.session + " · " + sc.title : "none"));
+    wrap.appendChild(info);
+
+    // who, if anyone, has the Lidless: it moves the roll by one
+    var sel = document.createElement("select");
+    sel.className = "gm-condsel";
+    var none = txt("option", null, "Nobody has the Eye-chrome");
+    none.value = ""; sel.appendChild(none);
+    partyChars().forEach(function (p) {
+      var o = txt("option", null, p.c.name || "Unnamed");
+      o.value = p.c.name || "Unnamed";
+      o.setAttribute("data-nolang", "");
+      if (st.eyeChrome === o.value) o.selected = true;
+      sel.appendChild(o);
+    });
+    if (st.eyeChrome && !partyChars().some(function (p) { return (p.c.name || "Unnamed") === st.eyeChrome; })) {
+      var gone = txt("option", null, st.eyeChrome); gone.value = st.eyeChrome; gone.selected = true;
+      sel.appendChild(gone);
+    }
+    sel.setAttribute("aria-label", "Who has the Eye-chrome");
+    sel.onchange = function () { storyPatch(function (x) { x.eyeChrome = sel.value; }); redraw(); };
+    wrap.appendChild(sel);
+    var out = el("div", "gm-god-out");
+    wrap.appendChild(out);
+    s.appendChild(wrap);
+  }
+
+  /* ---- role hooks, filled from the party ---- */
+  function partyRoles() {
+    var map = {};
+    partyChars().forEach(function (p) {
+      (SY.classRoles[p.c.cls] || []).forEach(function (r) {
+        (map[r] = map[r] || []).push(p.c.name || "Unnamed");
+      });
+    });
+    return map;
+  }
+  function fillHooks(host, sc) {
+    var have = partyRoles();
+    SY.roles.forEach(function (r) {
+      if (!sc.hooks || !sc.hooks[r]) return;
+      var who = have[r];
+      var line = el("div", "st-hook" + (who ? " on" : " off"));
+      var head = el("div", "st-hook-head");
+      head.appendChild(T.roleChip(r, who ? "" : "off"));
+      head.appendChild(stxt("span", "st-who", who ? who.join(", ") : ""));
+      if (!who) head.appendChild(txt("span", "gm-note", "nobody at the table"));
+      line.appendChild(head);
+      line.appendChild(stxt("div", "st-p", sc.hooks[r]));
+      host.appendChild(line);
+    });
+  }
+
+  /* ---- wiring into the other screens ---- */
+  function storyStartClocks(id) {
+    var sc = sceneById(id), n = 0;
+    if (!sc) return 0;
+    playPatch(function (p) {
+      (sc.clocks || []).forEach(function (c) {
+        if (p.clocks.some(function (x) { return x.id === c.id; })) return;
+        p.clocks.push({ id: c.id, name: c.name, seg: c.seg, filled: 0, notes: "" });
+        n++;
+      });
+    });
+    return n;
+  }
+  function storyAddNpcs(id) {
+    var sc = sceneById(id), n = 0;
+    if (!sc) return 0;
+    var have = {};
+    npcAll().forEach(function (x) { have[x.id] = true; });
+    (sc.npcs || []).forEach(function (m) {
+      if (have[m.id]) return;
+      var t = G.npcTemplates.filter(function (x) { return x.name === m.template; })[0] || G.npcTemplates[0];
+      var nn = npcFromTemplate(t);
+      nn.id = m.id; nn.name = m.name; nn.role = m.role; nn.notes = m.notes || "";
+      nn.tags = ["story"];
+      npcSave(nn); have[m.id] = true; n++;
+    });
+    return n;
+  }
+  function applyCall(c) {
+    storyPatch(function (x) {
+      if (c.salvage) x.salvage += c.salvage;
+      if (c.feed && x.feed[c.feed] != null) x.feed[c.feed]++;
+      if (c.doom) x.doom[c.doom] = true;
+    });
+  }
+  function callLine(host, c, sc) {
+    var d = el("div", "st-call");
+    d.appendChild(stxt("b", "st-q", c.call));
+    d.appendChild(stxt("p", "st-p", c.result));
+    if (c.lead) {
+      var l = el("p", "st-p st-lead");
+      l.appendChild(txt("span", "gm-label", "Lead on"));
+      l.appendChild(stxt("span", null, " " + c.lead));
+      d.appendChild(l);
+    }
+    var r = row("gm-row tight");
+    var bits = [];
+    if (c.salvage) bits.push("Salvage " + T.sgn(c.salvage));
+    if (c.feed) bits.push("Feed: " + c.feed);
+    if (c.doom) bits.push("Doom: fragment " + c.doom);
+    var ap = btn("Apply", "tiny", function () {
+      applyCall(c);
+      toast("Applied to the story");
+      redraw();
+    });
+    r.appendChild(ap);
+    bits.forEach(function (b) { r.appendChild(txt("span", "chip", b)); });
+    d.appendChild(r);
+    host.appendChild(d);
+  }
+  function keyLine(host, k) {
+    var st = storyState(), v = st.keys[k.id] || "";
+    var d = el("div", "st-key " + v);
+    var head = el("div", "st-key-head");
+    head.appendChild(stxt("b", null, k.id.toUpperCase() + " · " + k.name));
+    var seg = el("div", "seg");
+    [["kept", "Kept"], ["broken", "Broken"], ["", "Undecided"]].forEach(function (o) {
+      var b = txt("button", null, o[1]);
+      b.setAttribute("aria-pressed", v === o[0]);
+      b.onclick = function () { storyPatch(function (x) { if (o[0]) x.keys[k.id] = o[0]; else delete x.keys[k.id]; }); redraw(); };
+      seg.appendChild(b);
+    });
+    head.appendChild(seg);
+    d.appendChild(head);
+    d.appendChild(stxt("p", "st-p", k.keep));
+    var om = el("p", "st-p");
+    om.appendChild(txt("span", "gm-label", "Omen"));
+    om.appendChild(stxt("span", null, " " + k.omen));
+    d.appendChild(om);
+    var sc2 = el("p", "st-p");
+    sc2.appendChild(txt("span", "gm-label", "Scar"));
+    sc2.appendChild(stxt("span", null, " " + k.scar));
+    d.appendChild(sc2);
+    host.appendChild(d);
+  }
+
+  /* ---- one scene ---- */
+  var CATS = [
+    ["truth", "What's really happening"], ["readAloud", "Read aloud"], ["hooks", "Ways in, by role"],
+    ["questions", "Questions worth asking"], ["notAsked", "If they don't ask"], ["missed", "Details they can miss"],
+    ["right", "Right calls"], ["wrong", "Wrong calls"], ["goesWrong", "When it goes wrong anyway"],
+    ["checks", "Checks and DCs"], ["visions", "Visions"], ["scars", "Loop scars"], ["eyeChrome", "The Eye-chrome"],
+    ["cred", "Street Cred"], ["clocksNpcs", "Clocks and NPCs"], ["fragment", "The fragment"], ["keystones", "Keystones"]
+  ];
+  function fillCat(host, key, sc) {
+    switch (key) {
+      case "truth": host.appendChild(stxt("p", "st-p", sc.truth)); break;
+      case "readAloud":
+        sc.readAloud.forEach(function (t) { host.appendChild(stxt("p", "st-read", t)); }); break;
+      case "hooks": fillHooks(host, sc); break;
+      case "questions":
+        sc.questions.forEach(function (q) {
+          var d = el("div", "st-qa");
+          var h = el("div", "st-q-head");
+          h.appendChild(stxt("b", "st-q", q.q));
+          if (q.keystone) h.appendChild(txt("span", "chip tier", "Keystone " + q.keystone.toUpperCase()));
+          d.appendChild(h);
+          d.appendChild(stxt("p", "st-p", q.a));
+          host.appendChild(d);
+        });
+        break;
+      case "notAsked":
+        sc.notAsked.forEach(function (x) {
+          var d = el("div", "st-qa");
+          d.appendChild(stxt("b", "st-q", x["if"]));
+          d.appendChild(stxt("p", "st-p", x.then));
+          var r = el("p", "st-p st-lead");
+          r.appendChild(txt("span", "gm-label", "Where it comes back"));
+          r.appendChild(stxt("span", null, " " + x.recover));
+          d.appendChild(r);
+          host.appendChild(d);
+        });
+        break;
+      case "missed":
+        sc.missed.forEach(function (x) {
+          var d = el("div", "st-qa");
+          d.appendChild(stxt("b", "st-q", x.detail));
+          var m = el("p", "st-p");
+          m.appendChild(txt("span", "gm-label", "What it means"));
+          m.appendChild(stxt("span", null, " " + x.means));
+          d.appendChild(m);
+          var f = el("p", "st-p st-lead");
+          f.appendChild(txt("span", "gm-label", "If they miss it"));
+          f.appendChild(stxt("span", null, " " + x.ifMissed));
+          d.appendChild(f);
+          host.appendChild(d);
+        });
+        break;
+      case "right": sc.right.forEach(function (c) { callLine(host, c, sc); }); break;
+      case "wrong": sc.wrong.forEach(function (c) { callLine(host, c, sc); }); break;
+      case "goesWrong":
+        var ul = el("ul", "st-list");
+        sc.goesWrong.forEach(function (t) { ul.appendChild(stxt("li", null, t)); });
+        host.appendChild(ul);
+        break;
+      case "checks":
+        var tb = el("table", "gm-tbl");
+        var hr = el("tr");
+        ["Situation", "Roll", "DC"].forEach(function (h) { hr.appendChild(txt("th", null, h)); });
+        tb.appendChild(hr);
+        sc.checks.forEach(function (c) {
+          var tr = el("tr");
+          tr.appendChild(stxt("td", null, c.what));
+          tr.appendChild(stxt("td", null, c.skill));
+          tr.appendChild(txt("td", "num", c.dc ? String(c.dc) : "—"));
+          tb.appendChild(tr);
+        });
+        host.appendChild(tb);
+        break;
+      case "visions":
+        if (sc.fixedEcho) {
+          var fx = el("div", "st-qa st-fixed");
+          fx.appendChild(txt("span", "chip tier", "Fixed vision"));
+          fx.appendChild(stxt("p", "st-read", sc.fixedEcho));
+          var logged = storyState().echoes.some(function (e) { return e.fixed && e.scene === sc.id; });
+          var lr = row("gm-row tight");
+          lr.appendChild(btn(logged ? "Logged" : "Log it as seen", "tiny", function () {
+            if (!logged) { logFixed(sc); toast("Vision logged"); redraw(); }
+          }));
+          fx.appendChild(lr);
+          host.appendChild(fx);
+        }
+        sc.echoes.forEach(function (e) {
+          var d = el("div", "st-qa");
+          var b = el("p", "st-p");
+          b.appendChild(txt("span", "gm-label", "Roll when"));
+          b.appendChild(stxt("span", null, " " + e.beat));
+          d.appendChild(b);
+          d.appendChild(stxt("p", "st-read", e.text));
+          var cl = el("p", "st-p st-lead");
+          cl.appendChild(txt("span", "gm-label", "The clue"));
+          cl.appendChild(stxt("span", null, " " + e.clue));
+          d.appendChild(cl);
+          host.appendChild(d);
+        });
+        break;
+      case "scars":
+        var ul2 = el("ul", "st-list");
+        sc.scars.forEach(function (t) { ul2.appendChild(stxt("li", null, t)); });
+        host.appendChild(ul2);
+        break;
+      case "eyeChrome": host.appendChild(stxt("p", "st-p", sc.eyeChrome)); break;
+      case "cred":
+        sc.cred.forEach(function (c) {
+          var r = row("gm-row tight st-cred");
+          r.appendChild(btn("Street Cred " + T.sgn(c.delta), "tiny", function () {
+            var v = repSet(repGet() + c.delta);
+            toast("Street Cred is now " + T.sgn(v));
+            redraw();
+          }));
+          r.appendChild(stxt("span", "st-p", c.event));
+          host.appendChild(r);
+        });
+        break;
+      case "clocksNpcs":
+        if ((sc.clocks || []).length) {
+          host.appendChild(txt("div", "gm-label", "Clocks"));
+          sc.clocks.forEach(function (c) { host.appendChild(stxt("div", "st-p", c.name + " · " + c.seg)); });
+        }
+        if ((sc.npcs || []).length) {
+          host.appendChild(txt("div", "gm-label", "NPCs"));
+          sc.npcs.forEach(function (m) {
+            var d = el("div", "st-qa");
+            d.appendChild(stxt("b", "st-q", m.name + " — " + m.role));
+            d.appendChild(stxt("p", "st-p", m.notes));
+            host.appendChild(d);
+          });
+        }
+        break;
+      case "fragment":
+        var f = ST.fragments.filter(function (x) { return x.n === sc.fragment.n; })[0];
+        host.appendChild(stxt("p", "st-read", (f ? f.image : "")));
+        var ul3 = el("ul", "st-list");
+        sc.fragment.ways.forEach(function (t) { ul3.appendChild(stxt("li", null, t)); });
+        host.appendChild(ul3);
+        var on = !!storyState().doom[sc.fragment.n];
+        host.appendChild(btn(on ? "Fragment " + sc.fragment.n + " is ticked" : "Tick fragment " + sc.fragment.n, "tiny", function () {
+          storyPatch(function (x) { x.doom[sc.fragment.n] = !x.doom[sc.fragment.n]; }); redraw();
+        }));
+        break;
+      case "keystones":
+        sc.keystones.forEach(function (id) {
+          var k = ST.keystones.filter(function (x) { return x.id === id; })[0];
+          if (k) keyLine(host, k);
+        });
+        break;
+    }
+  }
+  function hasCat(key, sc) {
+    if (key === "eyeChrome") return !!sc.eyeChrome;
+    if (key === "fragment") return !!sc.fragment;
+    if (key === "keystones") return !!(sc.keystones && sc.keystones.length);
+    if (key === "visions") return !!(sc.fixedEcho || (sc.echoes && sc.echoes.length));
+    if (key === "clocksNpcs") return !!((sc.clocks && sc.clocks.length) || (sc.npcs && sc.npcs.length));
+    if (key === "scars") return !!(sc.scars && sc.scars.length);
+    if (key === "cred") return !!(sc.cred && sc.cred.length);
+    return true;
+  }
+  function sceneBlock(sc) {
+    var st = storyState();
+    var head = el("div", "st-scene-head");
+    head.appendChild(txt("span", "st-num", "S" + sc.session));
+    head.appendChild(stxt("h4", null, sc.title));
+    head.appendChild(txt("span", "chip", "Level " + sc.level));
+    if (st.done[sc.id]) head.appendChild(txt("span", "chip st-done", "Played"));
+    if (st.current === sc.id) head.appendChild(txt("span", "chip st-now", "Now"));
+    if (st.branch[sc.id]) head.appendChild(txt("span", "chip st-br " + st.branch[sc.id],
+      st.branch[sc.id] === "right" ? "Went right" : st.branch[sc.id] === "wrong" ? "Went wrong" : "Mixed"));
+
+    return lazyDetails("scene:" + sc.id, "st-scene" + (st.current === sc.id ? " now" : ""), head, function (body) {
+      body.appendChild(stxt("div", "gm-note st-place", sc.place));
+      var c = row("gm-row st-ctl");
+      c.appendChild(btn(st.done[sc.id] ? "Played ✓" : "Mark played", st.done[sc.id] ? "tiny" : "tiny primary", function () {
+        storyPatch(function (x) { x.done[sc.id] = !x.done[sc.id]; }); redraw();
+      }));
+      c.appendChild(btn(st.current === sc.id ? "Current scene" : "Set as current", "tiny", function () {
+        storyPatch(function (x) { x.current = sc.id; }); redraw();
+      }));
+      var seg = el("div", "seg");
+      [["right", "Right"], ["mixed", "Mixed"], ["wrong", "Wrong"]].forEach(function (o) {
+        var b = txt("button", null, o[1]);
+        b.setAttribute("aria-pressed", st.branch[sc.id] === o[0]);
+        b.onclick = function () {
+          storyPatch(function (x) { if (x.branch[sc.id] === o[0]) delete x.branch[sc.id]; else x.branch[sc.id] = o[0]; });
+          redraw();
+        };
+        seg.appendChild(b);
+      });
+      c.appendChild(seg);
+      if ((sc.clocks || []).length) c.appendChild(btn("Start clocks", "tiny", function () {
+        var n = storyStartClocks(sc.id);
+        toast(n ? "Started " + count(n, "clock", "clocks") : "Those clocks are already running");
+      }));
+      if ((sc.npcs || []).length) c.appendChild(btn("Add NPCs", "tiny", function () {
+        var n = storyAddNpcs(sc.id);
+        toast(n ? "Added " + count(n, "NPC", "NPCs") + " to your NPCs" : "They're already in your NPCs");
+      }));
+      body.appendChild(c);
+
+      var note = field(st.notes[sc.id] || "", "Your notes for this scene — what happened, who they annoyed…",
+        function (v) { storyPatch(function (x) { if (v) x.notes[sc.id] = v; else delete x.notes[sc.id]; }); }, "textarea");
+      note.className = "st-note";
+      note.rows = 2;
+      body.appendChild(note);
+
+      CATS.forEach(function (cat) {
+        if (!hasCat(cat[0], sc)) return;
+        body.appendChild(lazyDetails("cat:" + sc.id + ":" + cat[0], "st-cat st-cat-" + cat[0], cat[1], function (h) {
+          fillCat(h, cat[0], sc);
+        }));
+      });
+    });
+  }
+
+  function refBlock(id, title, fill) {
+    return lazyDetails("ref:" + id, "st-ref", title, fill);
+  }
+  function renderStory(s) {
+    sectionHead(s, "The table", "Story", null);
+    if (!ST) { empty(s, "The story file didn't load.", "Reload the page; story.js sits next to gm.js."); return; }
+    var intro = el("div", "st-title");
+    intro.appendChild(stxt("h3", null, ST.title));
+    intro.appendChild(stxt("p", "st-p", ST.pitch));
+    intro.appendChild(txt("div", "gm-note", "GM eyes only. " + ST.sessions + " sessions · levels " +
+      ST.levels[0] + "–" + ST.levels[1] + " · Street Cred starts at " + T.sgn(ST.startCred) + "."));
+    s.appendChild(intro);
+
+    storyDials(s);
+    storyVisions(s);
+
+    var tools = row("gm-row");
+    // Nested drop-downs are built on open, so "everything" means every id
+    // the story can have, set before the redraw rather than clicked open.
+    tools.appendChild(btn("Expand everything", "tiny", function () {
+      ["truth", "running", "fragments", "keystones", "visions", "eye", "scars", "hush", "cast", "tables",
+       "offscript", "endings"].forEach(function (k) { storyOpen["ref:" + k] = true; });
+      ST.acts.forEach(function (a) {
+        storyOpen["act:" + a.id] = true;
+        a.scenes.forEach(function (sc) {
+          storyOpen["scene:" + sc.id] = true;
+          CATS.forEach(function (c) { storyOpen["cat:" + sc.id + ":" + c[0]] = true; });
+        });
+      });
+      redraw();
+    }));
+    tools.appendChild(btn("Collapse everything", "tiny", function () {
+      Object.keys(storyOpen).forEach(function (k) { storyOpen[k] = false; });
+      [].forEach.call(s.querySelectorAll("details.st-d"), function (d) { d.open = false; });
+    }));
+    s.appendChild(tools);
+
+    /* ---- the reference shelf ---- */
+    s.appendChild(txt("div", "gm-label", "Before you run it"));
+    s.appendChild(refBlock("truth", "The truth", function (h) { paras(h, ST.truth); }));
+    s.appendChild(refBlock("running", "Running the doom", function (h) { paras(h, ST.running); }));
+    s.appendChild(refBlock("fragments", "The seven fragments", function (h) {
+      var st = storyState();
+      ST.fragments.forEach(function (f) {
+        var d = el("div", "st-qa" + (st.doom[f.n] ? " st-ticked" : ""));
+        d.appendChild(stxt("b", "st-q", f.n + ". " + f.image));
+        d.appendChild(stxt("p", "st-p", f.gm));
+        h.appendChild(d);
+      });
+    }));
+    s.appendChild(refBlock("keystones", "The 1% path: twelve keystones", function (h) {
+      ST.keystones.forEach(function (k) { keyLine(h, k); });
+    }));
+    s.appendChild(refBlock("visions", "The visions", function (h) {
+      paras(h, ST.visions);
+      var st = storyState();
+      h.appendChild(txt("div", "gm-label", "Vision log (" + st.echoes.length + ")"));
+      if (!st.echoes.length) h.appendChild(txt("div", "gm-note", "Nothing seen yet."));
+      st.echoes.forEach(function (e, i) {
+        var d = el("div", "st-qa");
+        var hd = el("div", "st-q-head");
+        hd.appendChild(stxt("b", "st-q", (i + 1) + ". " + e.who + " · " + (sceneById(e.scene) || { title: e.scene }).title));
+        if (e.fixed) hd.appendChild(txt("span", "chip tier", "Fixed"));
+        hd.appendChild(btn("×", "tiny", function () {
+          storyPatch(function (x) { x.echoes.splice(i, 1); }); redraw();
+        }));
+        d.appendChild(hd);
+        d.appendChild(stxt("p", "st-p", e.text));
+        h.appendChild(d);
+      });
+    }));
+    s.appendChild(refBlock("eye", "The Eye-chrome (secret)", function (h) {
+      var E = ST.eyeChrome;
+      h.appendChild(stxt("b", "st-q", E.name));
+      h.appendChild(stxt("p", "st-p", E.what));
+      var ul = el("ul", "st-list");
+      E.effects.forEach(function (t) { ul.appendChild(stxt("li", null, t)); });
+      h.appendChild(ul);
+      h.appendChild(txt("div", "gm-label", "Where it can turn up"));
+      E.chances.forEach(function (c) {
+        var d = el("div", "st-qa");
+        d.appendChild(stxt("b", "st-q", c.where));
+        d.appendChild(stxt("p", "st-p", c.how));
+        h.appendChild(d);
+      });
+    }));
+    s.appendChild(refBlock("scars", "Loop scars", function (h) {
+      var ul = el("ul", "st-list");
+      ST.scars.forEach(function (t) { ul.appendChild(stxt("li", null, t)); });
+      h.appendChild(ul);
+    }));
+    s.appendChild(refBlock("hush", "The Hush", function (h) { paras(h, ST.hush); }));
+    s.appendChild(refBlock("cast", "Cast", function (h) {
+      ST.cast.forEach(function (c) {
+        var d = el("div", "st-qa");
+        d.appendChild(stxt("b", "st-q", c.name + " — " + c.role));
+        d.appendChild(stxt("p", "st-p", c.notes));
+        h.appendChild(d);
+      });
+    }));
+    s.appendChild(refBlock("tables", "Random tables", function (h) {
+      ST.tables.forEach(function (t) {
+        var d = el("div", "st-qa");
+        var hd = el("div", "st-q-head");
+        hd.appendChild(stxt("b", "st-q", t.name + " (d" + t.die + ")"));
+        var out = el("div", "st-roll-out");
+        hd.appendChild(btn("Roll", "tiny primary", function () {
+          var r = roll(1, t.die, 0).total;
+          out.innerHTML = "";
+          out.appendChild(txt("span", "gm-god-die hit", String(r)));
+          out.appendChild(stxt("span", "st-p", t.rows[r - 1] || ""));
+        }));
+        d.appendChild(hd);
+        d.appendChild(stxt("p", "gm-note", t.note));
+        d.appendChild(out);
+        var ol = el("ol", "st-list");
+        t.rows.forEach(function (x) { ol.appendChild(stxt("li", null, x)); });
+        d.appendChild(ol);
+        h.appendChild(d);
+      });
+    }));
+    s.appendChild(refBlock("offscript", "Off-script kit", function (h) { paras(h, ST.offScript); }));
+    s.appendChild(refBlock("endings", "Endings", function (h) {
+      var st = storyState(), b = band(st.salvage).toLowerCase();
+      ST.endings.forEach(function (e) {
+        var d = el("div", "st-block" + (e.id === b ? " st-ticked" : ""));
+        d.appendChild(stxt("b", "st-h", e.name));
+        d.appendChild(stxt("p", "st-p", e.t));
+        h.appendChild(d);
+      });
+    }));
+
+    /* ---- the story itself ---- */
+    s.appendChild(txt("div", "gm-label", "The story"));
+    ST.acts.forEach(function (act) {
+      var head = el("div", "st-act-head");
+      head.appendChild(stxt("h4", null, act.title));
+      head.appendChild(txt("span", "chip", "Sessions " + act.sessions));
+      head.appendChild(txt("span", "chip", "Levels " + act.levels));
+      s.appendChild(lazyDetails("act:" + act.id, "st-act", head, function (body) {
+        body.appendChild(stxt("p", "st-p st-act-sum", act.summary));
+        act.scenes.forEach(function (sc) { body.appendChild(sceneBlock(sc)); });
+      }));
+    });
+  }
+
   /* ---------------------------------------------------------- dispatch --- */
   function renderStage(s, sec) {
     rememberMode("table");
     s.classList.add("gm");
     if (inDemo()) demoBanner(s);
-    var fns = [renderParty, renderEncounter, renderRulings, renderNPCs, renderClocks];
+    var fns = [renderParty, renderEncounter, renderRulings, renderNPCs, renderClocks, renderStory];
     (fns[sec] || renderParty)(s);
   }
 
@@ -1637,6 +2356,20 @@ window.TTGM = (function () {
       body.appendChild(list);
     } else {
       body.appendChild(txt("div", "gm-note", "No encounter running."));
+    }
+
+    var cur = ST ? sceneNow() : null;
+    if (cur) {
+      var stst = storyState();
+      body.appendChild(txt("div", "gm-label", "Story"));
+      var sr = el("div", "dos-row");
+      sr.appendChild(stxt("span", "k", "S" + cur.session));
+      sr.appendChild(stxt("span", "v", cur.title));
+      body.appendChild(sr);
+      var dr = el("div", "dos-row");
+      dr.appendChild(txt("span", "k", "Doom"));
+      dr.appendChild(txt("span", "v", doomCount(stst) + " / 7"));
+      body.appendChild(dr);
     }
 
     var party = partyAll();
@@ -2629,6 +3362,8 @@ window.TTGM = (function () {
     synergiesFor: synergiesFor, ambushTeamBonus: ambushTeamBonus,
     repGet: repGet, repSet: repSet, repState: repState, repMod: repMod,
     repSkillBonus: repSkillBonus, reactionBand: reactionBand, npcReaction: npcReaction,
-    importVault: importVault, loadDemo: loadDemo, exitDemo: exitDemo, inDemo: inDemo
+    importVault: importVault, loadDemo: loadDemo, exitDemo: exitDemo, inDemo: inDemo,
+    storyState: storyState, rollVision: rollVision, storyStartClocks: storyStartClocks,
+    storyAddNpcs: storyAddNpcs, cleanStory: cleanStory
   };
 })();

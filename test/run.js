@@ -8,7 +8,8 @@ const { launchOptions } = require("./lib");
 const SUITES = {
   rules: require("./rules.test"),
   browser: require("./browser.test"),
-  sw: require("./sw.test")
+  sw: require("./sw.test"),
+  story: require("./story.test")
 };
 
 (async () => {
