@@ -1,4 +1,4 @@
-/* Minimal test harness. No framework — one dev dependency is enough.
+/* Minimal test harness. No framework, one dev dependency is enough.
  *
  * The app is a DOM application with no module exports, so even the "unit"
  * tests run inside a real browser against window.TT, the namespace app.js

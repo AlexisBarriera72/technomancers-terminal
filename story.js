@@ -1,4 +1,4 @@
-/* story.js — "The Fourth Minute", a campaign for Cathedra. GM EYES ONLY.
+/* story.js, "The Fourth Minute", a campaign for Cathedra. GM EYES ONLY.
  *
  * window.TTST, plain data read by gm.js's Story tab. Bundled with the GM tools
  * by choice, which means it is public in the site's source like the unlock
@@ -44,7 +44,7 @@ var TTST = window.TTST = {
     { h: "What the Hush have been doing",
       t: "A secret order inside the Cantor's voice-tenders. Nine hundred years ago the first of them learned that a lullaby " +
          "carried through water keeps the god dreaming. Every pipe in Cathedra carries it: under the noise of the taps, " +
-         "a hymn with no words. Anyone who sees the god's future wakes it a little — a seer is an alarm clock — so the " +
+         "a hymn with no words. Anyone who sees the god's future wakes it a little, a seer is an alarm clock, so the " +
          "Hush quietly kill seers. They look like a death cult. They are the only reason the city exists." },
     { h: "What the Eye is",
       t: "The god's own eye, frozen open, still tracking. It shows what is true and has not happened yet. Nobody knows it " +
@@ -57,7 +57,7 @@ var TTST = window.TTST = {
          "they ever sent was the Fourth Minute. The crew believe the visions are gifts from the gods. They are gifts from themselves." },
     { h: "The Fourth Minute",
       t: "This season the Eye showed four petitioners the same minute: the end of the city. The fourth petitioner was " +
-         "Archdeacon Uln Sarrow of House Reliquary. Frightened, he did something no Archdeacon had done — he recorded it, " +
+         "Archdeacon Uln Sarrow of House Reliquary. Frightened, he did something no Archdeacon had done: he recorded it, " +
          "in a shard of the Eye's cornea, to study it and find a way to stop it. The Hush learned the shard exists. A recording " +
          "is a seer that never dies. They hired the crew to steal it so they could destroy it." },
     { h: "Why there is no villain",
@@ -78,12 +78,12 @@ var TTST = window.TTST = {
   running: [
     { h: "The rule you are not allowed to break",
       t: "Cathedra falls. However well they play, however badly. The only exception is the 1% path below. " +
-         "When a scene would stop a fragment coming true, it comes true by its other route — usually because " +
+         "When a scene would stop a fragment coming true, it comes true by its other route, usually because " +
          "someone else was trying to fix the same problem. Never tell them this is the rule." },
     { h: "Doom (seven fragments)",
       t: "The Fourth Minute has seven images in it. Each completes once, in some scene, by one of at least two routes. " +
          "Tick them on this tab as they happen. When all seven are ticked, the birth begins, whatever session it is. " +
-         "If they are ahead of schedule, let it land early — nothing frightens a table like the prophecy being faster than the plot." },
+         "If they are ahead of schedule, let it land early, nothing frightens a table like the prophecy being faster than the plot." },
     { h: "Salvage (what their play decides)",
       t: "Salvage is who gets out. Add it when they ask the right question, catch a detail, make a right call or save someone " +
          "the story didn't expect them to; take it away for the opposites. Every scene suggests amounts. Most scenes swing 1–4. " +
@@ -150,12 +150,12 @@ var TTST = window.TTST = {
       omen: "Brother Cobb's drill crew hear the bone creak like a sleeper turning over, and then nothing.",
       scar: "A second warm breach opens in a shaft nobody has drilled for a century." },
     { id: "k5", scene: "s5", name: "The right question",
-      keep: "Someone asks the Cantor a question that shows they suspect a loop — best of all, “What did we ask you last time?”",
+      keep: "Someone asks the Cantor a question that shows they suspect a loop, best of all, “What did we ask you last time?”",
       omen: "The lifts arrive when they are called, not before, for a whole day.",
       scar: "The Cantor answers a question nobody asked: “The same thing as always.”" },
     { id: "k6", scene: "s6", name: "Stay on the book",
       keep: "They leave their debts on House Thorn's ledger and save the foreclosed rib some other way.",
-      omen: "Ser Ambrel Dace, for once, raises her voice — to laugh.",
+      omen: "Ser Ambrel Dace, for once, raises her voice, to laugh.",
       scar: "A page of the ledger turns up in the Gullet with their names crossed out in their own hands." },
     { id: "k7", scene: "s7", name: "Spare the Choirmaster",
       keep: "Choirmaster Wren Aldous leaves the Choir-house alive.",
@@ -186,7 +186,7 @@ var TTST = window.TTST = {
   /* ============================================================== THE VISIONS */
   visions: [
     { h: "What they think is happening",
-      t: "Divine favour. Cathedra's own rule — one in twenty, something looks up — gives them the perfect explanation, and the " +
+      t: "Divine favour. Cathedra's own rule (one in twenty, something looks up) gives them the perfect explanation, and the " +
          "visions are lit like god-light: gold, from above, smelling of warm bone. Let them build theology on it." },
     { h: "What is happening",
       t: "Every vision is sent by one of the crew, from the ruins, through the Eye. The future selves are tired, scarred and " +
@@ -194,7 +194,7 @@ var TTST = window.TTST = {
     { h: "Rolling for a vision",
       t: "Each scene marks its key moments. At one, roll a d20 (the button on this tab does it): on a 17 or higher, a random " +
          "party member sees that scene's vision. If someone at the table owns the Eye-chrome, it is 16 or higher. " +
-         "Say it happens to the chosen player privately — a note, a whisper, a text — then let them decide what to tell the others." },
+         "Say it happens to the chosen player privately (a note, a whisper, a text), then let them decide what to tell the others." },
     { h: "The three fixed visions",
       t: "Session 1 (the Fourth Minute, everyone), session 7 (the Choir-house, whoever is closest to the Choirmaster) and " +
          "session 12 (the Sending, everyone, from the other side). Fixed visions cost 1 Humanity each and leave a Remnant " +
@@ -210,9 +210,9 @@ var TTST = window.TTST = {
           "(it does not blink, and neither, slowly, does its wearer). Never hand it to them. It turns up by luck, or they buy it " +
           "without knowing what it is.",
     effects: [
-      "Visions come on a 16 or higher instead of 17 — slightly better, not much.",
+      "Visions come on a 16 or higher instead of 17, slightly better, not much.",
       "Once a session, whisper its wearer one detail a minute before it happens.",
-      "On consecrated ground it goes dark, like all chrome — but it keeps tracking.",
+      "On consecrated ground it goes dark, like all chrome, but it keeps tracking.",
       "The Hush want it back, and will trade a great deal for it. Any Hush agent who sees it stops fighting to look."
     ],
     chances: [
@@ -269,7 +269,7 @@ var TTST = window.TTST = {
     { name: "Mother Slate", role: "Fixer, the Marrowworks · the cutout",
       notes: "Took the job for a client who paid in choir coins, which she has never seen a living person spend. Her reputation " +
              "burns with theirs after session 1. She is the first person they have to make it right with. She will not name the client " +
-             "until she is sure the crew aren't going to get her killed — then she will, and it will be the most useful thing anyone says to them." },
+             "until she is sure the crew aren't going to get her killed, then she will, and it will be the most useful thing anyone says to them." },
     { name: "Ketch", role: "Wirewalker · the second voice",
       notes: "Finds the crew unconscious on the chapel steps and drags them to the Gullet. Ketch's second voice is the god dreaming; " +
              "it knows their names because it has met them in every loop. It answers questions Ketch was not asked, and occasionally " +
@@ -335,7 +335,7 @@ var TTST = window.TTST = {
         "Chrome carved from the same bone twitches together, city-wide, for one second.",
         "Warm water comes out of the cold taps and smells of milk.",
         "The lifts arrive before they are called. Everyone has stopped mentioning it.",
-        "A district's bones creak at night like a building settling — except it is the building that is new.",
+        "A district's bones creak at night like a building settling, except it is the building that is new.",
         "Children in three ribs draw the same four figures on the same day.",
         "The Cantor sings a note that is not in its range, and nine hundred voices apologise.",
         "The ribs flex. Everyone standing loses their footing at once. Nobody is hurt; everyone is afraid.",
@@ -366,7 +366,7 @@ var TTST = window.TTST = {
     { h: "They try to leave the city",
       t: "Cathedra is the inside of a corpse. The only way out is the Spine's top stop and a year's walk across the god's weather. " +
          "Let them try: the weather turns them back, or the Hush meet them at the stop, or the vision comes again on the road. " +
-         "If they truly insist, the birth comes to them — the ribs open above the road." },
+         "If they truly insist, the birth comes to them, the ribs open above the road." },
     { h: "They attack the wrong person",
       t: "They will; that is the story. Let the fight happen and the cost land (Doom via the relevant fragment, Salvage down, " +
          "Feed violence). Then have someone who liked the victim tell them what they didn't ask." },
@@ -374,11 +374,11 @@ var TTST = window.TTST = {
       t: "Answer truthfully, costly, and pointing at the nearest unticked fragment. If the question would reveal the loop, " +
          "answer with a loop scar instead of words." },
     { h: "A character dies",
-      t: "Dark but survivable: a dying character gets a vision — their own face, older, saying their name. They may spend 1 " +
+      t: "Dark but survivable: a dying character gets a vision, their own face, older, saying their name. They may spend 1 " +
          "Humanity to stabilise at 1 HP. If they refuse, or it's truly over, the Cantor offers a seat (the voice in the pipes) " +
          "and the player keeps playing as that voice." },
     { h: "They guess the twist early",
-      t: "Reward it: keystone k11 kept, and a vision that is clearer. Then let the loop get smarter — the future selves start " +
+      t: "Reward it: keystone k11 kept, and a vision that is clearer. Then let the loop get smarter, the future selves start " +
          "sending visions that assume the crew know, which is its own kind of unsettling." },
     { h: "They refuse the quest",
       t: "The Hush keep hunting, the rumours keep turning, and Street Cred keeps falling. The story comes to them: the petitioners " +
@@ -407,7 +407,7 @@ var TTST = window.TTST = {
     { id: "feed", name: "What the god becomes (Feed)",
       t: "Mercy: it is gentle, and it will come back to ask how they are. Violence: it is strong and afraid, and the survivors " +
          "will need to stay out of its way. Lies: it is charming and it is never, ever honest, and it likes them. Questions: " +
-         "it is curious, and it asks them what it should be — the best ending short of the moth." },
+         "it is curious, and it asks them what it should be, the best ending short of the moth." },
     { id: "moth", name: "The 1% ending: the moth",
       t: "All twelve keystones kept. At the Sending they send back exactly what they received, and the loop closes clean. " +
          "The birth happens without the fall: the ribs part like curtains, something enormous and very new climbs out of " +
@@ -420,15 +420,15 @@ var TTST = window.TTST = {
 
 /* ======================================================================= ACT I */
 TTST.acts.push({
-  id: "a1", title: "Act I — The Fourth Minute", sessions: "1–3", levels: "3–5",
+  id: "a1", title: "Act I, The Fourth Minute", sessions: "1–3", levels: "3–5",
   summary: "They fail a job, see the end of the city, wake up hunted, and decide to chase the vision to prove everyone wrong about them.",
   scenes: [
 
   /* ------------------------------------------------------------------ S1 */
   { id: "s1", act: 1, session: 1, level: 3, title: "The Reliquary job", place: "The Crown · House Reliquary's chapel-vault",
     truth: "Mother Slate hires them, for a client who pays in choir coins, to lift a cornea shard from Archdeacon Uln Sarrow's " +
-      "vault under the Reliquary chapel. The client is the Hush, who want to destroy it. Nobody — not the Hush, not Slate, not the " +
-      "Archdeacon — knows the shard cracks the moment it leaves consecrated ground. The heist is fully winnable up to the chapel " +
+      "vault under the Reliquary chapel. The client is the Hush, who want to destroy it. Nobody, not the Hush, not Slate, not the " +
+      "Archdeacon, knows the shard cracks the moment it leaves consecrated ground. The heist is fully winnable up to the chapel " +
       "steps. Then the Eye weeps, the vision floods all of them, and they black out in the rain with alarms going. How badly they " +
       "failed (who died, who saw their faces, what they left behind) is all theirs.",
     readAloud: [
@@ -441,15 +441,15 @@ TTST.acts.push({
     hooks: {
       Muscle: "The vault door is counter-weighted on a bone hinge. Someone strong enough can hold it for the six seconds the ward sleeps.",
       Face: "The acolytes change shift at the third bell, and the new ones don't know every visiting pilgrim's face. Someone with a story walks in the front.",
-      Tech: "Consecrated ground kills netrunning — but the chapel's lift outside is ichor-driven and ordinary. Hack the lift, not the vault.",
+      Tech: "Consecrated ground kills netrunning, but the chapel's lift outside is ichor-driven and ordinary. Hack the lift, not the vault.",
       Arcane: "The ward is a prayer, not a machine. Someone who knows how prayers are built can find where this one was stitched short.",
       Stealth: "The ossuary crawlspace connects to the vault's drainage grate. It is narrow, it is full of the dead, and nobody watches it.",
-      Support: "An acolyte is sick in the cloister — a Streetdoc or a priest can be invited in to treat them, which gets someone inside for an hour."
+      Support: "An acolyte is sick in the cloister, a Streetdoc or a priest can be invited in to treat them, which gets someone inside for an hour."
     },
     questions: [
       { q: "Who is the client?", a: "Slate: “Someone who pays in choir coins. You know anybody who spends those? No. Nor do I.” (First Hush clue.)" },
       { q: "What is the shard, exactly?", a: "Slate doesn't know. An acolyte, if asked in the chapel: “The Archdeacon's minute. He came back from the Eye white as salt.”" },
-      { q: "Why intact?", a: "Slate: “Client's words. ‘It must not break before we hold it.’ Their ‘we’, not mine.” (They fear it breaking — foreshadowing.)" },
+      { q: "Why intact?", a: "Slate: “Client's words. ‘It must not break before we hold it.’ Their ‘we’, not mine.” (They fear it breaking, foreshadowing.)" },
       { q: "Has anyone else been hired for this?", a: "Slate hesitates. “I have this job in my ledger twice. I only took it once.” (Loop scar; worth a Salvage point if they ask to see it.)" },
       { q: "What happens to the Archdeacon if it's stolen?", a: "An acolyte: “He'll be relieved. He hasn't slept since he recorded it.” (He is not a villain.)" }
     ],
@@ -457,8 +457,8 @@ TTST.acts.push({
       { if: "They never ask who the client is.", then: "They leave with no idea the Hush exist, and in session 2 the attack comes from nowhere.",
         recover: "Ketch's second voice, in session 2, says “Your client sings. Did you not wonder why they pay in choir coins?”" },
       { if: "They never ask what the shard is.", then: "The vision hits with no context, and they will assume it is a curse from the Archdeacon.",
-        recover: "The Archdeacon's public statement in session 2 mentions “a recording of great spiritual danger” — they can put it together." },
-      { if: "They don't ask why it must stay intact.", then: "Nobody thinks to carry it in a consecrated reliquary box — which is the only thing that would have kept it whole.",
+        recover: "The Archdeacon's public statement in session 2 mentions “a recording of great spiritual danger”, they can put it together." },
+      { if: "They don't ask why it must stay intact.", then: "Nobody thinks to carry it in a consecrated reliquary box, which is the only thing that would have kept it whole.",
         recover: "It breaks anyway (it must). But a crew who asked will know, afterwards, that it broke because it left holy ground, and that is a clue about the Eye." }
     ],
     missed: [
@@ -468,13 +468,13 @@ TTST.acts.push({
       { detail: "The shard's case is engraved on the inside: “IV”.",
         means: "There were four petitioners. This was the fourth minute.",
         ifMissed: "They won't know to look for the other three until the rumours find them in session 3." },
-      { detail: "Moths gather on the case, all facing the same way — toward the Marrowworks.",
+      { detail: "Moths gather on the case, all facing the same way, toward the Marrowworks.",
         means: "The warm thing below is waking. The god knows where its hand is.",
         ifMissed: "Nothing, now. It is a clue for session 4 that pays off only if remembered." }
     ],
     right: [
       { call: "They get in and out without killing anyone.", result: "Keystone k1 kept. The failure is the city's, not theirs.",
-        lead: "Play the vision on the steps at full weight — they did everything right and it still happened. That is the tone of the whole campaign.",
+        lead: "Play the vision on the steps at full weight, they did everything right and it still happened. That is the tone of the whole campaign.",
         salvage: 2, feed: "mercy" },
       { call: "They carry the shard in something consecrated (a reliquary box, a pilgrim's mask wrapped around it).", result: "It survives down the chapel steps and cracks on the first step that isn't holy, a few seconds later. They get further than anyone.",
         lead: "They remember where it cracked. That becomes the clue that the Eye is bound to holy ground (useful in session 9).", salvage: 1, feed: "questions" },
@@ -484,16 +484,16 @@ TTST.acts.push({
     wrong: [
       { call: "They kill a guard or an acolyte.", result: "Keystone k1 broken. The Reliquary publishes the dead acolyte's name with the crew's descriptions.",
         lead: "Start session 2 with the funeral procession passing their hiding place.", salvage: -2, feed: "violence" },
-      { call: "They open the case to look at the shard.", result: "They see a flicker of the vision early — a single frame of the ribs opening — and one of them freezes for a turn at the worst moment.",
+      { call: "They open the case to look at the shard.", result: "They see a flicker of the vision early, a single frame of the ribs opening, and one of them freezes for a turn at the worst moment.",
         lead: "Curiosity isn't punished for long: that player gets the clearest version of the vision on the steps.", salvage: 0, feed: "questions" },
       { call: "They double-cross Slate and try to sell the shard elsewhere.", result: "It cracks on the steps anyway, and now Slate knows they meant to cheat her.",
         lead: "Slate is harder to win back in session 2 (−1 on every Cred event involving her).", salvage: -1, feed: "lies" }
     ],
     goesWrong: [
-      "The shift change comes early: the Archdeacon arrives to pray over the case, alone, and sees them. He doesn't raise the alarm — he asks them, quietly, not to break it.",
+      "The shift change comes early: the Archdeacon arrives to pray over the case, alone, and sees them. He doesn't raise the alarm, he asks them, quietly, not to break it.",
       "A Reliquary Humanity-buffer repossession is happening in the cloister at the same time. Chaos, witnesses, and a Thorn collector with no interest in them yet.",
       "The ward sleeps for four seconds, not six. Whoever is holding the door takes 2d6 bludgeoning.",
-      "It starts to rain chrome-grey ash. Everyone in the Crown looks up. Nobody is watching the chapel. (An omen — use it as a gift.)"
+      "It starts to rain chrome-grey ash. Everyone in the Crown looks up. Nobody is watching the chapel. (An omen, use it as a gift.)"
     ],
     checks: [
       { what: "Talk past the acolytes at the gate", skill: "Deception", dc: 15 },
@@ -533,7 +533,7 @@ TTST.acts.push({
   { id: "s2", act: 1, session: 2, level: 4, title: "Burned", place: "The Gullet · Ketch's noodle-loft, then everywhere they used to be welcome",
     truth: "Ketch found them on the chapel steps and dragged them down to the Gullet before the Reliquary guards got there. They wake " +
       "three days later. Their faces are on every Reliquary notice board, Mother Slate won't see them, Ser Ambrel Dace has been " +
-      "assigned the Reliquary's damages, and the Hush — who now know the crew are seers — send Tallow to sing them to sleep for good. " +
+      "assigned the Reliquary's damages, and the Hush, who now know the crew are seers, send Tallow to sing them to sleep for good. " +
       "The scene ends with the crew deciding to chase the vision: to prove they are not what the city says.",
     readAloud: [
       "You wake to the smell of broth and the sound of someone arguing with themselves. The someone is a Wirewalker with cables in " +
@@ -546,7 +546,7 @@ TTST.acts.push({
       Muscle: "Ser Ambrel Dace offers a duel instead of payment. Winning it clears one segment of the damages clock and earns respect nobody expected.",
       Face: "Mother Slate will see exactly one of them, for exactly one minute. What they say decides whether she ever works with them again.",
       Tech: "Ketch's cables are listening to the pipes. A Tech character can hear what Ketch hears: singing, under the water, all the time.",
-      Arcane: "The vision left a residue. An Arcane character can feel it in the others like a splinter — and feel that it didn't come from the god.",
+      Arcane: "The vision left a residue. An Arcane character can feel it in the others like a splinter, and feel that it didn't come from the god.",
       Stealth: "Getting across the Gullet unseen now is its own job. Someone who knows the rooftops of the throat can move the crew at night.",
       Support: "One of them came back from the steps with a Remnant that is getting worse. Treating it is the first scene of the day and the best time to talk."
     },
@@ -559,7 +559,7 @@ TTST.acts.push({
     ],
     notAsked: [
       { if: "Nobody asks the second voice anything.", then: "Keystone k2 is gone, and they lose the earliest and plainest statement of the twist.",
-        recover: "It will say something unprompted in session 5 — but by then it's a scar (humming a player's tune), not a keystone." },
+        recover: "It will say something unprompted in session 5, but by then it's a scar (humming a player's tune), not a keystone." },
       { if: "They never ask Tallow why.", then: "They conclude the Hush are a death cult. That is exactly the conclusion the story wants them to be able to make.",
         recover: "Tallow, spared, can say it in session 3. Tallow, killed, can't." },
       { if: "They don't go to Slate at all.", then: "She assumes they've cut her loose. Her Cred event is lost and her name for the client stays secret until session 6.",
@@ -569,11 +569,11 @@ TTST.acts.push({
       { detail: "Tallow hums before he attacks, and it is the tune from the chapel choir.",
         means: "The singers in the chapel and the killers in the pipes are part of the same song.",
         ifMissed: "The Choir-house in session 7 is a total surprise instead of an 'oh no'." },
-      { detail: "Ketch's broth is made with water from a well the second voice told Ketch to use — the one well in the Gullet the Hush don't sing through.",
+      { detail: "Ketch's broth is made with water from a well the second voice told Ketch to use, the one well in the Gullet the Hush don't sing through.",
         means: "The second voice is protecting them from the Hush.",
         ifMissed: "Nothing yet; it pays off if they ever wonder why they slept safely at Ketch's." },
       { detail: "One of the WANTED notices has moths drawn around a face. It's Pell's work.",
-        means: "Pell, a child, has seen them before — in the vision.",
+        means: "Pell, a child, has seen them before, in the vision.",
         ifMissed: "They meet Pell in session 3 without realising they've seen the drawings." }
     ],
     right: [
@@ -590,7 +590,7 @@ TTST.acts.push({
       { call: "They blame Slate publicly.", result: "Slate's name burns further and she stops protecting them. Cred event lost.",
         lead: "She becomes a closed door they will need open in session 6.", salvage: -1, feed: "lies" },
       { call: "They hide and wait for it to blow over.", result: "It doesn't. Dace's damages clock ticks, and the rumours get worse.",
-        lead: "The petitioners come to them instead — Ines Varro knocks on Ketch's door with the Hush one street behind.", salvage: -1, feed: "lies" }
+        lead: "The petitioners come to them instead, Ines Varro knocks on Ketch's door with the Hush one street behind.", salvage: -1, feed: "lies" }
     ],
     goesWrong: [
       "Dace arrives while Tallow is mid-song. Three-way standoff: Dace wants them alive (they owe her), Tallow wants them asleep.",
@@ -631,14 +631,14 @@ TTST.acts.push({
 
   /* ------------------------------------------------------------------ S3 */
   { id: "s3", act: 1, session: 3, level: 5, title: "The other petitioners", place: "The Sevenfold Spine, the Marrowworks and the Gullet, in one long night",
-    truth: "The Eye showed four petitioners the same minute. The Archdeacon was the fourth. The other three — Ines Varro (a lift " +
-      "operator), Brother Cobb (a drill foreman) and Pell (a Gullet child) — each saw a different part more clearly. The Hush are " +
+    truth: "The Eye showed four petitioners the same minute. The Archdeacon was the fourth. The other three, Ines Varro (a lift " +
+      "operator), Brother Cobb (a drill foreman) and Pell (a Gullet child), each saw a different part more clearly. The Hush are " +
       "working through the list tonight. The crew can reach at most two before the Hush reach the third, unless they split up. " +
       "Everything about tonight is designed to make the Hush look like monsters. They are killing frightened people in their sleep. " +
       "They also never touch anyone who hasn't seen the vision.",
     readAloud: [
       "Three names, three ribs, one night. Somewhere under the city, forty people in plain clothes are humming the same song and walking toward the same three doors.",
-      "Pell's drawing is pinned above her sleeping mat: four figures in a ruin, one holding something round and bright. The paper is new. The drawing is not the first — there are dozens underneath it."
+      "Pell's drawing is pinned above her sleeping mat: four figures in a ruin, one holding something round and bright. The paper is new. The drawing is not the first, there are dozens underneath it."
     ],
     hooks: {
       Muscle: "Ines Varro's lift car is stuck between ribs with a quieter in the cable housing. Someone has to climb the cable.",
@@ -656,7 +656,7 @@ TTST.acts.push({
       { q: "Why hasn't anyone killed the Archdeacon?", a: "Tallow or any Hush: “He's in the Crown, on holy ground, and he's paying us for our silence without knowing it.” (The Reliquary choir sings the lullaby too.)" }
     ],
     notAsked: [
-      { if: "No one talks to the Hush before fighting.", then: "Keystone k3 broken. They go into Act II certain the Hush are the enemy — which makes session 7 a massacre if they're not careful.",
+      { if: "No one talks to the Hush before fighting.", then: "Keystone k3 broken. They go into Act II certain the Hush are the enemy, which makes session 7 a massacre if they're not careful.",
         recover: "A dying quieter's last words: “Keep singing.” It is not enough to reopen the keystone, but it is enough to make them wonder." },
       { if: "They don't ask Pell anything.", then: "They never learn the drawings are of them until someone else points it out.",
         recover: "Dr. Vhoss, in session 4, sees one of the drawings on them and says “that's you. That's a very good likeness.”" },
@@ -664,7 +664,7 @@ TTST.acts.push({
         recover: "Cobb's crew's sickness is visible: their veins glow faintly. An observant character can work it out." }
     ],
     missed: [
-      { detail: "The Hush agents only ever go for the petitioners — never the petitioners' families, even when they're in the room.",
+      { detail: "The Hush agents only ever go for the petitioners, never the petitioners' families, even when they're in the room.",
         means: "They kill seers, not people. That is a rule, and rules are not what monsters keep.",
         ifMissed: "The crew will treat the Choir-house like a nest of murderers in session 7." },
       { detail: "One of Pell's older drawings shows the crew on the chapel steps, lying in the rain. It is dated before the job.",
@@ -680,10 +680,10 @@ TTST.acts.push({
       { call: "They talk a Hush agent down without violence.", result: "Keystone k3 kept. The agent leaves and takes the crew's message back to the Choirmaster.",
         lead: "The Choirmaster now knows them by name and reputation. Session 7 opens with a letter instead of a trap, if they want it.", salvage: 2, feed: "questions" },
       { call: "They hide the petitioners somewhere consecrated.", result: "The Hush can't sing through dead air. The petitioners are safe for as long as they stay there.",
-        lead: "Sanctum Null becomes a refuge — and a place where the crew can meet anyone without the pipes listening.", salvage: 2, feed: "questions" }
+        lead: "Sanctum Null becomes a refuge, and a place where the crew can meet anyone without the pipes listening.", salvage: 2, feed: "questions" }
     ],
     wrong: [
-      { call: "They ambush and kill the Hush team.", result: "Doom: fragment 2 advances by route A (the Cantor misses a note — one of the singers was a voice in it). The pipes go quiet in one rib for a night.",
+      { call: "They ambush and kill the Hush team.", result: "Doom: fragment 2 advances by route A (the Cantor misses a note, one of the singers was a voice in it). The pipes go quiet in one rib for a night.",
         lead: "Everyone in that rib sleeps badly and dreams of the Marrowworks. Roll twice on the omens table next session.", salvage: -2, feed: "violence", doom: 2 },
       { call: "They leave one petitioner to the Hush to save the other two.", result: "The one they leave is found asleep, smiling, in the morning. Nobody can wake them.",
         lead: "The other two petitioners stop trusting the crew a little. Pell draws the sleeper, and the drawing has a fifth figure now.", salvage: -1, feed: "violence" },
@@ -707,7 +707,7 @@ TTST.acts.push({
       { beat: "At the moment they must choose which petitioner to go to first", text: "Gold light. A child's hand pulling theirs. “Pell first. Pell always first.”",
         clue: "The hand pulling theirs has a ring one of the characters wears." },
       { beat: "When a Hush agent raises a knife", text: "They see the agent, older, singing at a bedside, crying. The voice: “Ask her why. You didn't, last time.”",
-        clue: "“Last time” — the first time the visions admit to a last time." }
+        clue: "“Last time”, the first time the visions admit to a last time." }
     ],
     scars: ["Pell's older drawing of the crew in the rain on the chapel steps, dated before the job."],
     eyeChrome: "If they kill a Hush tender tonight, roll a d6 for the Lidless on the body (a 6).",
@@ -735,7 +735,7 @@ TTST.acts.push({
 
 /* ====================================================================== ACT II */
 TTST.acts.push({
-  id: "a2", title: "Act II — Ask Around", sessions: "4–6", levels: "6–8",
+  id: "a2", title: "Act II, Ask Around", sessions: "4–6", levels: "6–8",
   summary: "They investigate the vision across the city. Every answer is true. Every answer is also a door the end walks through.",
   scenes: [
 
@@ -750,18 +750,18 @@ TTST.acts.push({
       "Somewhere below you, something enormous and very small is holding a drill bit the way a baby holds a finger."
     ],
     hooks: {
-      Muscle: "The drill rig is jammed in the breach. Someone strong can pull it free — or drive it deeper. Either one decides the fragment.",
+      Muscle: "The drill rig is jammed in the breach. Someone strong can pull it free, or drive it deeper. Either one decides the fragment.",
       Face: "A Reliquary deacon and a Thorn engineer are arguing at the shaft head. A Face can make them both think the other side has already decided.",
       Tech: "The drill's controller logs show it has been drilling itself for three nights with no operator. Someone reads the logs, someone finds out why.",
       Arcane: "The light is holy and it is not the old god's. An Arcane character knows the difference between a wound and a birth, if they look.",
       Stealth: "Getting into a sealed shaft past both Houses' guards is the whole first half of the night.",
-      Support: "Cobb's crew's glowing veins are getting worse. Keeping them alive means understanding the light — and it tells them what the light is."
+      Support: "Cobb's crew's glowing veins are getting worse. Keeping them alive means understanding the light, and it tells them what the light is."
     },
     questions: [
       { q: "Is the bone healing?", a: "Dr. Vhoss, if brought along or asked afterwards: “Healing? No. Healing closes. This is growing. This is making room.”" },
       { q: "What happens if the drilling stops?", a: "Cobb: “The bone closes over the shaft in a week. It always has. That's why we never stop.” (Stopping lets it grow unwatched.)" },
       { q: "What happens if they drill deeper?", a: "The Thorn engineer: “We finish it. Whatever it is. That's the plan.” (It isn't finishing anything; it's cutting the cord.)" },
-      { q: "Who wrote DON'T STOP THE DRILL on the shaft wall?", a: "Nobody on Cobb's crew. The paint is older than the shaft. (Loop scar — their handwriting.)" },
+      { q: "Who wrote DON'T STOP THE DRILL on the shaft wall?", a: "Nobody on Cobb's crew. The paint is older than the shaft. (Loop scar, their handwriting.)" },
       { q: "Can we just leave it alone?", a: "Cobb, surprised: “Seal it and walk away? Nobody's ever… I suppose. Nobody's ever tried.” (Keystone k4.)", keystone: "k4" }
     ],
     notAsked: [
@@ -769,7 +769,7 @@ TTST.acts.push({
         recover: "Vhoss asks them about it in session 5, when she sees the light still on their boots." },
       { if: "They never ask what leaving it alone would mean.", then: "Keystone k4 is almost certainly lost; the Houses force the question into kill-or-save.",
         recover: "None. This is one of the keystones the story is built to be missable." },
-      { if: "They don't read the drill logs.", then: "They miss that the drill has been running itself — the god is pulling it in.",
+      { if: "They don't read the drill logs.", then: "They miss that the drill has been running itself, the god is pulling it in.",
         recover: "The drill is found the next morning, three hundred feet deeper, with no one near it." }
     ],
     missed: [
@@ -784,10 +784,10 @@ TTST.acts.push({
         ifMissed: "The newborn god in session 11 has the same scar, and someone will finally notice." }
     ],
     right: [
-      { call: "They seal the breach and leave the hand alone, and talk both Houses out of acting.", result: "Keystone k4 kept. The fragment still comes true — the Houses send a second crew in a month and drill anyway — but it isn't theirs.",
+      { call: "They seal the breach and leave the hand alone, and talk both Houses out of acting.", result: "Keystone k4 kept. The fragment still comes true, the Houses send a second crew in a month and drill anyway, but it isn't theirs.",
         lead: "Cobb's crew recover. Cobb becomes a firm ally; his crew become the backbone of the evacuation later.", salvage: 3, feed: "questions" },
       { call: "They save Cobb's crew with Vhoss's help.", result: "Vhoss learns what the light is, and says the word 'birth' out loud for the first time.",
-        lead: "Vhoss becomes the crew's doctor for the rest of the campaign — and the Lidless is in her back room.", salvage: 2, feed: "mercy" },
+        lead: "Vhoss becomes the crew's doctor for the rest of the campaign, and the Lidless is in her back room.", salvage: 2, feed: "mercy" },
       { call: "They read the drill logs and don't touch the rig.", result: "They know the god is pulling the drill in. It's the first proof that the thing below is doing things on purpose.",
         lead: "Give them a vision if they ask the right follow-up (why?).", salvage: 1, feed: "questions" }
     ],
@@ -814,7 +814,7 @@ TTST.acts.push({
     ],
     echoes: [
       { beat: "When they first see the light", text: "Gold, warm, a voice that sounds like it has been crying: “Don't stop it and don't help it. Seal it. Leave it. Walk away. It's the hardest thing you'll do.”",
-        clue: "“The hardest thing you'll do” — the future self is guessing, and they're wrong: the hardest thing is session 12." },
+        clue: "“The hardest thing you'll do”, the future self is guessing, and they're wrong: the hardest thing is session 12." },
       { beat: "If someone touches the hand", text: "Tiny fingers close around theirs, and for a second they feel very, very loved.",
         clue: "No clue. Just let it land." }
     ],
@@ -841,7 +841,7 @@ TTST.acts.push({
   /* ------------------------------------------------------------------ S5 */
   { id: "s5", act: 2, session: 5, level: 7, title: "One question a year", place: "The Cantor's nave · the Sevenfold Spine's middle stop",
     truth: "The Cantor answers one question per petitioner per year, truthfully and not usefully. It has answered this crew before, in " +
-      "every loop, and it remembers. It cannot say so directly — but it will answer a question about the loop truthfully. This scene " +
+      "every loop, and it remembers. It cannot say so directly, but it will answer a question about the loop truthfully. This scene " +
       "is a puzzle with no wrong answers, only wasted ones. The Hush are here too, because the Cantor is their instrument, and a " +
       "Hush tender is present at every audience. The Archdeacon is here as well, asking his own question.",
     readAloud: [
@@ -849,9 +849,9 @@ TTST.acts.push({
       "“Petitioners,” it says, with nine hundred mouths. “One each. Choose well. You usually don't.”"
     ],
     hooks: {
-      Muscle: "The queue is violent — people have waited months. Someone keeps the crew's places in line, which earns respect from a crowd that will remember it during the evacuation.",
+      Muscle: "The queue is violent, people have waited months. Someone keeps the crew's places in line, which earns respect from a crowd that will remember it during the evacuation.",
       Face: "The Archdeacon is three places ahead. A Face can trade him a question: his answer for one of theirs.",
-      Tech: "The Cantor is also a machine. A Tech character can see which of the nine hundred voices is speaking — and that one of them is silent, waiting to be filled.",
+      Tech: "The Cantor is also a machine. A Tech character can see which of the nine hundred voices is speaking, and that one of them is silent, waiting to be filled.",
       Arcane: "The Cantor's answers rhyme with the vision. An Arcane character can hear which fragment each answer points to.",
       Stealth: "The Hush tender at the audience keeps notes. Lifting the notes shows every question every seer has asked this year.",
       Support: "An old woman in the queue is dying and wants to ask one last question. Giving her a place costs nothing and is remembered."
@@ -865,19 +865,19 @@ TTST.acts.push({
       { q: "Where is the Lidless?", a: "(Only if they've heard the name.) “In a doctor's back room, waiting for someone who won't blink.”" }
     ],
     notAsked: [
-      { if: "Nobody asks about 'last time' or the loop.", then: "Keystone k5 is lost, and the Cantor says “the same thing as always” unprompted to someone else in the queue — a scar they may overhear.",
+      { if: "Nobody asks about 'last time' or the loop.", then: "Keystone k5 is lost, and the Cantor says “the same thing as always” unprompted to someone else in the queue, a scar they may overhear.",
         recover: "None for the keystone. But the overheard line is a clue." },
       { if: "Nobody asks about the Hush.", then: "They leave still thinking the Hush are a cult.",
         recover: "The tender, watching them go, says: “You didn't ask about us. Everyone asks about us.” Then leaves a choir coin in someone's pocket." },
       { if: "They waste questions on things they could learn elsewhere (prices, names).", then: "The Cantor answers truthfully and it doesn't matter. Salvage −1 per wasted question.",
-        recover: "The Archdeacon offers his question in trade — if they will tell him what they saw." }
+        recover: "The Archdeacon offers his question in trade, if they will tell him what they saw." }
     ],
     missed: [
       { detail: "One of the nine hundred voice-housings is empty and polished, as if it's expected.",
         means: "The 901st seat. Someone is going to be a voice in the Cantor.",
         ifMissed: "It's a Tech or Perception notice. It matters for session 10 (keystone k10's scar)." },
       { detail: "The Hush tender's notes list this crew's names with question marks already written next to them.",
-        means: "The Hush knew they were coming. The Cantor told them — or the loop did.",
+        means: "The Hush knew they were coming. The Cantor told them, or the loop did.",
         ifMissed: "They'll never know how the Hush always seem to be a step ahead." },
       { detail: "When the Cantor answers, one voice lags behind the others, and it has an accent from the crew's home rib.",
         means: "Loop scar. One of the voices was one of them, in an earlier loop.",
@@ -900,7 +900,7 @@ TTST.acts.push({
         lead: "This seeds fragment 2's route B: the Houses begin their purge in session 7.", salvage: -2, feed: "violence" }
     ],
     goesWrong: [
-      "The lifts arrive before they're called — all of them, at once, empty. The queue panics.",
+      "The lifts arrive before they're called, all of them, at once, empty. The queue panics.",
       "A Hush tender and a Reliquary acolyte recognise the crew at the same moment.",
       "The Cantor answers a question nobody asked, and it's one of the crew's names.",
       "The empty voice-housing hums on its own when one of them walks under it."
@@ -948,7 +948,7 @@ TTST.acts.push({
     hooks: {
       Muscle: "Dace offers the duel again, and this time the stakes are the Seventh's debt. Win, and the rib gets thirty more days.",
       Face: "The clause. Someone who reads it aloud to the Seventh's people starts a movement Thorn can't collect against.",
-      Tech: "Thorn's ledger has a copy in the counting-engines. Changing the copy changes nothing — the Book is the binding — but it buys time.",
+      Tech: "Thorn's ledger has a copy in the counting-engines. Changing the copy changes nothing, the Book is the binding, but it buys time.",
       Arcane: "The Book is warm and it hums. An Arcane character can see the threads running from it down into the bone.",
       Stealth: "The oldest page is in a locked case. Reading it reveals who wrote the binding and why.",
       Support: "The Seventh's people need organising: shelters, food, a plan. A Support character becomes the rib's hero if they stay."
@@ -971,7 +971,7 @@ TTST.acts.push({
     missed: [
       { detail: "A page of the ledger is missing, torn out cleanly.",
         means: "It's in the Gullet with their names crossed out in their own hands (loop scar).",
-        ifMissed: "The scar still turns up — Pell finds it and gives it to them in session 7." },
+        ifMissed: "The scar still turns up, Pell finds it and gives it to them in session 7." },
       { detail: "Dace's own name is on the Book, owing the Seventh a favour.",
         means: "Dace was born in the Seventh. She's foreclosing on her own home and doing it because a promise is a promise.",
         ifMissed: "She is an obstacle. Noticed, she is a person who can be moved." },
@@ -1010,7 +1010,7 @@ TTST.acts.push({
     ],
     echoes: [
       { beat: "When they reach for their own page", text: "Gold and furious: “Don't pay it. Owe it. Owe everything. We paid, last time, and look.”",
-        clue: "“We paid, last time” — the loop, plainly. If a player catches it, keystone k11 is close." },
+        clue: "“We paid, last time”, the loop, plainly. If a player catches it, keystone k11 is close." },
       { beat: "If fire starts", text: "They see the Book burning, and themselves older, not trying to put it out.",
         clue: "The older selves are wearing the clothes the crew are wearing right now." }
     ],
@@ -1027,7 +1027,7 @@ TTST.acts.push({
       { id: "st-archivist", name: "Thorn archivist", template: "Civilian", role: "House Thorn",
         notes: "Has read the clause. Thought it was poetry." }
     ],
-    fragment: { n: 4, ways: ["Route A: they pay off their own debts.", "Route B: they burn the Book.", "If neither, Reliquary buys the Seventh's debt and clears it to sell buffers — offstage, next month."] },
+    fragment: { n: 4, ways: ["Route A: they pay off their own debts.", "Route B: they burn the Book.", "If neither, Reliquary buys the Seventh's debt and clears it to sell buffers, offstage, next month."] },
     keystones: ["k6"]
   }
   ]
@@ -1035,26 +1035,26 @@ TTST.acts.push({
 
 /* ===================================================================== ACT III */
 TTST.acts.push({
-  id: "a3", title: "Act III — Every Fix Feeds It", sessions: "7–9", levels: "9–11",
+  id: "a3", title: "Act III, Every Fix Feeds It", sessions: "7–9", levels: "9–11",
   summary: "They know enough to act. Every action is correct. Every action completes the vision.",
   scenes: [
 
   /* ------------------------------------------------------------------ S7 */
   { id: "s7", act: 3, session: 7, level: 9, title: "The Choir-house", place: "Beneath the Cantor · the Hush's cistern chapel",
     truth: "The crew find the Hush's heart: a flooded chapel under the Cantor where forty voice-tenders sing the lullaby into the city's " +
-      "water in shifts. Choirmaster Wren Aldous is here. If the crew come as enemies, they win the fight — they are level 9 and the Hush " +
-      "are singers — and killing the singers completes fragment 2. If they come to talk, they learn everything the Hush know: the god " +
+      "water in shifts. Choirmaster Wren Aldous is here. If the crew come as enemies, they win the fight, they are level 9 and the Hush " +
+      "are singers, and killing the singers completes fragment 2. If they come to talk, they learn everything the Hush know: the god " +
       "must not wake, seers wake it, and the crew are the loudest alarm the Hush have ever heard. Either way, this is the midpoint, and " +
-      "the fixed vision happens here. Meanwhile, the Houses — who heard the Cantor say 'stop singing' — are coming to purge the Hush.",
+      "the fixed vision happens here. Meanwhile, the Houses, who heard the Cantor say 'stop singing', are coming to purge the Hush.",
     readAloud: [
       "Water to the knee, warm as a bath. Forty people in plain clothes stand in a ring, singing without words, and the song goes down into the water and away through a thousand pipes. None of them stop when you come in. They can't.",
       "An old woman with a brass voice-box where her throat was turns to look at you. She keeps singing. Her eyes say: I'm sorry. I'm so sorry. Please don't."
     ],
     hooks: {
-      Muscle: "The Houses' purge squad is coming down the cistern stair. Someone holds the stair — for the Hush or against them.",
+      Muscle: "The Houses' purge squad is coming down the cistern stair. Someone holds the stair, for the Hush or against them.",
       Face: "The Choirmaster can't stop singing to talk. A Face has to hold a conversation with someone who answers in hand-signs and looks.",
       Tech: "The pipes are a network. A Tech character can see where the lullaby goes, and that it's already thin in three ribs.",
-      Arcane: "The lullaby is a spell nine hundred years long. An Arcane character can join it — or unpick it.",
+      Arcane: "The lullaby is a spell nine hundred years long. An Arcane character can join it, or unpick it.",
       Stealth: "Getting in unheard, in water, among people who listen for a living, is the hardest infiltration in the campaign.",
       Support: "Singers collapse from exhaustion mid-song. Keeping them standing keeps the song going."
     },
@@ -1069,7 +1069,7 @@ TTST.acts.push({
       { if: "They come in fighting and never ask anything.", then: "Doom: fragment 2, route A. They kill the singers, the Cantor misses a note, and the whole city wakes at 3 a.m. at once.",
         recover: "A dying singer presses a choir coin into a crew member's hand and says “finish the verse”. That's all." },
       { if: "They never ask about the Houses' purge.", then: "The purge squad catches them mid-conversation and the Hush think the crew brought them.",
-        recover: "Tallow warns them — if he's alive." },
+        recover: "Tallow warns them, if he's alive." },
       { if: "They don't ask to help sing.", then: "Keystone k10 in session 10 is much harder: they'll have to learn the song under fire.",
         recover: "The Choirmaster, if alive, offers in session 10 anyway." }
     ],
@@ -1086,8 +1086,8 @@ TTST.acts.push({
     ],
     right: [
       { call: "They spare the Choirmaster and hold the stair against the Houses.", result: "Keystone k7 kept. Every tap in the district plays one clear note at dawn (omen). The Hush owe them everything.",
-        lead: "The fragment still comes true — the Houses kill some singers before they're driven off — but the Hush survive as an order.", salvage: 3, feed: "mercy" },
-      { call: "They tell the Hush the god is pregnant, not dying.", result: "The song falters for a second — and the Choirmaster believes them. The Hush change what they're singing: a lullaby for a child instead of a dirge.",
+        lead: "The fragment still comes true, the Houses kill some singers before they're driven off, but the Hush survive as an order.", salvage: 3, feed: "mercy" },
+      { call: "They tell the Hush the god is pregnant, not dying.", result: "The song falters for a second, and the Choirmaster believes them. The Hush change what they're singing: a lullaby for a child instead of a dirge.",
         lead: "The birth, when it comes, is gentler. Salvage bonus stacks in session 11.", salvage: 2, feed: "questions" },
       { call: "They return the Lidless to the Hush (if they have it).", result: "The Hush trust them absolutely. The Choirmaster tells them where the Eye can be closed and why it mustn't be.",
         lead: "They lose the vision bonus, and gain a clear warning about session 9.", salvage: 2, feed: "mercy" }
@@ -1103,7 +1103,7 @@ TTST.acts.push({
     goesWrong: [
       "The purge squad arrives early and floods the cistern with flash-steam. Nobody can see; everybody can hear.",
       "A singer collapses and the song stops for three seconds. The ribs creak. Everyone freezes.",
-      "One of the crew starts singing along without meaning to — the tune has been in their head since session 1.",
+      "One of the crew starts singing along without meaning to, the tune has been in their head since session 1.",
       "The water rises. Warm. Fast. The Hush keep singing as it reaches their chins."
     ],
     checks: [
@@ -1120,7 +1120,7 @@ TTST.acts.push({
       { beat: "As they come down the stair", text: "Gold warmth and a smell of milk: “Don't draw. Whatever you think you know, don't draw.”",
         clue: "“Whatever you think you know” is a phrase one player uses when arguing." }
     ],
-    scars: ["A brass voice-box in a Gullet stall, still warm, for sale — if the Choirmaster died in any earlier scene of any loop, it is hers."],
+    scars: ["A brass voice-box in a Gullet stall, still warm, for sale, if the Choirmaster died in any earlier scene of any loop, it is hers."],
     eyeChrome: "If they kill a Hush tender here, roll a d6 for the Lidless on the body (a 6).",
     cred: [
       { event: "They drive off the Houses' purge", delta: 1 },
@@ -1142,17 +1142,17 @@ TTST.acts.push({
   { id: "s8", act: 3, session: 8, level: 10, title: "The pilgrimage", place: "The Sevenfold Spine · forty thousand pilgrims climbing",
     truth: "Forty thousand pilgrims climb the Spine to pray at the Crown: a week without signal, every car full. Their prayer, all at " +
       "once, is the loudest bell the god has ever heard. The Hush want to stop them reaching the top. The Houses want the tithe. The " +
-      "crew know the Spine snaps — Ines Varro saw it. Every way to stop the prayer or save the pilgrims puts more weight on the Spine " +
+      "crew know the Spine snaps, Ines Varro saw it. Every way to stop the prayer or save the pilgrims puts more weight on the Spine " +
       "or cuts it. The keystone way is to get the pilgrims off the Spine entirely, by rope, net and the ribs themselves.",
     readAloud: [
-      "The Spine is singing. Not the lullaby — something older. Forty thousand people in the cars and on the service stairs, all humming the same pilgrim hymn, and the cables are humming back.",
+      "The Spine is singing. Not the lullaby, something older. Forty thousand people in the cars and on the service stairs, all humming the same pilgrim hymn, and the cables are humming back.",
       "Ines Varro's hands are shaking on her lever. “This is it,” she says. “This is exactly what I saw. They're singing. Everyone on it was singing.”"
     ],
     hooks: {
       Muscle: "Cars are jamming at the seventh stop. Someone has to physically move a car full of pilgrims off the line.",
       Face: "The pilgrims won't leave the Spine for anyone. A Face has to talk a crowd of forty thousand into a different miracle.",
-      Tech: "No signal for a week — but the Spine's own control lines are ichor, not radio. A Tech character can reroute the whole Spine from one junction box.",
-      Arcane: "The prayer is real magic, and it's pointed at the god. An Arcane character can bend it — toward the Hush's lullaby instead.",
+      Tech: "No signal for a week, but the Spine's own control lines are ichor, not radio. A Tech character can reroute the whole Spine from one junction box.",
+      Arcane: "The prayer is real magic, and it's pointed at the god. An Arcane character can bend it, toward the Hush's lullaby instead.",
       Stealth: "A Hush strike team is heading for the main cable with pipe-knives. Someone has to find them in forty thousand people.",
       Support: "The ropes-and-nets evacuation needs organising, and the Long Fall rule means every slip is a district-sized drop."
     },
@@ -1176,17 +1176,17 @@ TTST.acts.push({
         means: "The prayer is a wake-up call, literally.",
         ifMissed: "An Arcane check can still find it mid-scene; if nobody does, the prayer completes unopposed." },
       { detail: "The snapped cable (if it snaps) is tied in a knot one of the crew always ties.",
-        means: "Loop scar. Their future selves tied it — trying to stop it, last time.",
+        means: "Loop scar. Their future selves tied it, trying to stop it, last time.",
         ifMissed: "It's still there afterwards, dangling at the seventh stop, for anyone who looks." },
       { detail: "The abbess is carrying one of Pell's drawings.",
         means: "Pell's drawings are spreading as scripture. The four figures are becoming saints.",
         ifMissed: "In session 11, the survivors call the crew by the figures' names." }
     ],
     right: [
-      { call: "They get the pilgrims off by rope, net and ribs.", result: "Keystone k8 kept. The Spine still snaps — the Hush cut it, or the prayer's weight does — but it's empty when it goes. A rope holds that shouldn't have (omen).",
+      { call: "They get the pilgrims off by rope, net and ribs.", result: "Keystone k8 kept. The Spine still snaps, the Hush cut it, or the prayer's weight does, but it's empty when it goes. A rope holds that shouldn't have (omen).",
         lead: "Forty thousand people owe the crew their lives. Salvage jumps. Cred jumps.", salvage: 5, feed: "mercy" },
       { call: "They turn the pilgrims' prayer into the lullaby.", result: "The prayer goes into the water instead of up the Spine. The god rolls over and sleeps a little longer.",
-        lead: "Doom is delayed by one session — the birth begins at session 11's end instead of its start.", salvage: 2, feed: "questions" },
+        lead: "Doom is delayed by one session, the birth begins at session 11's end instead of its start.", salvage: 2, feed: "questions" },
       { call: "They stop the Hush strike team without killing them.", result: "The Hush don't cut the cable. The Spine snaps later, on its own, with fewer people on it.",
         lead: "The Hush trust them a little more.", salvage: 2, feed: "mercy" }
     ],
@@ -1214,7 +1214,7 @@ TTST.acts.push({
     echoes: [
       { beat: "When they reach the seventh stop", text: "Gold and quiet: a knot, tied slowly, by hands they know. “Not the rails. The ribs. The ribs have ladders.”",
         clue: "The hands tying the knot tie it the way one character ties knots." },
-      { beat: "When the cable starts to hum", text: "They see the Spine from below, empty, snapping — and cheering. People cheering.",
+      { beat: "When the cable starts to hum", text: "They see the Spine from below, empty, snapping, and cheering. People cheering.",
         clue: "Everyone cheering is on the ribs, not the Spine. The future selves are showing what worked." }
     ],
     scars: ["The snapped Spine cable, tied in a knot one of the crew always ties."],
@@ -1239,7 +1239,7 @@ TTST.acts.push({
   /* ------------------------------------------------------------------ S9 */
   { id: "s9", act: 3, session: 9, level: 11, title: "Close the Eye", place: "The Eye · House Reliquary's viewing gallery",
     truth: "Archdeacon Uln Sarrow has studied his minute for months and reached a conclusion: the vision can't come true if the Eye " +
-      "can't see it. He means to seal the Eye with a reliquary shroud tonight, and he has invited the crew — his fellow seers — to " +
+      "can't see it. He means to seal the Eye with a reliquary shroud tonight, and he has invited the crew, his fellow seers, to " +
       "witness it. It will not stop anything. It closes the god's old eye, which is fragment 6, and it is also the only way the " +
       "future selves can send visions, which means sealing it would stop the help. The keystone path is to leave it open and stop " +
       "the sealing. There's also a quiet auction tonight in the gallery, and lot 41 is the Lidless.",
@@ -1249,9 +1249,9 @@ TTST.acts.push({
     ],
     hooks: {
       Muscle: "The shroud is carried by twelve acolytes on poles. Stopping it means stopping twelve people who think they're saving the world.",
-      Face: "The Archdeacon trusts them. A Face can talk him out of it — if they can explain what they know without sounding mad.",
+      Face: "The Archdeacon trusts them. A Face can talk him out of it, if they can explain what they know without sounding mad.",
       Tech: "The shroud is wired: ichor threads, a prayer-circuit. A Tech character can make it fail without anyone knowing why.",
-      Arcane: "Looking into the Eye tonight, an Arcane character sees it look back — and sees, very faintly, a figure on the other side.",
+      Arcane: "Looking into the Eye tonight, an Arcane character sees it look back, and sees, very faintly, a figure on the other side.",
       Stealth: "Lot 41 at the quiet sale is the Lidless. Someone lifts it while the room is watching the shroud.",
       Support: "The Archdeacon hasn't slept in months. Someone who sits with him and listens hears everything he knows."
     },
@@ -1263,7 +1263,7 @@ TTST.acts.push({
       { q: "Can the Eye be damaged?", a: "The Archdeacon: “Easily. It's glass and dream. That's why I'm sealing it rather than breaking it.”" }
     ],
     notAsked: [
-      { if: "They don't look into the Eye.", then: "They miss the figure on the other side — the plainest clue in the campaign.",
+      { if: "They don't look into the Eye.", then: "They miss the figure on the other side, the plainest clue in the campaign.",
         recover: "Pell, if present, looks, and says “it's you”." },
       { if: "They don't ask what the Archdeacon saw.", then: "They never learn he's known who the four figures are since the chapel.",
         recover: "He tells them anyway, at the end of the night, whatever happens." },
@@ -1298,7 +1298,7 @@ TTST.acts.push({
         lead: "Give them the session-12 vision early, broken and out of order. Chaos. Wonderful chaos.", salvage: -1, feed: "questions" }
     ],
     goesWrong: [
-      "The Hush arrive to stop the sealing too — by killing the Archdeacon.",
+      "The Hush arrive to stop the sealing too, by killing the Archdeacon.",
       "The shroud catches on the Eye's lash and tears; the Eye half-closes, and everyone in the gallery sees one second of the birth.",
       "Thorn outbids everyone on lot 41 and walks out with it. Dace carries the box.",
       "The Eye's pupil dilates and the gallery floor tilts toward it. Everyone slides."
@@ -1311,7 +1311,7 @@ TTST.acts.push({
       { what: "Look into the Eye and see the other side", skill: "Wisdom save", dc: 20 }
     ],
     echoes: [
-      { beat: "When the shroud is raised", text: "Gold, urgent, crackling like a bad line: “Leave it open. If you close it we can't reach you. We can't—”",
+      { beat: "When the shroud is raised", text: "Gold, urgent, crackling like a bad line: “Leave it open. If you close it we can't reach you. We can't...”",
         clue: "“We can't reach you.” The gods can reach anywhere. Whoever this is, can't." },
       { beat: "Looking into the Eye", text: "They see a hand press against the inside of the Eye, and the hand is theirs.",
         clue: "The plainest clue in the campaign. If they get it, keystone k11 is theirs to take." }
@@ -1338,14 +1338,14 @@ TTST.acts.push({
 
 /* ====================================================================== ACT IV */
 TTST.acts.push({
-  id: "a4", title: "Act IV — The Birth", sessions: "10–12", levels: "12",
+  id: "a4", title: "Act IV, The Birth", sessions: "10–12", levels: "12",
   summary: "The song fails, the god is born, and in the ruins they find out who has been helping them all along.",
   scenes: [
 
   /* ----------------------------------------------------------------- S10 */
   { id: "s10", act: 4, session: 10, level: 12, title: "The last lullaby", place: "Every pipe in Cathedra · the Choir-house and the Cantor's nave",
-    truth: "However many singers are left, it is not enough. Tonight the Hush attempt one last lullaby — every tender, every bath-keeper, " +
-      "every well-singer, at once — to hold the god asleep through the night. It fails. It always fails. If fragment 2 hasn't come " +
+    truth: "However many singers are left, it is not enough. Tonight the Hush attempt one last lullaby: every tender, every bath-keeper, " +
+      "every well-singer, at once, to hold the god asleep through the night. It fails. It always fails. If fragment 2 hasn't come " +
       "true yet, it comes true here (route C). What the crew decide is where they stand when it fails: singing with the Hush " +
       "(keystone k10, and the birth starts slow enough to walk out of), guarding the doors, or getting people out.",
     readAloud: [
@@ -1355,10 +1355,10 @@ TTST.acts.push({
     ],
     hooks: {
       Muscle: "The Houses' last purge squad wants to silence the pipes by force. The crew are the only people who can stop them.",
-      Face: "Half the city is panicking. A Face on the Cantor's own voice-lines can tell eleven districts what's happening — or lie to them kindly.",
+      Face: "Half the city is panicking. A Face on the Cantor's own voice-lines can tell eleven districts what's happening, or lie to them kindly.",
       Tech: "The pipes are overloading. A Tech character keeps the song flowing to the ribs that need it most, choosing who hears it.",
       Arcane: "The lullaby is failing because it's the wrong song. An Arcane character can hear what the god is humming and change the lullaby to match.",
-      Stealth: "Pell has gone missing again — to the Choir-house, to find her mother. Someone has to go through the pipes to get her.",
+      Stealth: "Pell has gone missing again, to the Choir-house, to find her mother. Someone has to go through the pipes to get her.",
       Support: "Singers are collapsing all over the city. Every one kept standing is a minute longer before the birth."
     },
     questions: [
@@ -1380,7 +1380,7 @@ TTST.acts.push({
       { detail: "The god's humming has words, very faintly, and they are things the crew have said.",
         means: "It learned to speak from them.",
         ifMissed: "The newborn will quote them in session 11, and they'll recognise it." },
-      { detail: "One of the singers is Tallow (if alive), and he is singing the part that used to be the crew's to sing — in the loops where they sang.",
+      { detail: "One of the singers is Tallow (if alive), and he is singing the part that used to be the crew's to sing, in the loops where they sang.",
         means: "Loop scar: there is a part in the song for them.",
         ifMissed: "Nothing. But Tallow will say so, if asked." },
       { detail: "The 901st housing starts humming on its own as the song thins.",
@@ -1401,7 +1401,7 @@ TTST.acts.push({
       { call: "They silence the pipes themselves to stop the city panicking.", result: "The god wakes all at once. The birth starts immediately and fast.",
         lead: "Skip to session 11 tonight. No evacuation time at all. Salvage −3 on top.", salvage: -3, feed: "lies", doom: 2 },
       { call: "They leave the city while they can.", result: "They reach the top of the ribs as the song fails, and turn to look back.",
-        lead: "Session 11 happens around them anyway — the ribs open above the road. They are still at the centre.", salvage: -4, feed: "lies" }
+        lead: "Session 11 happens around them anyway, the ribs open above the road. They are still at the centre.", salvage: -4, feed: "lies" }
     ],
     goesWrong: [
       "The Choirmaster's voice-box fails mid-song. Someone has to take her line.",
@@ -1418,7 +1418,7 @@ TTST.acts.push({
     ],
     echoes: [
       { beat: "When the first singer falls", text: "Gold, and very close: “Sing. Just sing. You know the words. You wrote some of them.”",
-        clue: "“You wrote some of them” — the lullaby has lines in it that came from the crew, from other loops." },
+        clue: "“You wrote some of them”, the lullaby has lines in it that came from the crew, from other loops." },
       { beat: "At 3 a.m., whatever is happening", text: "They see dawn from the ruins, and a figure holding up the Eye to the light like a lantern, waving.",
         clue: "The figure is waving to them. The gods don't wave." }
     ],
@@ -1441,26 +1441,26 @@ TTST.acts.push({
 
   /* ----------------------------------------------------------------- S11 */
   { id: "s11", act: 4, session: 11, level: 12, title: "The birth", place: "Cathedra, as it opens",
-    truth: "Dawn. The ribs open like a hand. The god is born — not out of the corpse, but as it: the old body unfolding into the new " +
+    truth: "Dawn. The ribs open like a hand. The god is born, not out of the corpse, but as it: the old body unfolding into the new " +
       "one, and everything built inside it falling or walking out along its arm. The newborn remembers the crew. What it is depends " +
       "on Feed. How many get out depends on Salvage. The crew are at the centre whatever they do: the thing being born looks for " +
       "them first. This is the set piece. It is not a boss fight unless they make it one.",
     readAloud: [
-      "The ribs are opening. Not breaking — opening, slowly, the way fingers uncurl. Districts tilt. Lifts hang sideways. Light comes up from the Marrowworks like a sunrise from underneath.",
+      "The ribs are opening. Not breaking, opening, slowly, the way fingers uncurl. Districts tilt. Lifts hang sideways. Light comes up from the Marrowworks like a sunrise from underneath.",
       "And something enormous and very new turns its attention toward you, and says, in your own voice: “There you are.”"
     ],
     hooks: {
       Muscle: "The Seventh's tilt is sliding eleven thousand people toward a Long Fall. Someone holds the rail.",
-      Face: "The newborn is talking — in their voices. Someone has to answer it. What they say is part of what it becomes.",
+      Face: "The newborn is talking, in their voices. Someone has to answer it. What they say is part of what it becomes.",
       Tech: "The Spine is gone, but the ribs have ladders and the Cantor's pipes still carry voice. A Tech character runs the evacuation's comms.",
-      Arcane: "The birth is a ritual nine hundred years long. An Arcane character can steady it — slow it — at a cost in Humanity.",
+      Arcane: "The birth is a ritual nine hundred years long. An Arcane character can steady it, slow it, at a cost in Humanity.",
       Stealth: "People are trapped in sealed House chapels with dead air: no comms, no signal. Someone has to go in person.",
       Support: "The Streetdocs are overwhelmed. Every ichor ampule in the city is being used at once, and every one costs Humanity."
     },
     questions: [
       { q: "(To the newborn) What are you?", a: "Answer by Feed. Mercy: “Yours.” Violence: “Afraid.” Lies: “Whatever you want me to be.” Questions: “I don't know yet. What should I be?”" },
       { q: "(To the newborn) Do you remember us?", a: "“Every time.” (The loop, from the god's mouth.)" },
-      { q: "Where is the Eye?", a: "The old Eye has closed (fragment 6) — but it is still there, in the ruins of the Reliquary gallery, and it's still open on the inside. Someone has to go and get it." },
+      { q: "Where is the Eye?", a: "The old Eye has closed (fragment 6), but it is still there, in the ruins of the Reliquary gallery, and it's still open on the inside. Someone has to go and get it." },
       { q: "Can it be slowed?", a: "Yes, by singing, by an Arcane character spending Humanity, or by asking it to. Each slows it by an hour; every hour is +1 Salvage." },
       { q: "(To the newborn) What do you want?", a: "“To see.” It will follow whoever has the Eye." }
     ],
@@ -1503,7 +1503,7 @@ TTST.acts.push({
       "The Crown slides. House Reliquary's entire chapel tips into the open air, full of people and dead air.",
       "The newborn reaches for the crew with one enormous finger. Being touched costs 1 Humanity and is the kindest thing that has ever happened to them.",
       "The last of the Houses' guards open fire on the newborn. It flinches, and a district goes with it.",
-      "Mother Slate, Ketch, Dace, Vhoss, Cobb, Ines, Pell — pick whichever NPC they love most. They're in the wrong place."
+      "Mother Slate, Ketch, Dace, Vhoss, Cobb, Ines, Pell, pick whichever NPC they love most. They're in the wrong place."
     ],
     checks: [
       { what: "Hold the Seventh's rail against the tilt", skill: "Athletics", dc: 25 },
@@ -1533,22 +1533,22 @@ TTST.acts.push({
   /* ----------------------------------------------------------------- S12 */
   { id: "s12", act: 4, session: 12, level: 12, title: "The Sending", place: "The ruins · the Eye, still open on the inside",
     truth: "After the birth, in the ruins of the Reliquary gallery, the crew find the Eye closed on the outside and still open on the " +
-      "inside. Standing in front of it, they understand what it does: it sends. Every vision they ever had came from here — from " +
+      "inside. Standing in front of it, they understand what it does: it sends. Every vision they ever had came from here, from " +
       "them. They are the future selves now. The last choice of the campaign is literally the first vision: what do they send back? " +
       "Default: they send what they received, the loop closes, and it all happens again as it just did. Different: the next loop " +
-      "is worse, or stranger — describe it. With all twelve keystones kept, they already know exactly what to send, and the loop " +
+      "is worse, or stranger, describe it. With all twelve keystones kept, they already know exactly what to send, and the loop " +
       "closes clean: the moth ending.",
     readAloud: [
-      "The gallery is open to the sky now. The Eye lies on its side in the rubble, closed — and then, when you step in front of it, you see it is still open on the inside, like a window seen from the wrong side of the glass.",
+      "The gallery is open to the sky now. The Eye lies on its side in the rubble, closed, and then, when you step in front of it, you see it is still open on the inside, like a window seen from the wrong side of the glass.",
       "In it, very small, very far away, you see yourselves: younger, soaked, lying on the chapel steps in the rain. The Eye waits for you to decide what they should see."
     ],
     hooks: {
       Muscle: "Lifting the Eye takes all of them. It's heavy the way a memory is heavy.",
-      Face: "Someone has to speak the vision into the Eye. The words are theirs to choose — and the players should choose them, out loud.",
-      Tech: "The Eye has a memory. A Tech character can see the log of every vision ever sent through it — including sendings from earlier loops.",
+      Face: "Someone has to speak the vision into the Eye. The words are theirs to choose, and the players should choose them, out loud.",
+      Tech: "The Eye has a memory. A Tech character can see the log of every vision ever sent through it, including sendings from earlier loops.",
       Arcane: "An Arcane character understands the cost: whoever sends pays in Humanity, and the Remnant is permanent.",
       Stealth: "Among the rubble are bodies from earlier loops. Someone goes through their pockets. (The Lidless is on one.)",
-      Support: "Someone has to hold the whole thing together — the crew, the survivors, the newborn watching over the gallery wall."
+      Support: "Someone has to hold the whole thing together, the crew, the survivors, the newborn watching over the gallery wall."
     },
     questions: [
       { q: "Who sent the visions?", a: "They did. They're about to. Let a player say it before you confirm it." },
@@ -1558,16 +1558,16 @@ TTST.acts.push({
       { q: "(To the newborn) What should we send?", a: "By Feed. Questions: “Send them a question.” Mercy: “Send them each other.” Violence: “Send them a weapon.” Lies: “Send them what they want to hear.”" }
     ],
     notAsked: [
-      { if: "They don't ask what they received.", then: "They improvise the sending from memory. Almost certainly it's not exact — k12 is lost.",
+      { if: "They don't ask what they received.", then: "They improvise the sending from memory. Almost certainly it's not exact, k12 is lost.",
         recover: "None. That's the point: the players have to have been paying attention for twelve sessions." },
       { if: "They never wonder about the bodies.", then: "The Lidless stays in the rubble, and they don't see how many times this has happened.",
         recover: "The newborn tells them: “You've been here so often.”" },
       { if: "They don't ask whether it can be different.", then: "They send the same, and it's the default ending. That's fine; most tables will.",
-        recover: "—" }
+        recover: "-" }
     ],
     missed: [
       { detail: "The Eye's log shows many sendings. Each loop, the visions are a little different, and every loop they got a little closer.",
-        means: "They are not the first to try, and they won't be the last — unless.",
+        means: "They are not the first to try, and they won't be the last, unless.",
         ifMissed: "The ending is still whole. This is for the table that looks." },
       { detail: "The newborn has the same scar as one of them.",
         means: "It learned its shape from them.",
@@ -1581,11 +1581,11 @@ TTST.acts.push({
         lead: "Read the moth ending. Tell them how close they came: they came all the way.", salvage: 5, feed: "questions" },
       { call: "They send back exactly what they received (keystones not all kept).", result: "The loop closes as it has before. Salvage decides the epilogue band.",
         lead: "The bittersweet default. Read the band and the Feed result.", salvage: 2, feed: "questions" },
-      { call: "They send a message of their own to one particular character.", result: "The loop takes it. Next time, that character has one more piece of help. It isn't enough — but it's more.",
+      { call: "They send a message of their own to one particular character.", result: "The loop takes it. Next time, that character has one more piece of help. It isn't enough, but it's more.",
         lead: "Describe the next loop in one line: something small that goes better.", salvage: 1, feed: "mercy" }
     ],
     wrong: [
-      { call: "They send nothing.", result: "Paradox. The Eye goes dark. The past crew never saw the Fourth Minute, never failed the job — and the city fell anyway, with nobody warning anyone.",
+      { call: "They send nothing.", result: "Paradox. The Eye goes dark. The past crew never saw the Fourth Minute, never failed the job, and the city fell anyway, with nobody warning anyone.",
         lead: "Salvage drops to 0 for the epilogue. The survivors, whoever they are, never heard of the crew.", salvage: -10, feed: "lies" },
       { call: "They send a warning to stop the heist.", result: "The past crew don't take the job. The Hush hire someone else. That crew fail too, and see the vision, and don't have anyone to help them.",
         lead: "Ash epilogue, whatever Salvage says. In the ruins, four strangers stand in front of the Eye.", salvage: -6, feed: "questions" },
@@ -1595,7 +1595,7 @@ TTST.acts.push({
     goesWrong: [
       "The Hush survivors arrive, see the Eye, and beg the crew not to send anything, because seers wake it.",
       "The newborn leans over the gallery wall to watch. Its breath knocks everyone down.",
-      "A body from an earlier loop moves. It's not dead — it's them, very old, and they have one thing to say.",
+      "A body from an earlier loop moves. It's not dead, it's them, very old, and they have one thing to say.",
       "The Eye starts sending on its own before they've decided, and they have to grab it."
     ],
     checks: [
@@ -1622,3 +1622,189 @@ TTST.acts.push({
   }
   ]
 });
+
+/* ============================================================ WALKTHROUGH
+   A sample run of the whole campaign with the demo crew (Vesper, Jax, Sable,
+   Brick and Lux), one step per session. Each step says what happened at the
+   table and which buttons the GM pressed. `set` is absolute, `add` stacks on
+   the steps before it; the Story tab adds them up to show the dials at any
+   point. Steps 1 to 3 add up to exactly what "Load a demo table" starts with. */
+TTST.walkthrough = [
+  { title: "Before session 1",
+    narrative: "Five players have built their characters and sent their share links. The GM has read The truth and Running the doom, " +
+      "and knows one thing the players don't: however well they play tonight, the job fails.",
+    actions: [
+      "Party screen: paste each share link and press Add to party.",
+      "Party screen: press Roll the god's attention (a 7, nothing happens).",
+      "Story: open S1 and press Set as current, then Start clocks and Add NPCs.",
+      "Read the S1 Read aloud box to open the session."
+    ],
+    set: { current: "s1", cred: 0 }, add: {} },
+
+  { title: "After session 1: The Reliquary job",
+    narrative: "Lux talked the crew past the gate as visiting pilgrims, Brick held the bone door for its six seconds, and nobody died. " +
+      "Jax asked Mother Slate who the client was and got the choir-coin answer. On the chapel steps the shard cracked, " +
+      "all five saw the Fourth Minute and blacked out in the rain.",
+    actions: [
+      "Log it as seen on S1's fixed vision (everyone loses 1 Humanity and takes a Remnant).",
+      "Keystone K1: Kept, nobody died. Show the omen: the moths follow them out.",
+      "Apply 'They get in and out without killing anyone' (Salvage +2, mercy).",
+      "Doom: tick fragment 1, the Eye weeps.",
+      "Street Cred −3 for the public failure, then +1 when the Archdeacon says they left him unharmed.",
+      "Mark played, Mixed. Note: 'Jax asked about the client. Nobody opened the case.'"
+    ],
+    set: { current: "s2", cred: -2 },
+    add: { done: ["s1"], branch: { s1: "mixed" }, doom: [1], salvage: 2, feed: { mercy: 1, questions: 1 },
+           keys: { k1: "kept" }, notes: { s1: "Jax asked about the client. Nobody opened the case." },
+           echoes: [{ scene: "s1", fixed: true, who: "everyone" }] } },
+
+  { title: "After session 2: Burned",
+    narrative: "They woke in Ketch's loft. Sable asked the second voice who sent the vision and laughed off the answer, " +
+      "'You did. You always do.' When Tallow came singing through the pipes, Brick pinned him and Lux talked him down instead of killing him. " +
+      "They went to Slate and owned the failure, and decided to chase the vision.",
+    actions: [
+      "When Tallow started to sing: Roll for a vision. 18, a hit on Jax: 'Don't kill the singer. You'll want him later.'",
+      "Keystone K2: Kept, someone asked the second voice.",
+      "Apply 'They take Tallow alive' (Salvage +2, mercy) and 'They decide to chase the vision' (Salvage +1, questions).",
+      "Street Cred +1 for facing Slate, +1 for paying Dace's first installment.",
+      "Mark played, Right."
+    ],
+    set: { current: "s3", cred: 0 },
+    add: { done: ["s2"], branch: { s2: "right" }, salvage: 3, feed: { mercy: 1, questions: 1 }, keys: { k2: "kept" },
+           echoes: [{ scene: "s2", echo: 0, who: "Jax Oriel" }] } },
+
+  { title: "After session 3: The other petitioners",
+    narrative: "They split up and saved all three petitioners. But Vesper and Brick ambushed a pair of Hush quieters on the Spine " +
+      "before anyone asked them a thing, and Pell watched it happen. Nobody died, so the Cantor didn't miss a note, but the chance to hear the Hush out was gone.",
+    actions: [
+      "Keystone K3: Broken, nobody talked first. The 1% path closes here. Put the scar somewhere: a Hush death-notice with their names.",
+      "Apply 'They split up and reach all three' (Salvage +3) and take 4 back for the ambush and Pell's fear.",
+      "Street Cred +2 for three petitioners alive, +1 for being seen fighting the Hush.",
+      "Mark played, Wrong. Note: 'They ambushed the quieters on the Spine before anyone asked a thing. Pell saw it all.'"
+    ],
+    set: { current: "s4", cred: 3 },
+    add: { done: ["s3"], branch: { s3: "wrong" }, salvage: -1, feed: { violence: 1 }, keys: { k3: "broken" },
+           notes: { s3: "They ambushed the quieters on the Spine before anyone asked a thing. Pell saw it all." } } },
+
+  { title: "After session 4: The warm bleed",
+    narrative: "This is where 'Load a demo table' starts. Lux brought Dr. Vhoss down shaft nine and together they saved Cobb's crew. " +
+      "Then the crew stopped the drilling to spare the warm thing, and for a whole shift the Marrowworks filled with light. " +
+      "Sable, who had been kind to Vhoss, was shown the back room and bought 'an old eye that doesn't blink'.",
+    actions: [
+      "Pick Sable Voss in the Eye-chrome picker next to Roll for a vision. Visions now hit on 16.",
+      "Apply 'They save Cobb's crew with Vhoss's help' (Salvage +2, mercy).",
+      "Apply 'They stop the drilling' (Salvage −1, mercy, Doom fragment 3).",
+      "Keystone K4: Broken. Street Cred +1, Cobb's crew came home.",
+      "Mark played, Mixed."
+    ],
+    set: { current: "s5", cred: 4, eyeChrome: "Sable Voss" },
+    add: { done: ["s4"], branch: { s4: "mixed" }, doom: [3], salvage: 1, feed: { mercy: 2 }, keys: { k4: "broken" } } },
+
+  { title: "After session 5: One question a year",
+    narrative: "In the Cantor's nave Sable asked 'What did we ask you last time?' and nine hundred voices said 'You never ask this one.' " +
+      "Lux gave up a place in the queue to a dying woman. Brick spotted the empty 901st voice-housing and nobody knew what to make of it.",
+    actions: [
+      "Keystone K5: Kept. Omen: the lifts arrive on time all day.",
+      "Roll for a vision in the queue: 16, a hit (the Eye-chrome counts) on Lux: 'Ask it about last time.'",
+      "Apply 'They ask about the loop' (Salvage +2, questions) and 'They give their place to the dying woman' (Salvage +2, mercy).",
+      "Street Cred +1, they held the queue for everyone.",
+      "Mark played, Right."
+    ],
+    set: { current: "s6", cred: 5 },
+    add: { done: ["s5"], branch: { s5: "right" }, salvage: 4, feed: { mercy: 1, questions: 1 }, keys: { k5: "kept" },
+           echoes: [{ scene: "s5", echo: 0, who: "Lux Marrow" }] } },
+
+  { title: "After session 6: On the book",
+    narrative: "Vesper read House Thorn's clause to the Seventh Rib out loud and eleven thousand people refused to leave. " +
+      "Then the crew paid off their own debts to clear their names. It felt exactly like redemption. The page went cold, and a nail came loose somewhere below.",
+    actions: [
+      "Apply 'They read the clause to the Seventh's people' (Salvage +2, questions).",
+      "Apply 'They pay off their own debts' (Doom fragment 4, mercy). Street Cred +2 for saving the Seventh.",
+      "Keystone K6: Broken, they cleared the book.",
+      "Mark played, Mixed. Roll on the omens table afterwards: 'The ribs flex.'"
+    ],
+    set: { current: "s7", cred: 7 },
+    add: { done: ["s6"], branch: { s6: "mixed" }, doom: [4], salvage: 2, feed: { mercy: 1, questions: 1 }, keys: { k6: "broken" } } },
+
+  { title: "After session 7: The Choir-house",
+    narrative: "Remembering Pell's face on the Spine, they came in with hands open this time. Lux told Choirmaster Aldous the god isn't dying, it's pregnant, " +
+      "and the whole room missed a beat. They held the stair while the Houses' purge squad came down, but the Houses still killed six singers before they were driven off.",
+    actions: [
+      "Log it as seen on S7's fixed vision, for Brick (closest to the Choirmaster). 1 Humanity and a Remnant.",
+      "Keystone K7: Kept, the Choirmaster lives. Omen: every tap plays one clear note at dawn.",
+      "Apply 'They spare the Choirmaster and hold the stair' (Salvage +3, mercy).",
+      "Doom: tick fragment 2 (the purge killed singers, so route B came true without them).",
+      "Street Cred +1, they drove the purge off. Mark played, Right."
+    ],
+    set: { current: "s8", cred: 8 },
+    add: { done: ["s7"], branch: { s7: "right" }, doom: [2], salvage: 3, feed: { mercy: 1, questions: 1 }, keys: { k7: "kept" },
+           echoes: [{ scene: "s7", fixed: true, who: "Brick Halloran" }] } },
+
+  { title: "After session 8: The pilgrimage",
+    narrative: "Forty thousand pilgrims were singing on the Spine and Ines's hands were shaking. The crew panicked and evacuated everyone by the lifts, as fast as they could. " +
+      "They saved thousands. The main cable went at the seventh stop with twelve cars on it.",
+    actions: [
+      "Apply 'They evacuate everyone by the lifts' (Salvage −2, mercy, Doom fragment 5).",
+      "Keystone K8: Broken. Scar: the snapped cable is tied in Vesper's knot.",
+      "Street Cred −2, cars fell with people in them.",
+      "Mark played, Wrong. Note: 'Let the table sit with it. They saved thousands and lost hundreds.'"
+    ],
+    set: { current: "s9", cred: 6 },
+    add: { done: ["s8"], branch: { s8: "wrong" }, doom: [5], salvage: -2, feed: { mercy: 1 }, keys: { k8: "broken" },
+           notes: { s8: "Let the table sit with it. They saved thousands and lost hundreds." } } },
+
+  { title: "After session 9: Close the Eye",
+    narrative: "At the Archdeacon's sealing they talked him down and the shroud never went up. Sable looked into the Eye, saw a hand pressed against the inside of it, " +
+      "and said out loud, 'That's my hand. They're us.' Nobody at the table spoke for a minute. At dawn the god closed its old eye on its own.",
+    actions: [
+      "Roll for a vision when Sable looks into the Eye: 17, a hit on Sable: the hand is theirs.",
+      "Keystones K9 and K11: Kept (the Eye stays open; Sable named the sender).",
+      "Apply 'They stop the sealing and leave the Eye open' (Salvage +2, questions).",
+      "Doom: tick fragment 6 (the god closed the eye itself). Street Cred +1, the Archdeacon thanks them publicly.",
+      "Mark played, Right."
+    ],
+    set: { current: "s10", cred: 7 },
+    add: { done: ["s9"], branch: { s9: "right" }, doom: [6], salvage: 2, feed: { questions: 1 }, keys: { k9: "kept", k11: "kept" },
+           echoes: [{ scene: "s9", echo: 1, who: "Sable Voss" }] } },
+
+  { title: "After session 10: The last lullaby",
+    narrative: "Every tap in the city sang. The Houses sent one last squad to silence the pipes, and the crew guarded the doors instead of singing. " +
+      "They won the fight. It didn't matter: the song failed at three in the morning.",
+    actions: [
+      "Keystone K10: Broken, they fought instead of sang. Scar: nine hundred and one voices in the Cantor.",
+      "Apply 'They guard the doors and fight' (Salvage 0, violence).",
+      "Every ally they made (Cobb, Ines, the Seventh, Reliquary) evacuates on their own: count that in the next session.",
+      "Mark played, Wrong."
+    ],
+    set: { current: "s11", cred: 7 },
+    add: { done: ["s10"], branch: { s10: "wrong" }, feed: { violence: 1 }, keys: { k10: "broken" } } },
+
+  { title: "After session 11: The birth",
+    narrative: "The ribs opened like a hand. Brick fired on the newborn before anyone could stop him, and it flinched. Then Lux spoke to it, gently, " +
+      "and it answered in their own voices: 'There you are.' It slowed down to listen, and most of the city walked out along its arm.",
+    actions: [
+      "Roll for a vision as the ribs open: a hit on Vesper: 'Go to the Eye when it's done. We'll be waiting.'",
+      "Apply 'They attack the newborn' (violence) and 'They talk to the newborn gently and honestly' (Salvage +3, questions).",
+      "Take 2 Salvage back for the district that went when it flinched.",
+      "Doom: tick fragment 7. Street Cred +3, they stayed and got people out.",
+      "Mark played, Mixed."
+    ],
+    set: { current: "s12", cred: 10 },
+    add: { done: ["s11"], branch: { s11: "mixed" }, doom: [7], salvage: 1, feed: { violence: 1, questions: 2 },
+           echoes: [{ scene: "s11", echo: 0, who: "Vesper Kane" }] } },
+
+  { title: "After session 12: The Sending",
+    narrative: "In the ruins they found the Eye, closed outside and open inside, and their own younger selves lying on the chapel steps. " +
+      "The GM read out the vision log and they sent back exactly what they had received. The loop closed as it always has. " +
+      "Salvage ended at 17: Exodus. Questions was the top Feed, so the newborn god asked them what it should be.",
+    actions: [
+      "Log it as seen on S12's fixed vision (everyone, 1 Humanity and a permanent Remnant).",
+      "Read out The visions > Vision log so they can send it back in order. Keystone K12: Kept.",
+      "Apply 'They send back exactly what they received' (Salvage +2, questions).",
+      "Open Endings: Salvage 17 is Exodus; Feed questions means the god asks what it should be.",
+      "Tell them the 1% path closed in session 3, and that they kept 7 of 12. Mark played, Right."
+    ],
+    set: { current: "s12", cred: 10 },
+    add: { done: ["s12"], branch: { s12: "right" }, salvage: 2, feed: { questions: 1 }, keys: { k12: "kept" },
+           echoes: [{ scene: "s12", fixed: true, who: "everyone" }] } }
+];

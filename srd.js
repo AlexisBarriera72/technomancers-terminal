@@ -2,7 +2,7 @@
  *
  * Everything here is mechanically the System Reference Document's, unchanged:
  * same triggers, same dice, same durations, same save DCs. Only the framing
- * prose is written for Cathedra. That split is deliberate — the surrounding
+ * prose is written for Cathedra. That split is deliberate, the surrounding
  * application infers mechanics from this text (see ACT_RULES in app.js), so
  * rewriting a rule sentence for flavour would quietly change what the sheet
  * prints. Flavour goes in `description` and in the gloss paragraph under each
@@ -17,7 +17,7 @@ window.TTSRD = {
     label: "SRD",
     tagline: "Fifth edition's open rules, dressed for the city.",
     notice: "This work includes material taken from the System Reference Document 5.1 (“SRD 5.1”) by Wizards of the Coast LLC, available at https://dnd.wizards.com/resources/systems-reference-document. The SRD 5.1 is licensed under the Creative Commons Attribution 4.0 International License, available at https://creativecommons.org/licenses/by/4.0/legalcode.",
-    note: "Rules are the SRD's, unchanged — same rolls, same numbers, same durations. Only the description around them is written for Cathedra, so a table using the printed book and a table using this site are playing the same game."
+    note: "Rules are the SRD's, unchanged, same rolls, same numbers, same durations. Only the description around them is written for Cathedra, so a table using the printed book and a table using this site are playing the same game."
   },
   subclasses: [
     {
@@ -29,8 +29,8 @@ window.TTSRD = {
       page: null,
       origin: "srd",
       description: [
-        "Every other caster in Cathedra runs their power through something: a licensed focus, a dampener rig, a cortical governor with a service contract. You do not. Whatever happened to you — a birth under a failing reactor, an ancestor who signed the wrong contract, a spike of raw grid that went through you instead of around you — left your magic with no shielding and no ground.",
-        "So it leaks. Most nights that means nothing worse than the lights guttering when you get angry. Some nights the district's reality budget gets rebalanced around you, and nobody — least of all you — gets a say in where the difference lands."
+        "Every other caster in Cathedra runs their power through something: a licensed focus, a dampener rig, a cortical governor with a service contract. You do not. Whatever happened to you, a birth under a failing reactor, an ancestor who signed the wrong contract, a spike of raw grid that went through you instead of around you, left your magic with no shielding and no ground.",
+        "So it leaks. Most nights that means nothing worse than the lights guttering when you get angry. Some nights the district's reality budget gets rebalanced around you, and nobody, least of all you, gets a say in where the difference lands."
       ],
       features: [
         {
@@ -44,7 +44,7 @@ window.TTSRD = {
             },
             {
               type: "p",
-              text: "In Cathedra the surge is read as a fault, not a miracle. Building AIs log it, street doctors have a name for the smell it leaves, and the grid's own maintenance layer tries to correct for it — which is why so many results look like something being patched badly rather than something being summoned."
+              text: "In Cathedra the surge is read as a fault, not a miracle. Building AIs log it, street doctors have a name for the smell it leaves, and the grid's own maintenance layer tries to correct for it, which is why so many results look like something being patched badly rather than something being summoned."
             },
             {
               type: "table",
@@ -135,7 +135,7 @@ window.TTSRD = {
             },
             {
               type: "p",
-              text: "You have stopped merely leaking and started aiming. It still is not control — you are pushing on somebody else's outcome with the same unshielded thing that keeps turning your hair to filament — but a nudge landed at the right instant is worth more than most people's precision."
+              text: "You have stopped merely leaking and started aiming. It still is not control, you are pushing on somebody else's outcome with the same unshielded thing that keeps turning your hair to filament, but a nudge landed at the right instant is worth more than most people's precision."
             }
           ]
         },
@@ -165,7 +165,7 @@ window.TTSRD = {
             },
             {
               type: "p",
-              text: "The overflow has stopped being a defect and started being a weapon. When one of your spells hits its ceiling, the unshielded remainder does not dissipate into the district — it goes where the rest of the spell went."
+              text: "The overflow has stopped being a defect and started being a weapon. When one of your spells hits its ceiling, the unshielded remainder does not dissipate into the district, it goes where the rest of the spell went."
             }
           ]
         }

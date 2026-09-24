@@ -1,8 +1,8 @@
 /* The Story tab: "The Fourth Minute".
  *
  * Two halves. The data lint reads story.js directly and holds the story to
- * its own promises — every scene carries every category, every reference
- * resolves — so a later edit can't quietly leave a hole the GM finds mid-game.
+ * its own promises, every scene carries every category, every reference
+ * resolves, so a later edit can't quietly leave a hole the GM finds mid-game.
  * The browser half drives the tab the way a GM would. */
 "use strict";
 const fs = require("fs");
@@ -102,6 +102,33 @@ module.exports = async function (browser) {
       ST.tables.every(t => t.rows.length === t.die), JSON.stringify(ST.tables.map(t => [t.id, t.die, t.rows.length])));
     R.check("the endings cover every Salvage band, Feed and the moth",
       ["ash", "embers", "exodus", "witnesses", "feed", "moth"].every(id => ST.endings.some(e => e.id === id)), "");
+
+    // the demo walkthrough: a whole campaign, one step a session
+    const W = ST.walkthrough || [];
+    R.eq("the walkthrough has thirteen steps, before session 1 and one a session", W.length, 13);
+    R.check("every step says what happened and what the GM pressed",
+      W.every(w => w.title && w.narrative && w.actions && w.actions.length >= 3),
+      JSON.stringify(W.map(w => [w.title, (w.actions || []).length])));
+    const wref = [];
+    W.forEach((w, i) => {
+      const a = w.add || {}, set = w.set || {};
+      (a.done || []).concat(Object.keys(a.branch || {}), Object.keys(a.notes || {}))
+        .forEach(id => { if (ids.indexOf(id) < 0) wref.push(i + ": scene " + id); });
+      if (set.current && ids.indexOf(set.current) < 0) wref.push(i + ": current " + set.current);
+      Object.keys(a.keys || {}).forEach(k => {
+        if (!ST.keystones.some(x => x.id === k)) wref.push(i + ": keystone " + k);
+        if (["kept", "broken"].indexOf(a.keys[k]) < 0) wref.push(i + ": keystone state " + a.keys[k]);
+      });
+      Object.keys(a.feed || {}).forEach(k => { if (FEEDS.indexOf(k) < 0) wref.push(i + ": feed " + k); });
+      (a.doom || []).forEach(d => { if (!(d >= 1 && d <= 7)) wref.push(i + ": doom " + d); });
+      (a.echoes || []).forEach(e => { if (ids.indexOf(e.scene) < 0) wref.push(i + ": echo " + e.scene); });
+    });
+    R.eq("every step points at real scenes, keystones and Feeds", wref, []);
+
+    R.eq("every named synergy pair says what it does",
+      SY.pairs.filter(p => typeof p.effect !== "string" || p.effect.length < 10).map(p => p.id), []);
+    R.eq("and only Ambush Team claims to be automatic",
+      SY.pairs.filter(p => p.wired).map(p => p.id), ["ambush-team"]);
   }
 
   /* ============================ in the browser ============================ */
@@ -241,6 +268,83 @@ module.exports = async function (browser) {
     R.check("in Spanish the tab is Historia", /Historia/.test(es.rail), es.rail);
     R.eq("and its labels translate", es.dial, "Perdición");
     R.eq("but the story keeps its English", [es.story, /^The crew fail a job/.test(es.pitch)], ["The Fourth Minute", true]);
+
+    // the walkthrough: after session 3 (step 4) is exactly where the demo table starts
+    const seedCheck = await page.evaluate(() => {
+      const G = window.TTGM, T = window.TT;
+      G.loadDemo();
+      const st = G.storyState(), ws = G.walkState(3).story;
+      const pick = x => ({ current: x.current, done: x.done, branch: x.branch, doom: x.doom,
+                           salvage: x.salvage, feed: x.feed, keys: x.keys,
+                           echoes: x.echoes.map(e => [e.scene, e.who, e.fixed]) });
+      return { demo: pick(st), walk: pick(ws), cred: G.walkState(3).cred, rep: G.repGet() };
+    });
+    R.eq("the walkthrough after session 3 adds up to the demo table", seedCheck.walk, seedCheck.demo);
+    R.eq("including its Street Cred", seedCheck.cred, seedCheck.rep);
+
+    const walk = await page.evaluate(async () => {
+      const G = window.TTGM, T = window.TT;
+      T.setMode("table"); T.gmSec(5); T.render();
+      const find = () => document.querySelector("details.st-walk");
+      const d = find();
+      d.open = true; d.dispatchEvent(new Event("toggle"));
+      await new Promise(r => setTimeout(r, 30));
+      const step = () => find().querySelector(".st-walk-n").textContent;
+      const first = step();
+      [...find().querySelectorAll("button")].find(b => /Next/.test(b.textContent)).click();
+      const second = step(), secondTitle = find().querySelector(".st-walk-title").textContent;
+      for (let i = 0; i < 20; i++) [...find().querySelectorAll("button")].find(b => /Next/.test(b.textContent)).click();
+      const last = step();
+      const go = [...find().querySelectorAll("button")].find(b => /on the dials/.test(b.textContent));
+      const label = go.textContent;
+      go.click();
+      const st = G.storyState();
+      return { first, second, secondTitle, last, label, salvage: st.salvage,
+               doomOn: document.querySelectorAll(".st-doom .gm-seg.on").length,
+               cred: G.repGet(), stillOpen: find().open };
+    });
+    R.eq("the walkthrough starts at step 1", walk.first, "Step 1 / 13");
+    R.eq("Next moves it on", walk.second, "Step 2 / 13");
+    R.check("and shows that step", walk.secondTitle.length > 3, walk.secondTitle);
+    R.eq("and stops at the last step", walk.last, "Step 13 / 13");
+    R.eq("in the demo the button says it shows the dials", walk.label, "Show this on the dials");
+    R.eq("showing the last step sets Salvage", walk.salvage, 17);
+    R.eq("and fills all seven fragments of Doom", walk.doomOn, 7);
+    R.eq("and sets the table's Street Cred", walk.cred, 10);
+    R.check("and the walkthrough stays open to keep reading", walk.stillOpen, "");
+
+    // outside the demo it loads the demo first; the real table comes back after
+    const real = await page.evaluate(() => {
+      const G = window.TTGM, T = window.TT;
+      G.exitDemo();
+      G.storyPatch(function (st) { st.salvage = 2; st.feed.lies = 5; });
+      G.repSet(-3);
+      T.setMode("table"); T.gmSec(5); T.render();
+      const d = document.querySelector("details.st-walk");
+      const label = [...d.querySelectorAll("button")].find(b => /show this/i.test(b.textContent)).textContent;
+      G.showWalk(5);
+      const during = { demo: G.inDemo(), salvage: G.storyState().salvage };
+      G.exitDemo();
+      return { label, during, after: { demo: G.inDemo(), salvage: G.storyState().salvage,
+               lies: G.storyState().feed.lies, cred: G.repGet() } };
+    });
+    R.eq("outside the demo the button loads the demo first", real.label, "Load the demo and show this");
+    R.eq("which puts the step on the demo table", real.during.demo, true);
+    R.eq("and leaving the demo brings the real story back untouched",
+      real.after, { demo: false, salvage: 2, lies: 5, cred: -3 });
+
+    const walkEs = await page.evaluate(() => {
+      const T = window.TT; T.setLang("es"); T.setMode("table"); T.gmSec(5); T.render();
+      const d = document.querySelector("details.st-walk");
+      const out = { n: d.querySelector(".st-walk-n").textContent,
+                    title: d.querySelector(".st-walk-title").textContent,
+                    effectsLeftEnglish: window.TTSY.pairs.filter(p => T.T(p.effect) === p.effect).map(p => p.id) };
+      T.setLang("en");
+      return out;
+    });
+    R.check("in Spanish the walkthrough's chrome translates", /^Paso \d+ \/ 13$/.test(walkEs.n), walkEs.n);
+    R.eq("every synergy's bonus has a Spanish line", walkEs.effectsLeftEnglish, []);
+    R.check("but the demo crew's story stays English", /[a-z]/.test(walkEs.title) && !/^Paso/.test(walkEs.title), walkEs.title);
 
     R.eq("no page errors on the Story tab", errors, []);
     await ctx.close();

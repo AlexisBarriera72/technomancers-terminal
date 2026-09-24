@@ -4,12 +4,12 @@
    Anything in here shows up in the app's Campaign tab. Two ways to add to it:
 
    1. Paste notes into the Claude chat that built this site and ask for them to
-      be added — they get folded into this file and the site redeploys.
+      be added, they get folded into this file and the site redeploys.
    2. Add and edit campaigns directly in the app. Those live in the visitor's
       own browser and can be exported to a .json file, which can then be pasted
       back here to make them part of the site for everyone.
 
-   Schema — every field except id and name is optional:
+   Schema, every field except id and name is optional:
 
    {
      id:            "short-slug",
@@ -37,8 +37,8 @@ window.TTBC = {
       dm: "Alex",
       blurb: "A god fell out of the sky nine hundred years ago and has not finished " +
              "dying. The city grew inside its ribs. The four Houses drill the marrow " +
-             "for ichor — the only substance that will hold an enchantment and carry a " +
-             "current at the same time — so every implant in Cathedra was carved from " +
+             "for ichor, the only substance that will hold an enchantment and carry a " +
+             "current at the same time, so every implant in Cathedra was carved from " +
              "something that used to be divine, and none of it has forgotten that.",
       tone: ["Divine industry", "Body horror", "House politics", "Vertical city"],
       startingLevel: 3,
@@ -53,12 +53,12 @@ window.TTBC = {
                 "not a machine." },
         { title: "Chrome remembers whose it was",
           text: "Nothing is mass-produced. Every implant is carved from god-bone and keyed to " +
-                "one body. Second-hand ware — pulled off a corpse, bought in the Gullet — " +
+                "one body. Second-hand ware, pulled off a corpse, bought in the Gullet, " +
                 "installs at +2 Humanity and carries a Remnant belonging to the last wearer: " +
                 "a habit, a fear, an appetite. The DM decides what. You find out at the worst " +
                 "possible moment." },
         { title: "Sanctuary static",
-          text: "Consecrated ground — any shrine, reliquary or House chapel — is dead air. No " +
+          text: "Consecrated ground, any shrine, reliquary or House chapel, is dead air. No " +
                 "netrunning, no smartlink, no drone uplink, no comms, and any cyberware with " +
                 "an active power draw operates at disadvantage. This is why deals get struck " +
                 "in churches, and why Wirewalkers wait outside in the rain." },
@@ -74,8 +74,8 @@ window.TTBC = {
                 "when you clear a debt and falls twice as fast when somebody clears yours for " +
                 "you." },
         { title: "One in twenty, something looks up",
-          text: "Roll a d20 at the start of each session. On a 20 the god notices one character " +
-                "— the players choose which — until dawn. That character has advantage on one " +
+          text: "Roll a d20 at the start of each session. On a 20 the god notices one character, " +
+                "the players choose which, until dawn. That character has advantage on one " +
                 "roll of their choosing, and everything with ichor in it (implants, wards, the " +
                 "lifts, the Cantor) treats them as a person of importance." }
       ],
@@ -97,7 +97,7 @@ window.TTBC = {
                  "than theirs and everybody knows it, which is the entire problem." },
         { name: "Ser Ambrel Dace", role: "House Thorn, collections",
           notes: "A knight in full chrome who collects debts in person and has never raised her " +
-                 "voice. Accepts payment, a counter-favour, or a duel — in that order of " +
+                 "voice. Accepts payment, a counter-favour, or a duel, in that order of " +
                  "preference." },
         { name: "The Cantor", role: "The choir-engine",
           notes: "Nine hundred voices in a housing the size of a cathedral. Runs the water, the " +
@@ -111,7 +111,7 @@ window.TTBC = {
                  "weather and sell it back down." },
         { name: "The Marrowworks",
           notes: "Where ichor comes out. Three shifts, no windows, and the drilling never stops, " +
-                 "because the Houses know — correctly — that the bone heals." },
+                 "because the Houses know, correctly, that the bone heals." },
         { name: "Sanctum Null",
           notes: "A cathedral with no signal in it. Neutral ground by custom rather than by law, " +
                  "which is exactly why the custom has held for two hundred years." },
@@ -134,7 +134,7 @@ window.TTBC = {
         { name: "Bone-carved smartlink", cost: "9,000 grams",
           notes: "Ignore half cover with firearm attacks. Keyed to one body: installed in anyone " +
                  "else it does nothing at all except ache." },
-        { name: "Choir coin", cost: "—",
+        { name: "Choir coin", cost: "-",
           notes: "A favour token from the Cantor. Not for sale, only given. Spend it to have one " +
                  "door in Cathedra unlocked, one lift rerouted, or one ward switched off for six " +
                  "seconds." },
@@ -149,7 +149,7 @@ window.TTBC = {
       ],
       sessions: [
         { date: "Session zero", title: "Bring a debt",
-          notes: "Everyone starts owing one of the four Houses something — money, a favour, a " +
+          notes: "Everyone starts owing one of the four Houses something, money, a favour, a " +
                  "body part, a silence. Write one sentence for what you owe and one for who " +
                  "holds it. That is your hook; you do not need a backstory past it. Build at " +
                  "level 3 with 25,000 grams. The Humanity track is on, and it matters more here " +
@@ -166,7 +166,7 @@ window.TTBC = {
         "a clause nobody has read all the way to the end of.",
         "The Eye has shown the same thing to four different petitioners this month. House " +
         "Reliquary has stopped selling minutes.",
-        "A pilgrimage is coming up the Spine — forty thousand faithful, no signal for a week, " +
+        "A pilgrimage is coming up the Spine, forty thousand faithful, no signal for a week, " +
         "and every Wirewalker in Cathedra suddenly out of work."
       ]
     }

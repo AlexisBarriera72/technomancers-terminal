@@ -6,7 +6,7 @@
 <meta name="description" content="A character builder and rules browser for The Technomancer's Textbook, the cyberpunk D&D 5e supplement by Mogrit, plus the Neon Ledger expansion. Build a character, print a sheet, share a link.">
 <meta name="theme-color" content="#05070c">
 <meta property="og:title" content="Technomancer's Terminal">
-<meta property="og:description" content="Cyberpunk 5e character builder — 21 classes, 106 archetypes, a live Humanity track and printable sheets.">
+<meta property="og:description" content="Cyberpunk 5e character builder, 21 classes, 106 archetypes, a live Humanity track and printable sheets.">
 <meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%BE%3C/text%3E%3C/svg%3E">
 <link rel="manifest" href="manifest.json">
@@ -26,7 +26,7 @@ img{max-width:100%}
 <style>
 /* Neon Noir. Dark is the default whatever the system says; light is the
    toggle. Every text colour below is at least 4.5:1 on every background it
-   sits on, in both themes — checked, not eyeballed. */
+   sits on, in both themes, checked, not eyeballed. */
 :root{
   --ground:#05070c; --surface:#0b0f17; --raised:#111724; --sunk:#04060a;
   --line:#1f2a3d; --line-soft:#161e2c;
@@ -183,6 +183,10 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .syn-pv-row{border-top:1px solid var(--line-soft)}
 .syn-pv-det{padding:0 0 8px 13px}
 .syn-pv-line{font-size:12.5px;color:var(--ink-dim);line-height:1.45}
+.syn-pv-effect{margin-top:6px;padding:6px 9px;border-left:2px solid var(--signal);background:var(--sunk);
+  font-size:12.5px;color:var(--ink);line-height:1.45}
+.syn-pv-k{display:block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--signal);margin-bottom:2px}
 .syn-pv-wired{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.05em;
   color:var(--gold);margin-top:5px}
 
@@ -558,7 +562,7 @@ details.item .body p,details.item .body ul{max-width:70ch}
 .gm-god-die.hit{color:var(--gold)}
 .gm-god-says{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--ink-dim)}
 
-/* Street Cred — one number for the whole table */
+/* Street Cred, one number for the whole table */
 .gm-rep{background:var(--sunk);border:1px solid var(--line);border-left:3px solid var(--signal);
   border-radius:var(--r);padding:14px;margin:15px 0}
 .gm-rep-ctl{display:flex;gap:9px;align-items:center;margin:9px 0 3px}
@@ -580,6 +584,8 @@ details.item .body p,details.item .body ul{max-width:70ch}
 .gm-syn-pair{font-family:var(--f-mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;
   color:var(--ink-faint)}
 .gm-syn-line{font-size:12.5px;color:var(--ink-dim);line-height:1.45}
+.gm-syn-effect{margin-top:7px;font-size:12.5px;color:var(--ink);line-height:1.45}
+.gm-syn-effect .gm-label{display:block;margin:0 0 2px;color:var(--signal)}
 .gm-syn-wired{font-family:var(--f-mono);font-size:11px;letter-spacing:.05em;color:var(--gold);margin-top:6px}
 .gm-syn-cov{margin-top:9px;font-size:12.5px}
 /* what one character brings: their class's pairs, live ones lit */
@@ -926,6 +932,11 @@ input[type=range]{accent-color:var(--accent)}
 .st-ticked{border-left:3px solid var(--hot);padding-left:10px}
 .st-roll-out{display:flex;gap:10px;align-items:center;margin:6px 0}
 .st-cred{margin:4px 0}
+.st-walk>summary h4{color:var(--hot)}
+.st-walk-n{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;color:var(--ink-dim)}
+.st-walk-title{font-size:17px;color:var(--ink);margin:6px 0 8px}
+.st-walk-actions li{color:var(--ink)}
+.st-walk-state .chip b{color:var(--ink);font-weight:600}
 .gm .st-call .chip{min-height:0;padding:3px 8px;font-size:10.5px;border-style:dashed}
 
 /* ---- empty screens: a picture and one thing to do, not an italic shrug */

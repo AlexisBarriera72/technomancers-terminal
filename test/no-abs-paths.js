@@ -3,7 +3,7 @@
  *
  * A hardcoded path is right on exactly one machine. test/sw.test.js once pointed
  * a file:// URL at this container's checkout directory, which passed here and
- * failed on CI with ERR_FILE_NOT_FOUND — the one class of bug that is invisible
+ * failed on CI with ERR_FILE_NOT_FOUND, the one class of bug that is invisible
  * on the machine that wrote it, which is what this cheap check is for.
  *
  * Paths belong to test/lib.js, which derives them from __dirname.
@@ -33,7 +33,7 @@ fs.readdirSync(DIR)
   });
 
 if (failures.length) {
-  console.error("Absolute paths in the test suite — these break on any other machine:\n");
+  console.error("Absolute paths in the test suite, these break on any other machine:\n");
   console.error(failures.join("\n"));
   console.error("\nUse FILE_URL / ROOT from test/lib.js instead.");
   process.exit(1);

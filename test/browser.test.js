@@ -14,15 +14,15 @@ module.exports = async function (browser) {
     const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#c=" + payload });
     await page.waitForTimeout(400);
     const pwned = await page.evaluate(() => !!window.__pwned);
-    R.check("item 1 — onerror payload in a text field does not execute", pwned === false);
+    R.check("item 1, onerror payload in a text field does not execute", pwned === false);
     const rendered = await page.evaluate(() => ({
       stage: document.querySelector("#stage").children.length,
       dossier: document.querySelector("#dossier").children.length,
       badge: (document.querySelector(".lvl-badge") || {}).textContent
     }));
-    R.check("item 1 — page still renders after a hostile payload",
+    R.check("item 1, page still renders after a hostile payload",
       rendered.stage > 0 && rendered.dossier > 0, JSON.stringify(rendered));
-    R.check("item 1 — no uncaught errors from a hostile payload", errors.length === 0,
+    R.check("item 1, no uncaught errors from a hostile payload", errors.length === 0,
       errors.join(" | "));
     await ctx.close();
   }
@@ -34,7 +34,7 @@ module.exports = async function (browser) {
     await page.evaluate(p => { location.hash = "#c=" + p; }, payload);
     await page.waitForTimeout(400);
     const pwned = await page.evaluate(() => !!window.__pwned);
-    R.check("item 1 — hashchange path does not execute either", pwned === false);
+    R.check("item 1, hashchange path does not execute either", pwned === false);
     await ctx.close();
   }
 
@@ -53,7 +53,7 @@ module.exports = async function (browser) {
         rail: document.querySelector("#rail").children.length,
         stage: document.querySelector("#stage").children.length
       }));
-      R.check("item 4 — " + label + " still renders", n.rail > 0 && n.stage > 0,
+      R.check("item 4, " + label + " still renders", n.rail > 0 && n.stage > 0,
         JSON.stringify(n) + " " + errors.join(" | "));
       await ctx.close();
     }
@@ -78,7 +78,7 @@ module.exports = async function (browser) {
       const t = document.querySelector(".toast");
       return { toast: t ? t.textContent : null };
     });
-    R.check("item 2 — failed save does not report success",
+    R.check("item 2, failed save does not report success",
       !said.err && said.toast && !/saved to this browser/i.test(said.toast),
       "toast=" + JSON.stringify(said));
     await page.evaluate(() => window.__restore && window.__restore());
@@ -135,8 +135,8 @@ module.exports = async function (browser) {
         stored: (JSON.parse(localStorage.getItem("ttb.gm.play") || "{}")).scratch
       };
     });
-    R.check("item 3 — export captured", !out.err, JSON.stringify(out));
-    R.eq("item 3 — export contains the edit that failed to save",
+    R.check("item 3, export captured", !out.err, JSON.stringify(out));
+    R.eq("item 3, export contains the edit that failed to save",
       out.scratch, "AFTER-THE-FAILURE");
     await ctx.close();
   }
@@ -147,8 +147,8 @@ module.exports = async function (browser) {
     const { page, ctx } = await appPage(browser, { url: FILE_URL + "#c=" + payload });
     await page.waitForTimeout(300);
     const before = await page.evaluate(() => location.hash);
-    R.check("item 5 — share link loads with the fragment present", before.indexOf("#c=") === 0, before);
-    // "New character" — accept the confirm dialog
+    R.check("item 5, share link loads with the fragment present", before.indexOf("#c=") === 0, before);
+    // "New character", accept the confirm dialog
     page.on("dialog", d => d.accept());
     await page.evaluate(() => {
       const b = [...document.querySelectorAll(".dossier button")]
@@ -157,7 +157,7 @@ module.exports = async function (browser) {
     });
     await page.waitForTimeout(250);
     const after = await page.evaluate(() => location.hash);
-    R.check("item 5 — New character clears the share fragment", after.indexOf("c=") < 0,
+    R.check("item 5, New character clears the share fragment", after.indexOf("c=") < 0,
       "hash=" + JSON.stringify(after));
     await ctx.close();
   }
@@ -232,16 +232,16 @@ module.exports = async function (browser) {
 
     await seed(); await goEncounter();
     await nextTurn();                              // Rook -> Nyx
-    R.eq("item 13 — turn advances in initiative order", await whoseTurn(), "Nyx");
+    R.eq("item 13, turn advances in initiative order", await whoseTurn(), "Nyx");
 
     await removeNamed("Rook");                     // removing ABOVE the active one
-    R.eq("item 13 — removing a combatant above keeps the same one active",
+    R.eq("item 13, removing a combatant above keeps the same one active",
       await whoseTurn(), "Nyx");
 
     // adding one that rolls higher must not steal the marker either
     await seed(); await goEncounter();
     await nextTurn();
-    R.eq("item 13 — reseeded, Nyx active", await whoseTurn(), "Nyx");
+    R.eq("item 13, reseeded, Nyx active", await whoseTurn(), "Nyx");
     await page.evaluate(() => {
       const b = [...document.querySelectorAll(".gm-row button")].find(x => /Ad-hoc/.test(x.textContent));
       if (b) b.click();
@@ -255,12 +255,12 @@ module.exports = async function (browser) {
       localStorage.setItem("ttb.gm.play", JSON.stringify(p));
     });
     await goEncounter();
-    R.eq("item 13 — adding a higher-initiative combatant does not move the marker",
+    R.eq("item 13, adding a higher-initiative combatant does not move the marker",
       await whoseTurn(), "Nyx");
 
     // removing the ACTIVE one must hand over to the next in order
     await removeNamed("Nyx");
-    R.eq("item 13 — removing the active one advances to the next in order",
+    R.eq("item 13, removing the active one advances to the next in order",
       await whoseTurn(), "Gang");
     await ctx.close();
   }
@@ -297,9 +297,9 @@ module.exports = async function (browser) {
       const c = JSON.parse(localStorage.getItem("ttb.gm.play")).enc.combatants[0];
       return { hp: c.hp, hpMax: c.hpMax, tmp: c.tmp, conds: c.conds, dead: c.dead };
     });
-    R.eq("item 17 — Run it clears temp HP", ran.tmp, 0);
-    R.eq("item 17 — Run it still restores hit points", ran.hp, ran.hpMax);
-    R.eq("item 17 — Run it still clears conditions", ran.conds, []);
+    R.eq("item 17, Run it clears temp HP", ran.tmp, 0);
+    R.eq("item 17, Run it still restores hit points", ran.hp, ran.hpMax);
+    R.eq("item 17, Run it still clears conditions", ran.conds, []);
     await ctx.close();
   }
 
@@ -335,7 +335,7 @@ module.exports = async function (browser) {
       const head = document.querySelector(".cs-head .meta");
       return { text: head ? head.textContent : null };
     });
-    R.check("item 15 — printed campaign comes from the character",
+    R.check("item 15, printed campaign comes from the character",
       !label.err && /Cathedra/.test(label.text || ""), JSON.stringify(label));
     await ctx.close();
   }
@@ -626,7 +626,7 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
-  /* the GM's new screens have to speak Spanish too — they are built by gm.js
+  /* the GM's new screens have to speak Spanish too, they are built by gm.js
      after render(), which is exactly where applyLang() is easy to forget */
   {
     const { page, ctx } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
@@ -714,7 +714,8 @@ module.exports = async function (browser) {
                role: (w.querySelector(".syn-pv-body .chip") || {}).textContent,
                partner: (w.querySelector(".syn-pv-row .count") || {}).textContent,
                pairName: (w.querySelector(".syn-pv-row b") || {}).textContent,
-               line: (w.querySelector(".syn-pv-line") || {}).textContent };
+               line: (w.querySelector(".syn-pv-line") || {}).textContent,
+               effect: (w.querySelector(".syn-pv-effect") || {}).textContent };
     });
     R.check("the preview's heading is translated", /Sinergias/.test(pv.head), pv.head);
     R.check("and the role chip", /Músculo/.test(pv.role || ""), pv.role);
@@ -722,6 +723,7 @@ module.exports = async function (browser) {
       /^con Paladin/.test((pv.partner || "").trim()), pv.partner);
     R.check("and the pair's own line", /primera línea/.test(pv.line || ""), (pv.line || "").slice(0, 50));
     R.eq("but the pair's name stays English here too", pv.pairName, "Shield Wall");
+    R.check("and what the pair does", /\+1 a la CA contra ataques cuerpo a cuerpo/.test(pv.effect || ""), pv.effect);
 
     R.check("a reaction rolled after render is still Spanish",
       /Actúan|regañadientes|Negocio|inclina|Interviene/.test(rolled), rolled.slice(0, 70));
@@ -778,6 +780,15 @@ module.exports = async function (browser) {
     R.check("clicking a pair opens its detail", deep.open, "");
     R.check("which is that pair's own line", /front-liners holding the same door/.test(deep.line),
       deep.line.slice(0, 50));
+
+    // and what picking the pair actually does at the table
+    const eff = await page.evaluate(() => {
+      const d = window.__wrap("Fighter").querySelector(".syn-pv-det");
+      const e = d.querySelector(".syn-pv-effect");
+      return e ? { k: e.querySelector(".syn-pv-k").textContent, text: e.textContent } : null;
+    });
+    R.check("the detail says what the pair does", !!eff && eff.k === "What it does" &&
+      /\+1 AC against melee attacks/.test(eff.text), JSON.stringify(eff));
 
     /* render() rebuilds the whole stage, so picking the class you were reading
        about would otherwise shut the thing you opened to decide with */
@@ -843,7 +854,7 @@ module.exports = async function (browser) {
 
   /* ===== every toast has Spanish =====
      Toasts only appear after an action, so a sweep of the screens never sees
-     them — which is how 29 of them went out English. This reads the source. */
+     them, which is how 29 of them went out English. This reads the source. */
   {
     const fs = require("fs"), path = require("path");
     const root = path.join(__dirname, "..");
@@ -970,7 +981,7 @@ module.exports = async function (browser) {
 
   /* ===== the Neon Noir look: what it promises, as behaviour =====
      Styling itself is checked by eye; these are the parts a refactor could
-     silently drop — role chips, the quiet header, dark by default, the
+     silently drop, role chips, the quiet header, dark by default, the
      empty-screen pictures, and motion that fires once rather than on every
      redraw. */
   {
@@ -1074,7 +1085,7 @@ module.exports = async function (browser) {
 
   /* ===== the demo table: a game in progress, and your own table untouched =====
      It loads over the real keys, so the whole point is that exiting puts back
-     exactly what was there — including through a reload in between. */
+     exactly what was there, including through a reload in between. */
   {
     const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
     await page.waitForTimeout(300);

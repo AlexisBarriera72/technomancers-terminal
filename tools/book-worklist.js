@@ -2,7 +2,7 @@
 /* The rules text that needs translating, taken from the data rather than the DOM.
  *
  * leadify() and renderTable() translate whole data strings now, so a book key is
- * exactly the string data.js holds — which means this can enumerate the work
+ * exactly the string data.js holds, which means this can enumerate the work
  * without a browser, in the order a reader meets it.
  *
  * Names are deliberately absent: class, archetype, feature, feat, background and

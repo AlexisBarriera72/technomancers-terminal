@@ -1,14 +1,14 @@
-/* gm.js — the GM's side of the table.
+/* gm.js, the GM's side of the table.
  *
  * Two halves:
- *   window.TTBGM  reference data you can edit by hand — the unlock token, the
+ *   window.TTBGM  reference data you can edit by hand, the unlock token, the
  *                 DC ladder, conditions, the rulings catalogue, NPC templates
  *                 and the name lists the improviser draws from.
  *   window.TTGM   the code. app.js hands it a namespace (window.TT) on boot;
  *                 nothing here runs at load time and nothing here reaches into
  *                 app.js directly.
  *
- * Rulings schema — every field but id/q/roll is optional:
+ * Rulings schema, every field but id/q/roll is optional:
  *   id    slug
  *   q     the situation, as a player would describe it
  *   keys  extra search words
@@ -18,14 +18,14 @@
  *         {kind:"none",  text}          don't roll; say this instead
  *   dc    a dcLadder key ("moderate") or a raw number (15)
  *   alt   [{when, dc}]  harder or easier versions of the same job
- *   fail  what going wrong looks like — not "nothing happens"
+ *   fail  what going wrong looks like, not "nothing happens"
  *   note  a rule you'll otherwise forget
  *   tags  grouping
  *
- * Synergies live in synergy.js (window.TTSY), not here — a player's class
+ * Synergies live in synergy.js (window.TTSY), not here, a player's class
  *   picker reads them now, and this file is GM-only.
  *
- * Street Cred — repBands is the expansion's own 0-10 table made real, plus
+ * Street Cred, repBands is the expansion's own 0-10 table made real, plus
  *   a mirrored negative half the book never had:
  *   {min, max, tier, mod, tone, buys, digging, combat}. mod is added to
  *   Charisma checks. reactionBands turn one d20 into what an NPC does about
@@ -37,7 +37,7 @@
 window.TTBGM = {
 
   /* Change this and the old address stops working. Anyone who reads this file
-     can find it — it keeps a curious player out, not a determined one. */
+     can find it, it keeps a curious player out, not a determined one. */
   unlock: "cathedra",
 
   dcLadder: [
@@ -87,7 +87,7 @@ window.TTBGM = {
     { id: "sneak-past", q: "Move past a guard unseen", keys: ["sneak", "stealth", "hide", "creep", "past"],
       roll: { kind: "contest", skill: "Stealth", vs: "Perception" },
       note: "Use the guard's passive Perception unless they're actively searching. Don't roll for them twice.",
-      fail: "Not spotted outright — heard. They call it in and start walking your way.", tags: ["infiltration"] },
+      fail: "Not spotted outright, heard. They call it in and start walking your way.", tags: ["infiltration"] },
     { id: "tail-someone", q: "Follow someone through a crowd without being made",
       keys: ["tail", "follow", "shadow", "track"],
       roll: { kind: "contest", skill: "Stealth", vs: "Perception" }, dc: "moderate",
@@ -121,7 +121,7 @@ window.TTBGM = {
     { id: "trace-signal", q: "Trace a signal back to its source", keys: ["trace", "signal", "source", "origin", "track", "call"],
       roll: { kind: "check", skill: "Technology" }, dc: "hard",
       alt: [{ when: "Sloppy amateur", dc: "easy" }, { when: "Routed through a ghost relay", dc: "extreme" }],
-      fail: "You get a district, not an address — and they know they were traced.", tags: ["netrunning"] },
+      fail: "You get a district, not an address, and they know they were traced.", tags: ["netrunning"] },
     { id: "scrub-record", q: "Scrub or alter a record", keys: ["scrub", "delete", "record", "erase", "edit", "file", "database"],
       roll: { kind: "check", skill: "Technology" }, dc: "hard",
       fail: "The record is gone and the deletion is logged. Someone will read that log.",
@@ -140,7 +140,7 @@ window.TTBGM = {
       roll: { kind: "check", skill: "Persuasion" }, dc: "moderate",
       alt: [{ when: "They're paid to be here and you're offering more", dc: "easy" },
             { when: "They have orders and a supervisor", dc: "hard" }],
-      note: "Street Cred adds to Charisma checks — check the party's track before setting the DC.",
+      note: "Street Cred adds to Charisma checks, check the party's track before setting the DC.",
       fail: "They don't attack. They also don't leave, and now they've seen your face.", tags: ["social"] },
     { id: "lie", q: "Tell a lie to someone's face", keys: ["lie", "bluff", "deceive", "con", "story"],
       roll: { kind: "contest", skill: "Deception", vs: "Insight" },
@@ -189,7 +189,7 @@ window.TTBGM = {
       tags: ["medical"] },
     { id: "field-surgery", q: "Field surgery, or pull ware loose", keys: ["surgery", "operate", "remove ware", "extract", "cut out"],
       roll: { kind: "check", skill: "Medicine" }, dc: "hard",
-      note: "Tearing ware loose does 2d6 to 6d6 slashing by grade — see the Tearing Ware Loose table. Doing it properly takes a clinic.",
+      note: "Tearing ware loose does 2d6 to 6d6 slashing by grade, see the Tearing Ware Loose table. Doing it properly takes a clinic.",
       fail: "It comes out. So does something that was holding them together.", tags: ["medical", "chrome"] },
     { id: "diagnose", q: "Work out what's wrong with someone", keys: ["diagnose", "sick", "poisoned", "what's wrong", "illness"],
       roll: { kind: "check", skill: "Medicine" }, dc: "moderate", tags: ["medical"] },
@@ -219,7 +219,7 @@ window.TTBGM = {
       tags: ["physical", "city"] },
 
     /* ---- vehicles & the city ---- */
-    { id: "drive-hard", q: "Drive hard — evade, ram, or take a corner too fast",
+    { id: "drive-hard", q: "Drive hard, evade, ram, or take a corner too fast",
       keys: ["drive", "car", "chase", "evade", "ram", "vehicle", "bike"],
       roll: { kind: "check", skill: "Technology" }, dc: "moderate",
       note: "No Vehicles skill in this book. Technology for anything driven, Athletics if they're hanging off it.",
@@ -232,32 +232,32 @@ window.TTBGM = {
       note: "A Fixer does this with Favours instead of a roll. Let them.", tags: ["city", "social"] },
     { id: "spot-corp", q: "Tell whether someone is corporate", keys: ["corp", "corporate", "suit", "company", "who are they"],
       roll: { kind: "check", skill: "Insight" }, dc: "easy",
-      note: "Shoes and posture. Anyone who's lived in the zone knows this one — consider giving it free.",
+      note: "Shoes and posture. Anyone who's lived in the zone knows this one, consider giving it free.",
       tags: ["city", "social"] },
 
     /* ---- Cathedra: the campaign's own rules ---- */
     { id: "cathedra-consecrated", q: "They try to netrun on consecrated ground",
       keys: ["consecrated", "sanctum", "holy", "church", "netrun here", "no signal"],
-      roll: { kind: "none", text: "It doesn't work. No netrunning, no smartlink, no comms — and powered cyberware operates at disadvantage while they stand there." },
+      roll: { kind: "none", text: "It doesn't work. No netrunning, no smartlink, no comms, and powered cyberware operates at disadvantage while they stand there." },
       note: "House rule. It's absolute, not a DC. Say so before they commit to a plan built on it.",
       tags: ["cathedra"] },
     { id: "cathedra-secondhand", q: "They install second-hand ware",
       keys: ["second hand", "secondhand", "used ware", "salvage", "remnant", "cheap chrome"],
-      roll: { kind: "none", text: "It installs at +2 Humanity over the listed cost, and it carries a Remnant — something of the last owner comes with it." },
+      roll: { kind: "none", text: "It installs at +2 Humanity over the listed cost, and it carries a Remnant, something of the last owner comes with it." },
       note: "House rule. The Remnant is yours to invent. Make it a person, not a debuff.",
       tags: ["cathedra", "chrome"] },
     { id: "cathedra-fall", q: "They fall more than 60 feet",
       keys: ["fall", "falling", "drop", "off the edge", "60 feet"],
-      roll: { kind: "none", text: "They don't land — they drop a district. Work out where they come down before you work out the damage." },
+      roll: { kind: "none", text: "They don't land, they drop a district. Work out where they come down before you work out the damage." },
       note: "House rule. A fall in Cathedra is a change of scene.", tags: ["cathedra"] },
     { id: "cathedra-favour", q: "They want to pay in favours rather than grams",
       keys: ["favour", "favor", "on the book", "owe", "credit", "tab"],
-      roll: { kind: "none", text: "Favours on the book replace payment. Write down who holds it — the book is a real object and someone keeps it." },
+      roll: { kind: "none", text: "Favours on the book replace payment. Write down who holds it, the book is a real object and someone keeps it." },
       note: "House rule. A held favour should come back in a later session, unprompted.", tags: ["cathedra", "social"] },
     { id: "humanity-fraying", q: "A Fraying character takes a crit or drops to 0",
       keys: ["fraying", "humanity", "crit", "zero", "cyberpsychosis", "snap"],
       roll: { kind: "save", abil: "Wis" }, dc: 12,
-      note: "Only at Humanity 20-39%. On a failure they attack the nearest creature — nearest, not an enemy.",
+      note: "Only at Humanity 20-39%. On a failure they attack the nearest creature (nearest, not an enemy).",
       fail: "They turn on whoever is closest. That is usually the person who just saved them.",
       tags: ["cathedra", "chrome", "combat"] },
     { id: "signal-surveillance", q: "Church of the Signal origin senses surveillance",
@@ -266,19 +266,19 @@ window.TTBGM = {
       note: "Origin perk, Wisdom (Perception) DC 13, and only for that origin. They can always attempt it.",
       tags: ["cathedra", "perception"] },
     { id: "god-notices", q: "The god notices someone", keys: ["god", "notice", "attention", "d20", "session start"],
-      roll: { kind: "none", text: "Roll the attention die at the start of the session. On a 20 the god notices one character — use the button on the Party screen." },
+      roll: { kind: "none", text: "Roll the attention die at the start of the session. On a 20 the god notices one character, use the button on the Party screen." },
       note: "House rule. The Clocks screen is the right place to track what comes of it.",
       tags: ["cathedra"] }
   ],
 
   /* ------------------------------------------------------------ Street Cred
      The bands, the names and the modifiers are the expansion's own Street Cred
-     table, unchanged — this is that rule finally wired to something. What the
+     table, unchanged, this is that rule finally wired to something. What the
      expansion never covered is what a reputation does outside a conversation,
      so each band also carries a line for looking into things and a line for
      what happens when the shooting is about to start.                       */
   repBands: [
-    /* Below zero is not in the expansion — the book only ever went up. These
+    /* Below zero is not in the expansion, the book only ever went up. These
        five mirror the five above, because a party the city has decided against
        should cost exactly what a party it likes is paid. */
     { min: -10, max: -9, tier: "Blacklisted", mod: -5, tone: "alert",
@@ -316,7 +316,7 @@ window.TTBGM = {
       digging: "A contact points them the right way once, unasked.",
       combat: "A rival crew might skip a fight it doesn't need." },
     { min: 5, max: 6, tier: "Name", mod: 3, tone: "signal",
-      buys: "Doors open. So do files — corps run their faces on sight.",
+      buys: "Doors open. So do files, corps run their faces on sight.",
       digging: "Strangers volunteer what they know before being asked.",
       combat: "Hostile reactions get rare, and someone is probably filming." },
     { min: 7, max: 8, tier: "Legend", mod: 4, tone: "signal",
@@ -334,13 +334,13 @@ window.TTBGM = {
      the party's Street Cred modifier plus whatever the situation is worth. */
   reactionBands: [
     { max: 5, name: "Hostile", tone: "alert",
-      gist: "They move against the party — draw down, call it in, shut the door." },
+      gist: "They move against the party, draw down, call it in, shut the door." },
     { max: 10, name: "Wary", tone: "gold",
       gist: "Grudging and minimal. One question answered, help only under duress, and they take the safe side of a fight." },
     { max: 15, name: "Neutral", tone: "gold",
       gist: "Business as usual. Deals fairly, takes no side unless pushed." },
     { max: 20, name: "Friendly", tone: "signal",
-      gist: "Leans their way — a tip, a discount, a shout of warning, a moment's hesitation before swinging." },
+      gist: "Leans their way, a tip, a discount, a shout of warning, a moment's hesitation before swinging." },
     { max: null, name: "Ally", tone: "signal",
       gist: "Steps in. Cover fire, a rescue, a lie told on the party's behalf. This is the roll that turns a fight." }
   ],
@@ -473,7 +473,7 @@ window.TTBGM = {
     party: {
       steps: [
         "Ask each player to open their Play Sheet and press Copy share link, then send it to you.",
-        "Paste the link below, type the player's name if you like, and press Add to party. Paste it again after they level up — cards are snapshots.",
+        "Paste the link below, type the player's name if you like, and press Add to party. Paste it again after they level up, cards are snapshots.",
         "At the start of every session, press Roll the god's attention once.",
         "Move Street Cred with −1 / +1 when the street sees them do something: a job done well, folding in public.",
         "After every session, press Export GM vault so a cleared browser can't lose your table."
@@ -483,7 +483,7 @@ window.TTBGM = {
         fromFile: "From a file takes a player's Download backup (.json) or a roster export. From this browser adds characters saved on this device.",
         god: "Once per session. On a 20 the god notices one character until dawn: advantage on one roll, and anything with ichor treats them as important.",
         cred: "Street Cred is the whole table's reputation. It is already added to every Charisma check on the Ruling desk and to the reaction roll.",
-        card: "Full sheet shows their whole character as text for rules questions. Remove takes them off this device's party only — their own sheet is untouched.",
+        card: "Full sheet shows their whole character as text for rules questions. Remove takes them off this device's party only, their own sheet is untouched.",
         vault: "Export writes everything on these screens to one file. Import merges a file back: characters, NPCs and encounters by id; clocks, Street Cred and story progress are replaced.",
         demo: "Fills every screen with a made-up game so you can see how it all looks. Your own table is set aside and comes back when you exit."
       },
@@ -511,7 +511,7 @@ window.TTBGM = {
         "Press Save as template to reuse this fight later, and End encounter when it's over."
       ],
       hints: {
-        bar: "Reaction check asks whether a meeting turns violent and whether anyone steps in — Street Cred is included. Reroll initiative gives everyone a new order.",
+        bar: "Reaction check asks whether a meeting turns violent and whether anyone steps in, Street Cred is included. Reroll initiative gives everyone a new order.",
         hp: "Red buttons hurt, green heal. For a big hit, type the number and press −. Anyone Concentrating gets their save reminder when they take damage.",
         library: "Run it loads a saved fight fresh: full hit points, no conditions."
       },
@@ -531,14 +531,14 @@ window.TTBGM = {
       steps: [
         "A player says what they're doing.",
         "Find it in the catalogue below, or use Any situation and pick the skill or save yourself.",
-        "Read the Say line out loud and pick a DC — Moderate (15) is the default; Hard (20) is a specialist's day at work.",
+        "Read the Say line out loud and pick a DC, Moderate (15) is the default; Hard (20) is a specialist's day at work.",
         "The table shows each character's real bonus and chance, Street Cred included.",
         "Press Roll it secretly for everyone when they shouldn't know how well they did."
       ],
       hints: {
         picker: "Check for skills, Save for saving throws. The DC buttons run from Trivial (5) to Near-impossible (30).",
         react: "Use the reaction roll when the party meets someone whose attitude isn't obvious: pick what's in their favour or against them, then roll.",
-        catalog: "Search for what they're doing — “climb”, “lie”, “hack” — and open it for the roll, the DC and what failure costs."
+        catalog: "Search for what they're doing, “climb”, “lie”, “hack”, and open it for the roll, the DC and what failure costs."
       },
       tips: {
         secret: "Roll this check for every character without telling them",
@@ -548,7 +548,7 @@ window.TTBGM = {
     npcs: {
       steps: [
         "+ Blank NPC for someone who matters, + Quick mook for someone who's there to fall down, Improvise someone for a name and a secret on the spot.",
-        "From a template gives you a ready statblock — rename it and it's yours.",
+        "From a template gives you a ready statblock, rename it and it's yours.",
         "Pull from Cathedra brings the campaign's cast in as names and notes; you add the numbers.",
         "Open an NPC to edit it. Add to encounter drops them into the fight; Duplicate makes a second; Delete removes them.",
         "Search by name, role or tag when the list gets long."
@@ -570,7 +570,7 @@ window.TTBGM = {
     clocks: {
       steps: [
         "Start a clock when a threat begins: 4 segments for soon, 6 for the usual, 8 for a slow burn.",
-        "Name it after what happens when it fills — “House Thorn calls the debt”.",
+        "Name it after what happens when it fills, “House Thorn calls the debt”.",
         "Tap a segment whenever the party spends time, makes noise or gets unlucky. Tap the last filled one to undo.",
         "When it's full, it happens. No roll.",
         "The scratchpad is for this session's notes; Stamp the time adds the time so you can find things later."
@@ -596,8 +596,8 @@ window.TTBGM = {
         "After the session: Mark played, pick Right, Mixed or Wrong, write a note, tick the fragment if it came true, and mark keystones Kept or Broken."
       ],
       hints: {
-        dials: "Doom: tap a segment when a fragment of the vision comes true. Salvage: who gets out — the scenes say how much. Feed: + when they feed the god mercy, violence, lies or questions. The 1% path closes the moment one keystone breaks.",
-        vision: "Press it at a key moment. Tell the chosen player privately. If someone finds the Eye-chrome, pick them here — it lowers the roll to 16.",
+        dials: "Doom: tap a segment when a fragment of the vision comes true. Salvage: who gets out, the scenes say how much. Feed: + when they feed the god mercy, violence, lies or questions. The 1% path closes the moment one keystone breaks.",
+        vision: "Press it at a key moment. Tell the chosen player privately. If someone finds the Eye-chrome, pick them here, it lowers the roll to 16.",
         expand: "Everything is a drop-down. Expand everything opens it all at once; Collapse everything tidies up.",
         scene: "Set as current before the session. Start clocks and Add NPCs put this scene's clocks and people on the other screens, once. Afterwards: Mark played and pick how it went.",
         apply: "Apply adds that call's Salvage, Feed and Doom to the dials at the top."
@@ -615,7 +615,7 @@ window.TTBGM = {
     campaign: {
       steps: [
         "This is reference for your table: house rules, people, places, custom gear, the session log and hooks.",
-        "The sections run along the top — tap one to open it.",
+        "The sections run along the top, tap one to open it.",
         "Cathedra comes with the site and is read-only. + New campaign makes one you can type into; it saves as you go.",
         "Export this campaign writes it to a file you can keep or share; Import loads one."
       ],
@@ -656,7 +656,7 @@ window.TTGM = (function () {
   /* ------------------------------------------------------------ storage --
      Split by how often each key is written: an HP tap must not rewrite the
      whole NPC library. Every write is guarded, and unlike the rest of the app
-     a failure here says so once — losing a session's notes silently is worse
+     a failure here says so once, losing a session's notes silently is worse
      than a toast.                                                          */
   var storageWarned = false;
   function lsGet(key, dflt) {
@@ -670,7 +670,7 @@ window.TTGM = (function () {
     catch (e) {
       if (!storageWarned) {
         storageWarned = true;
-        toast("Storage is blocked — export your vault before you lose it");
+        toast("Storage is blocked, export your vault before you lose it");
       }
       return false;
     }
@@ -792,8 +792,8 @@ window.TTGM = (function () {
     var nat = mode === "adv" ? Math.max(a, b) : mode === "dis" ? Math.min(a, b) : a;
     return { nat: nat, both: mode ? [a, b] : [a], total: nat + (bonus || 0), bonus: bonus || 0 };
   }
-  /* Parses the damage strings that already sit in the book's tables —
-     "2d6 piercing", "1d8+2", "1d8 piercing + 1d8 thunder" — and the ones a GM
+  /* Parses the damage strings that already sit in the book's tables,
+     "2d6 piercing", "1d8+2", "1d8 piercing + 1d8 thunder", and the ones a GM
      types into a statblock, which is where this used to fall over: the dice
      branch allowed an optional sign but the constant branch required one, so a
      flat "7" was worth 0 and "5 + 1d4" silently dropped the 5.
@@ -929,7 +929,7 @@ window.TTGM = (function () {
   }
 
   /* ------------------------------------------------------- party synergies --
-     app.js computes one character at a time — statsOf() takes a single `c` and
+     app.js computes one character at a time, statsOf() takes a single `c` and
      has no way to know who else is at the table. That is correct for a player's
      own sheet, which genuinely does not know. Everything below therefore lives
      here, where partyChars() has already put the whole party in one array.
@@ -958,7 +958,7 @@ window.TTGM = (function () {
   }
 
   /* The one synergy that is a number rather than a line to read. Both halves
-     have to be present, and the bonus belongs to the pair — a Fighter standing
+     have to be present, and the bonus belongs to the pair, a Fighter standing
      next to them gets nothing. Same shape as app.js's initiative(), which
      already hardcodes Chromehound and Firebrand for the same reason: it is a
      single known case, not a rule that wants a parser. */
@@ -994,7 +994,7 @@ window.TTGM = (function () {
 
   /* The expansion's Street Cred rule, finally applied: "a bonus you can add to
      a Charisma check made against someone who has heard of you." Only the
-     party's own checks — a passive score shown for reference is not a roll
+     party's own checks, a passive score shown for reference is not a roll
      anybody is making. */
   function repSkillBonus(sk, d) {
     var base = T.skillBonus(sk, d);
@@ -1003,7 +1003,7 @@ window.TTGM = (function () {
 
   /* --------------------------------------------------------- NPC reaction --
      Does this turn into a fight, does anyone step in once it is one, and will
-     this person help at all — one roll, because they are the same question
+     this person help at all, one roll, because they are the same question
      asked at three different moments. */
   function reactionBand(total) {
     for (var i = 0; i < G.reactionBands.length; i++) {
@@ -1038,7 +1038,7 @@ window.TTGM = (function () {
       prev = r; return false;
     });
     all.push({
-      id: c.id, name: c.name || "Unnamed", cls: c.cls || "—", level: c.level,
+      id: c.id, name: c.name || "Unnamed", cls: c.cls || "-", level: c.level,
       player: player != null ? player : (prev ? prev.player : ""),
       source: source || "link",
       added: prev ? prev.added : Date.now(), updated: Date.now(),
@@ -1108,8 +1108,8 @@ window.TTGM = (function () {
     redraw();
   }
   /* ------------------------------------------------------------ demo table --
-     A made-up game already in progress — five characters, their NPCs, a fight
-     in its second round, clocks ticking — so the GM screens can be seen doing
+     A made-up game already in progress, five characters, their NPCs, a fight
+     in its second round, clocks ticking, so the GM screens can be seen doing
      their job before a real party exists.
 
      It is loaded into the real keys rather than beside them, because every
@@ -1238,7 +1238,7 @@ window.TTGM = (function () {
             text: "Gold light, a warm hand over their ears, and a voice they almost know: “Don't kill the singer. You'll want him later.”" }
         ]
       },
-      scratch: "Session 4 — Collections in the Gullet\n" +
+      scratch: "Session 4, Collections in the Gullet\n" +
         "[20:10] Jax lifted the ichor vial from Dace's courier. Dace knows.\n" +
         "[20:35] Mother Slate: the Marrowworks crew hit something that bled warm.\n" +
         "[21:02] Fight in the Gullet. Brick owes Thorn 4,000₵ and a tooth.\n" +
@@ -1297,10 +1297,10 @@ window.TTGM = (function () {
     inp.click();
   }
 
-  /* ================================================== SECTION 1 — PARTY  */
+  /* ================================================== SECTION 1, PARTY  */
   function renderParty(s) {
     sectionHead(s, "The table", "Party",
-      "Every number a player is about to be asked for. Sheets arrive as the share codes they already make — this is a snapshot, so ask for a fresh one when someone levels.");
+      "Every number a player is about to be asked for. Sheets arrive as the share codes they already make, this is a snapshot, so ask for a fresh one when someone levels.");
 
     /* ---- import ---- */
     var box = el("div", "gm-import");
@@ -1309,7 +1309,7 @@ window.TTGM = (function () {
     var nameIn = field("", "Player's name (optional)");
     var add = btn("Add to party", "primary", function () {
       var c = parseShare(ta.value);
-      if (!c) { toast("Couldn't read that — paste the whole share link"); return; }
+      if (!c) { toast("Couldn't read that, paste the whole share link"); return; }
       if (!c.cls) { toast("That character has no class yet"); return; }
       var replaced = partyPut(c, nameIn.value.trim(), "link");
       ta.value = ""; nameIn.value = "";
@@ -1481,7 +1481,7 @@ window.TTGM = (function () {
 
       notes.innerHTML = "";
       // Each half is its own text node rather than one built string, so the
-      // Spanish table can translate the label and the band line separately —
+      // Spanish table can translate the label and the band line separately,
       // a concatenation would need one key per band per line.
       function note(label, body) {
         var d = el("div", "meter-note");
@@ -1527,13 +1527,19 @@ window.TTGM = (function () {
         h.appendChild(txt("span", "gm-syn-pair", s.pair.join(" + ")));
         card.appendChild(h);
         card.appendChild(txt("div", "gm-syn-line", s.line));
+        if (s.effect) {
+          var ef = el("div", "gm-syn-effect");
+          ef.appendChild(txt("span", "gm-label", "What it does"));
+          ef.appendChild(txt("span", null, s.effect));
+          card.appendChild(ef);
+        }
         if (s.wired) card.appendChild(txt("div", "gm-syn-wired", s.wired));
         list.appendChild(card);
       });
       wrap.appendChild(list);
     } else {
       wrap.appendChild(txt("div", "gm-note",
-        "No named pair at this table. That is not a penalty — it means whatever they pull off is theirs."));
+        "No named pair at this table. That is not a penalty, it means whatever they pull off is theirs."));
     }
 
     var cov = el("div", "gm-syn-cov");
@@ -1541,7 +1547,7 @@ window.TTGM = (function () {
     // not a fault, and alert is what Humanity uses for actually losing people.
     cov.appendChild(txt("b", "tone-" + (syn.roles.length >= 6 ? "signal" : "gold"),
       syn.tier ? syn.tier.name : ""));
-    cov.appendChild(txt("span", "gm-note", " — "));
+    cov.appendChild(txt("span", "gm-note", ": "));
     cov.appendChild(txt("span", "gm-note", syn.tier ? syn.tier.gist : ""));
     wrap.appendChild(cov);
     var chips = el("div", "gm-chips tight");
@@ -1595,7 +1601,7 @@ window.TTGM = (function () {
       line.appendChild(txt("b", "tone-" + r.band.tone, r.band.name));
       out.appendChild(line);
       out.appendChild(txt("div", "gm-say", r.band.gist));
-      // built after render(), so applyLang() has already been and gone — the
+      // built after render(), so applyLang() has already been and gone, the
       // same thing toast() does with the text it creates on the fly
       if (T.applyLang) T.applyLang(out);
     }));
@@ -1662,7 +1668,7 @@ window.TTGM = (function () {
     var nm = el("div");
     nm.appendChild(txt("div", "gm-name", c.name || "Unnamed"));
     nm.appendChild(txt("div", "gm-sub",
-      "Level " + c.level + " " + (c.cls || "—") +
+      "Level " + c.level + " " + (c.cls || "-") +
       (d.sub && c.level >= d.sub.levelAvailable ? " · " + d.sub.name : "") +
       (p.rec.player ? "  ·  " + p.rec.player : "")));
     head.appendChild(nm);
@@ -1675,7 +1681,7 @@ window.TTGM = (function () {
     var vitals = el("div", "gm-vitals");
     var dc = T.saveDC(d);
     [["AC", d.ac.ac, d.ac.from],
-     ["HP", d.hp == null ? "—" : d.hp, (d.cls ? c.level + d.cls.hit : "")],
+     ["HP", d.hp == null ? "-" : d.hp, (d.cls ? c.level + d.cls.hit : "")],
      // the same number the tracker will roll, synergy included, so the card
      // and the encounter never disagree about it
      ["Init", T.sgn(combatInitiative(p, party || [])),
@@ -1709,7 +1715,7 @@ window.TTGM = (function () {
     sv.appendChild(svr);
     card.appendChild(sv);
 
-    /* humanity — reuse the app's own meter so it reads identically */
+    /* humanity, reuse the app's own meter so it reads identically */
     if (d.hum) {
       var hm = el("div", "gm-strip");
       hm.appendChild(txt("div", "gm-label", "Humanity"));
@@ -1753,6 +1759,7 @@ window.TTGM = (function () {
         var row = el("div", "gm-pair" + (who ? " live" : ""));
         row.appendChild(txt("span", "n", s.name));
         row.appendChild(txt("span", "w", who ? (who.c.name || "Unnamed") : other));
+        if (s.effect) row.title = s.effect;
         list.appendChild(row);
       });
       ps.appendChild(list);
@@ -1799,18 +1806,18 @@ window.TTGM = (function () {
     }
     var age = p.exported ? Math.floor((Date.now() - p.exported) / 86400000) : null;
     wrap.appendChild(txt("div", "gm-note", age == null
-      ? "Never exported. Everything here lives in this browser only — clearing site data deletes it."
+      ? "Never exported. Everything here lives in this browser only, clearing site data deletes it."
       : age === 0 ? "Exported today." : "Exported " + age + " day" + (age === 1 ? "" : "s") + " ago."));
     if (hasUnsaved()) {
       var bad = txt("div", "gm-unsaved",
         "Some changes could not be saved to this browser. They are still on screen and " +
-        "will be included in an export — do that now, before you close the tab.");
+        "will be included in an export, do that now, before you close the tab.");
       wrap.appendChild(bad);
     }
     s.appendChild(wrap);
   }
 
-  /* =================================================== SECTION 6 — STORY
+  /* =================================================== SECTION 6, STORY
      "The Fourth Minute", from story.js. Everything the story says is English
      and marked data-nolang, so the Spanish overlay never half-translates a
      sentence; the tab's own labels translate as usual.
@@ -1977,7 +1984,7 @@ window.TTGM = (function () {
         says.appendChild(txt("div", "gm-god-says", "Nothing this time."));
         says.appendChild(txt("div", "gm-note", "Needs " + v.need + "+."));
       } else if (!v.echo) {
-        says.appendChild(txt("div", "gm-god-says", "A vision — but this scene's vision is a fixed one."));
+        says.appendChild(txt("div", "gm-god-says", "A vision, but this scene's vision is a fixed one."));
       } else {
         says.appendChild(stxt("div", "gm-god-says", v.who + " sees:"));
         says.appendChild(stxt("div", "st-p", v.echo.text));
@@ -2199,7 +2206,7 @@ window.TTGM = (function () {
           var tr = el("tr");
           tr.appendChild(stxt("td", null, c.what));
           tr.appendChild(stxt("td", null, c.skill));
-          tr.appendChild(txt("td", "num", c.dc ? String(c.dc) : "—"));
+          tr.appendChild(txt("td", "num", c.dc ? String(c.dc) : "-"));
           tb.appendChild(tr);
         });
         host.appendChild(tb);
@@ -2260,7 +2267,7 @@ window.TTGM = (function () {
           host.appendChild(txt("div", "gm-label", "NPCs"));
           sc.npcs.forEach(function (m) {
             var d = el("div", "st-qa");
-            d.appendChild(stxt("b", "st-q", m.name + " — " + m.role));
+            d.appendChild(stxt("b", "st-q", m.name + ", " + m.role));
             d.appendChild(stxt("p", "st-p", m.notes));
             host.appendChild(d);
           });
@@ -2343,7 +2350,7 @@ window.TTGM = (function () {
       });
       if (helpOn()) { var sh = hintEl("story", "scene"); if (sh) body.appendChild(sh); }
 
-      var note = field(st.notes[sc.id] || "", "Your notes for this scene — what happened, who they annoyed…",
+      var note = field(st.notes[sc.id] || "", "Your notes for this scene, what happened, who they annoyed…",
         function (v) { storyPatch(function (x) { if (v) x.notes[sc.id] = v; else delete x.notes[sc.id]; }); }, "textarea");
       note.className = "st-note";
       note.rows = 2;
@@ -2355,6 +2362,83 @@ window.TTGM = (function () {
           fillCat(h, cat[0], sc);
         }));
       });
+    });
+  }
+
+  /* ---- the demo walkthrough: the whole campaign, one session at a time ----
+     Steps add up from the start, so any step can be shown on the dials. It
+     only ever writes to the demo table: outside the demo, showing a step
+     loads the demo first, which sets the real table aside. */
+  var walkIx = 0;
+  function walkState(n) {
+    var st = cleanStory({}), cred = 0, W = (ST && ST.walkthrough) || [];
+    for (var i = 0; i <= n && i < W.length; i++) {
+      var w = W[i], a = w.add || {}, set = w.set || {};
+      (a.done || []).forEach(function (id) { st.done[id] = true; });
+      Object.keys(a.branch || {}).forEach(function (k) { st.branch[k] = a.branch[k]; });
+      Object.keys(a.notes || {}).forEach(function (k) { st.notes[k] = a.notes[k]; });
+      (a.doom || []).forEach(function (d) { st.doom[d] = true; });
+      st.salvage += a.salvage || 0;
+      Object.keys(a.feed || {}).forEach(function (k) { st.feed[k] += a.feed[k]; });
+      Object.keys(a.keys || {}).forEach(function (k) { st.keys[k] = a.keys[k]; });
+      (a.echoes || []).forEach(function (e) {
+        var sc = sceneById(e.scene);
+        if (!sc) return;
+        var ech = e.fixed ? null : sc.echoes[e.echo || 0];
+        st.echoes.push({ at: 0, scene: e.scene, who: e.who, fixed: !!e.fixed,
+          text: e.fixed ? sc.fixedEcho : (ech ? ech.text : ""), clue: ech ? ech.clue : "" });
+      });
+      if (set.current) st.current = set.current;
+      if (set.eyeChrome != null) st.eyeChrome = set.eyeChrome;
+      if (set.cred != null) cred = set.cred;
+    }
+    return { story: st, cred: cred };
+  }
+  function showWalk(n) {
+    if (!inDemo()) loadDemo();
+    var ws = walkState(n);
+    playPatch(function (p) { p.story = ws.story; });
+    repSet(ws.cred);
+    redraw();
+  }
+  function walkBlock() {
+    var W = ST.walkthrough || [];
+    if (!W.length) return null;
+    return lazyDetails("ref:walk", "st-ref st-walk", "Demo walkthrough: a whole campaign, step by step", function (h) {
+      h.appendChild(txt("p", "gm-note", "Follow the demo crew from before session 1 to the Sending. Each step says what happened at the table and which buttons the GM pressed. Show this on the dials sets Doom, Salvage, Feed, keystones and Street Cred to that point, on the demo table only."));
+      var nav = row("gm-row st-walk-nav");
+      nav.appendChild(btn("◀ Previous", "tiny", function () { walkIx = Math.max(0, walkIx - 1); redraw(); }));
+      nav.appendChild(txt("span", "st-walk-n", "Step " + (walkIx + 1) + " / " + W.length));
+      nav.appendChild(btn("Next ▶", "tiny primary", function () { walkIx = Math.min(W.length - 1, walkIx + 1); redraw(); }));
+      h.appendChild(nav);
+      var w = W[walkIx];
+      h.appendChild(stxt("h4", "st-walk-title", w.title));
+      h.appendChild(stxt("p", "st-read", w.narrative));
+      h.appendChild(txt("div", "gm-label", "What the GM did"));
+      var ol = el("ol", "st-list st-walk-actions");
+      w.actions.forEach(function (a) { ol.appendChild(stxt("li", null, a)); });
+      h.appendChild(ol);
+      var ws = walkState(walkIx), st = ws.story, k = keysKept(st);
+      var top = FEEDS.slice().sort(function (a, b) { return st.feed[b[0]] - st.feed[a[0]]; })[0];
+      var chips = el("div", "gm-chips tight st-walk-state");
+      [["Doom", doomCount(st) + " / 7"], ["Salvage", st.salvage + " · " + band(st.salvage)],
+       ["Street Cred", T.sgn(ws.cred)], ["Keystones kept", k.kept + " / " + k.total],
+       ["Feed", st.feed[top[0]] ? (T.T ? T.T(top[1]) : top[1]) + " " + st.feed[top[0]] : "-"]].forEach(function (c) {
+        var ch = el("span", "chip");
+        ch.appendChild(txt("span", null, c[0] + ": "));
+        ch.appendChild(stxt("b", null, c[1]));
+        chips.appendChild(ch);
+      });
+      h.appendChild(txt("div", "gm-label", "Where the dials are after this step"));
+      h.appendChild(chips);
+      var go = row("gm-row");
+      var b = btn(inDemo() ? "Show this on the dials" : "Load the demo and show this", "primary", function () {
+        showWalk(walkIx);
+        toast("Step " + (walkIx + 1) + " is on the dials");
+      });
+      b.title = "Set the demo table's story to this point";
+      go.appendChild(b);
+      h.appendChild(go);
     });
   }
 
@@ -2373,12 +2457,14 @@ window.TTGM = (function () {
 
     storyDials(s);
     storyVisions(s);
+    var wb = walkBlock();
+    if (wb) s.appendChild(wb);
 
     var tools = row("gm-row");
     // Nested drop-downs are built on open, so "everything" means every id
     // the story can have, set before the redraw rather than clicked open.
     tools.appendChild(btn("Expand everything", "tiny", function () {
-      ["truth", "running", "fragments", "keystones", "visions", "eye", "scars", "hush", "cast", "tables",
+      ["walk", "truth", "running", "fragments", "keystones", "visions", "eye", "scars", "hush", "cast", "tables",
        "offscript", "endings"].forEach(function (k) { storyOpen["ref:" + k] = true; });
       ST.acts.forEach(function (a) {
         storyOpen["act:" + a.id] = true;
@@ -2453,7 +2539,7 @@ window.TTGM = (function () {
     s.appendChild(refBlock("cast", "Cast", function (h) {
       ST.cast.forEach(function (c) {
         var d = el("div", "st-qa");
-        d.appendChild(stxt("b", "st-q", c.name + " — " + c.role));
+        d.appendChild(stxt("b", "st-q", c.name + ", " + c.role));
         d.appendChild(stxt("p", "st-p", c.notes));
         h.appendChild(d);
       });
@@ -2648,7 +2734,7 @@ window.TTGM = (function () {
           (cb.dead ? " out" : ""));
         r2.appendChild(txt("span", "i", cb.init));
         r2.appendChild(txt("span", "n", cb.name));
-        r2.appendChild(txt("span", "h", cb.hp == null ? "—" : cb.hp + "/" + cb.hpMax));
+        r2.appendChild(txt("span", "h", cb.hp == null ? "-" : cb.hp + "/" + cb.hpMax));
         list.appendChild(r2);
       });
       body.appendChild(list);
@@ -2690,7 +2776,7 @@ window.TTGM = (function () {
     host.appendChild(body);
   }
 
-  /* ================================================ SECTION 3 — RULINGS  */
+  /* ================================================ SECTION 3, RULINGS  */
   var rulingQ = "";
 
   function dcOf(spec) {
@@ -2767,7 +2853,7 @@ window.TTGM = (function () {
         "The ruling desk works without them, but the useful half is seeing each character's real modifier next to the DC.", "party");
     }
 
-    /* Street Cred is already inside every Charisma number below — this is so
+    /* Street Cred is already inside every Charisma number below, this is so
        you can see why one of them looks higher than the sheet says. */
     s.appendChild(repBadge());
 
@@ -2885,7 +2971,7 @@ window.TTGM = (function () {
       });
       if (!hits.length) {
         empty(list, "Nothing catalogued for that.",
-          "Use the picker above — it covers anything, and never says no match.");
+          "Use the picker above, it covers anything, and never says no match.");
         return;
       }
       hits.forEach(function (r) { list.appendChild(rulingCard(r, party)); });
@@ -2932,7 +3018,7 @@ window.TTGM = (function () {
     return d;
   }
 
-  /* =================================================== SECTION 4 — NPCS  */
+  /* =================================================== SECTION 4, NPCS  */
   var npcQ = "", npcOpen = null;
 
   function blankNPC(kind) {
@@ -3025,7 +3111,7 @@ window.TTGM = (function () {
     }
 
     var all = npcAll().sort(function (a, b) { return (a.name || "").localeCompare(b.name || ""); });
-    if (!all.length) { empty(s, "No NPCs yet.", "Start from a template — it's faster than a blank form.", "npcs"); return; }
+    if (!all.length) { empty(s, "No NPCs yet.", "Start from a template, it's faster than a blank form.", "npcs"); return; }
 
     var search = field(npcQ, "Search names, roles and tags", function (v) { npcQ = v; paint(); });
     search.className = "search";
@@ -3118,7 +3204,7 @@ window.TTGM = (function () {
       b.appendChild(g2);
     }
 
-    /* actions and traits — same editor, two lists */
+    /* actions and traits, same editor, two lists */
     [["actions", "Actions"], ["traits", "Traits"], ["reactions", "Reactions"]].forEach(function (spec) {
       var key = spec[0];
       if (n.kind === "mook" && key !== "actions") return;
@@ -3153,7 +3239,7 @@ window.TTGM = (function () {
       b.appendChild(sec);
     });
 
-    var notes = field(n.notes, "Prep notes — what they want, what they're hiding", put("notes"), "textarea");
+    var notes = field(n.notes, "Prep notes, what they want, what they're hiding", put("notes"), "textarea");
     notes.rows = 3;
     b.appendChild(line("Notes", notes));
 
@@ -3178,7 +3264,7 @@ window.TTGM = (function () {
     return b;
   }
 
-  /* ============================================== SECTION 2 — ENCOUNTER  */
+  /* ============================================== SECTION 2, ENCOUNTER  */
   function ordered(enc) {
     return (enc.combatants || []).slice().sort(function (a, b) {
       if (b.init !== a.init) return b.init - a.init;
@@ -3186,7 +3272,7 @@ window.TTGM = (function () {
     });
   }
 
-  /* Whose turn it is used to be an index into the list ordered() returns —
+  /* Whose turn it is used to be an index into the list ordered() returns,
      and that list is re-sorted on every render. So removing someone above the
      marker, adding someone who rolled higher, or even renaming a combatant
      tied on initiative silently handed the turn to somebody else. Track the
@@ -3230,7 +3316,7 @@ window.TTGM = (function () {
       fn(p.enc);
     });
   }
-  /* A, B, C rather than 1, 2, 3 — easier to say out loud mid-fight. */
+  /* A, B, C rather than 1, 2, 3, easier to say out loud mid-fight. */
   function suffixFor(enc, base) {
     var same = enc.combatants.filter(function (c) {
       return c.name === base || c.name.indexOf(base + " ") === 0;
@@ -3393,7 +3479,7 @@ window.TTGM = (function () {
         // Copy into the live slot so the prepared version stays pristine.
         var copy = JSON.parse(JSON.stringify(t));
         copy.round = 1;
-        // A template can be saved mid-fight, so every per-fight field resets —
+        // A template can be saved mid-fight, so every per-fight field resets,
         // temporary hit points included, which used to ride along forever.
         copy.combatants.forEach(function (c) {
           c.cid = uid("k"); c.hp = c.hpMax; c.tmp = 0; c.conds = []; c.dead = false;
@@ -3425,7 +3511,7 @@ window.TTGM = (function () {
     head.appendChild(nameBox);
     r.appendChild(head);
 
-    /* hit points — updated in place. A full re-render here would blow away
+    /* hit points, updated in place. A full re-render here would blow away
        scroll position and any half-typed note mid-fight. */
     var hpWrap = el("div", "gm-hp");
     var bar = el("div", "gm-hpbar");
@@ -3546,7 +3632,7 @@ window.TTGM = (function () {
     tools.appendChild(btn("Remove", "tiny", function () {
       encPatch(function (e) {
         // If the one leaving is the one acting, hand the turn to the next in
-        // order first — otherwise the marker lands on whoever happens to shift
+        // order first, otherwise the marker lands on whoever happens to shift
         // into that slot.
         var active = turnOf(e);
         if (active && active.cid === cb.cid) stepTurn(e, 1);
@@ -3564,7 +3650,7 @@ window.TTGM = (function () {
     return r;
   }
 
-  /* ================================================== SECTION 5 — CLOCKS */
+  /* ================================================== SECTION 5, CLOCKS */
   function renderClocks(s) {
     sectionHead(s, "The table", "Clocks",
       "Things closing in. Fill a segment whenever the party spends time, makes noise, or gets unlucky.");
@@ -3632,7 +3718,7 @@ window.TTGM = (function () {
               st.clocks.forEach(function (x) { if (x.id === c.id) x.filled = c.filled; });
             });
             paint();
-            if (c.filled >= c.seg) toast(c.name + " — it lands.");
+            if (c.filled >= c.seg) toast(c.name + ", it lands.");
           };
           segs.appendChild(seg);
         })(i);
@@ -3664,6 +3750,7 @@ window.TTGM = (function () {
     repSkillBonus: repSkillBonus, reactionBand: reactionBand, npcReaction: npcReaction,
     importVault: importVault, loadDemo: loadDemo, exitDemo: exitDemo, inDemo: inDemo,
     storyState: storyState, rollVision: rollVision, storyStartClocks: storyStartClocks,
-    storyAddNpcs: storyAddNpcs, cleanStory: cleanStory, help: HELP
+    storyAddNpcs: storyAddNpcs, cleanStory: cleanStory, help: HELP,
+    walkState: walkState, showWalk: showWalk, storyPatch: storyPatch
   };
 })();

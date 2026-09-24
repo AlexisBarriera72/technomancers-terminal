@@ -10,7 +10,7 @@
  *
  * Bump CACHE on every deploy that changes a file below.
  */
-var CACHE = "ttb-v23";
+var CACHE = "ttb-v24";
 var SHELL = [
   "./",
   "./index.html",
@@ -33,7 +33,7 @@ var SHELL = [
  * a partial shell is NOT treated as success: if anything failed we delete the
  * half-built cache and reject, so this worker never activates and the previous
  * complete one keeps serving. Getting this wrong is worse than having no
- * worker — a partial cache replaces a working one and leaves the tablet with
+ * worker, a partial cache replaces a working one and leaves the tablet with
  * an HTML shell and no application, recoverable only with the network that
  * this file exists to do without.
  *
@@ -79,7 +79,7 @@ self.addEventListener("fetch", function (e) {
   var req = e.request;
   if (req.method !== "GET") return;
   var url = new URL(req.url);
-  if (url.origin !== self.location.origin) return;   // fonts etc. — leave alone
+  if (url.origin !== self.location.origin) return;   // fonts etc., leave alone
 
   e.respondWith(
     caches.match(req, { ignoreSearch: true }).then(function (hit) {

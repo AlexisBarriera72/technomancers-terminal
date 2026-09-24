@@ -26,9 +26,9 @@ module.exports = async function (browser) {
                          arrayMap: { Str: 15, Dex: 14, Con: 13, Int: 12, Wis: 10, Cha: 9 },
                          scores: { Str: 8, Dex: 8, Con: 8, Int: 8, Wis: 8, Cha: 8 } });
     const d = await stats(c);
-    R.eq("item 7 — rolled Str 15 reaches scores", d.sc.Str, 15);
-    R.eq("item 7 — rolled Dex 14 reaches scores", d.sc.Dex, 14);
-    R.check("item 7 — HP uses the rolled Con", d.hp > 30, "hp=" + d.hp + " (Con 13 at level 5 rogue)");
+    R.eq("item 7, rolled Str 15 reaches scores", d.sc.Str, 15);
+    R.eq("item 7, rolled Dex 14 reaches scores", d.sc.Dex, 14);
+    R.check("item 7, HP uses the rolled Con", d.hp > 30, "hp=" + d.hp + " (Con 13 at level 5 rogue)");
   }
 
   /* ---- item 8: two identical rolled values ---- */
@@ -49,12 +49,12 @@ module.exports = async function (browser) {
       assign("Str", 14); assign("Dex", 14);
       return map;
     });
-    R.eq("item 8 — both 14s assignable (model)", dup, { Str: 14, Dex: 14 });
+    R.eq("item 8, both 14s assignable (model)", dup, { Str: 14, Dex: 14 });
 
     const c = baseChar({ method: "roll", rolled: [14, 14, 13, 12, 10, 9],
                          arrayMap: { Str: 14, Dex: 14, Con: 13, Int: 12, Wis: 10, Cha: 9 } });
     const d = await stats(c);
-    R.eq("item 8 — duplicate values survive migrate", [d.sc.Str, d.sc.Dex], [14, 14]);
+    R.eq("item 8, duplicate values survive migrate", [d.sc.Str, d.sc.Dex], [14, 14]);
   }
 
   /* ---- item 9: feat ability increases ---- */
@@ -62,11 +62,11 @@ module.exports = async function (browser) {
     const c = baseChar({ level: 4, scores: { Str: 10, Dex: 15, Con: 13, Int: 12, Wis: 10, Cha: 8 },
                          asi: [{ type: "feat", name: "Fast Draw" }] });
     const d = await stats(c);
-    R.eq("item 9 — Fast Draw raises Dex 15 to 16", d.sc.Dex, 16);
+    R.eq("item 9, Fast Draw raises Dex 15 to 16", d.sc.Dex, 16);
 
     const c2 = baseChar({ level: 4, asi: [{ type: "feat", name: "Paramedic", abil: "Wis" }] });
     const d2 = await stats(c2);
-    R.eq("item 9 — Paramedic applies the chosen ability", d2.sc.Wis, 11);
+    R.eq("item 9, Paramedic applies the chosen ability", d2.sc.Wis, 11);
 
     const covered = await page.evaluate(() => {
       const T = window.TT;
@@ -80,7 +80,7 @@ module.exports = async function (browser) {
       return { withInc: withInc.length, modelled: modelled.length,
                missed: withInc.filter(n => !T.FEAT_EFFECTS[n]) };
     });
-    R.check("item 9 — every ability-increase feat is modelled",
+    R.check("item 9, every ability-increase feat is modelled",
       !covered.missing && covered.withInc === covered.modelled,
       JSON.stringify(covered));
   }
@@ -93,10 +93,10 @@ module.exports = async function (browser) {
       return { fighter: T.asiLevelsFor("Fighter"), rogue: T.asiLevelsFor("Rogue"),
                wizard: T.asiLevelsFor("Wizard"), hound: T.asiLevelsFor("Chromehound") };
     });
-    R.eq("item 10 — Fighter ASI levels", got.fighter, [4, 6, 8, 12, 14, 16, 19]);
-    R.eq("item 10 — Rogue ASI levels", got.rogue, [4, 8, 10, 12, 16, 19]);
-    R.eq("item 10 — Wizard keeps the default", got.wizard, [4, 8, 12, 16, 19]);
-    R.eq("item 10 — expansion class keeps the default (its own table agrees)",
+    R.eq("item 10, Fighter ASI levels", got.fighter, [4, 6, 8, 12, 14, 16, 19]);
+    R.eq("item 10, Rogue ASI levels", got.rogue, [4, 8, 10, 12, 16, 19]);
+    R.eq("item 10, Wizard keeps the default", got.wizard, [4, 8, 12, 16, 19]);
+    R.eq("item 10, expansion class keeps the default (its own table agrees)",
       got.hound, [4, 8, 12, 16, 19]);
   }
 
@@ -108,7 +108,7 @@ module.exports = async function (browser) {
       gear: [{ key: "Armor|Combat Suit", name: "Combat Suit", cost: "2,000₵" },
              { key: "Armor|Ballistic Shield", name: "Ballistic Shield", cost: "1,000₵" }] });
     const a = await stats(armour), b = await stats(withShield);
-    R.check("item 11 — shield adds +2 on top of armour", b.ac.ac === a.ac.ac + 2,
+    R.check("item 11, shield adds +2 on top of armour", b.ac.ac === a.ac.ac + 2,
       "armour=" + a.ac.ac + " with shield=" + b.ac.ac);
   }
 
@@ -117,7 +117,7 @@ module.exports = async function (browser) {
     const c = baseChar({ cls: "Stackborn", level: 5, sub: null,
                          picks: { imprints: ["Stealth"] }, skills: [] });
     const d = await stats(c);
-    R.check("item 12a — imprinted skill is proficient", d.prof.indexOf("Stealth") >= 0,
+    R.check("item 12a, imprinted skill is proficient", d.prof.indexOf("Stealth") >= 0,
       "prof=" + JSON.stringify(d.prof));
   }
 
@@ -137,37 +137,37 @@ module.exports = async function (browser) {
       return { sniper: sniper.bonus, sniperProf: sniper.proficient,
                pistol: pistol.bonus, pistolProf: pistol.proficient, pb: d.pb };
     });
-    R.check("item 12b — Wizard is not proficient with a sniper rifle",
+    R.check("item 12b, Wizard is not proficient with a sniper rifle",
       gated.sniperProf === false, JSON.stringify(gated));
-    R.eq("item 12b — non-proficient attack omits the bonus", gated.sniper, 2);
-    R.check("item 12b — Wizard IS proficient with a pistol", gated.pistolProf === true,
+    R.eq("item 12b, non-proficient attack omits the bonus", gated.sniper, 2);
+    R.check("item 12b, Wizard IS proficient with a pistol", gated.pistolProf === true,
       JSON.stringify(gated));
-    R.eq("item 12b — proficient attack includes the bonus", gated.pistol, 5);
+    R.eq("item 12b, proficient attack includes the bonus", gated.pistol, 5);
   }
 
   /* ---- item 4: the validator ---- */
   {
     const frac = await validate(baseChar({ level: 2.5 }));
-    R.check("item 4 — fractional level rejected",
+    R.check("item 4, fractional level rejected",
       Number.isInteger(frac.level) && frac.level >= 1 && frac.level <= 20,
       "level=" + frac.level);
 
     const nan = await page.evaluate(() =>
       window.TT.migrate({ id: "x", level: NaN, scores: {} }).level);
-    R.check("item 4 — NaN level rejected", Number.isInteger(nan) && nan >= 1, "level=" + nan);
+    R.check("item 4, NaN level rejected", Number.isInteger(nan) && nan >= 1, "level=" + nan);
 
     const badCls = await validate(baseChar({ cls: "Netrunner" }));
-    R.eq("item 4 — unknown class dropped", badCls.cls, null);
+    R.eq("item 4, unknown class dropped", badCls.cls, null);
 
     const badSub = await validate(baseChar({ cls: "Rogue", sub: "wirewalker-icebreaker" }));
-    R.eq("item 4 — subclass from another class dropped", badSub.sub, null);
+    R.eq("item 4, subclass from another class dropped", badSub.sub, null);
 
     const nullAsi = await validate(baseChar({ asi: [null, { type: "asi", a: "Dex", b: "Con" }] }));
-    R.check("item 4 — null ASI slot dropped", nullAsi.asi.every(s => s && typeof s === "object"),
+    R.check("item 4, null ASI slot dropped", nullAsi.asi.every(s => s && typeof s === "object"),
       JSON.stringify(nullAsi.asi));
 
     const badLevel = await validate(baseChar({ level: "<img src=x onerror=alert(1)>" }));
-    R.eq("item 4 — markup in a number field coerced to a number", badLevel.levelType, "number");
+    R.eq("item 4, markup in a number field coerced to a number", badLevel.levelType, "number");
   }
 
   /* ---- item 4: fractional level must not crash the meters ---- */
@@ -182,7 +182,7 @@ module.exports = async function (browser) {
         return { ok: true, pct: d.hum.pct };
       } catch (e) { return { ok: false, err: String(e) }; }
     });
-    R.check("item 4 — Chromehound humanity survives a fractional level", ok.ok, ok.err);
+    R.check("item 4, Chromehound humanity survives a fractional level", ok.ok, ok.err);
 
     const ok2 = await page.evaluate(() => {
       try {
@@ -194,7 +194,7 @@ module.exports = async function (browser) {
         return { ok: true };
       } catch (e) { return { ok: false, err: String(e) }; }
     });
-    R.check("item 4 — Bioforged essence survives a fractional level", ok2.ok, ok2.err);
+    R.check("item 4, Bioforged essence survives a fractional level", ok2.ok, ok2.err);
   }
 
   /* ---- esc() ---- */
@@ -212,10 +212,10 @@ module.exports = async function (browser) {
       return { types: T.actionEntries(f).map(e => e.type),
                gists: T.actionEntries(f).map(e => e.gist) };
     });
-    R.check("item 16 — Demolitions Expert is a Reaction, not a Bonus action",
+    R.check("item 16, Demolitions Expert is a Reaction, not a Bonus action",
       !dem.missing && dem.types.length === 1 && dem.types[0] === "Reaction",
       JSON.stringify(dem));
-    R.check("item 16 — and its excerpt is the reaction sentence",
+    R.check("item 16, and its excerpt is the reaction sentence",
       !dem.missing && /reaction to detonate/i.test(dem.gists[0] || ""),
       JSON.stringify(dem.gists));
 
@@ -223,7 +223,7 @@ module.exports = async function (browser) {
     // not an ability the feature grants.
     const loose = await page.evaluate(() =>
       window.TT.actionType("Firearms with the blast property which require a bonus action to reload."));
-    R.eq("item 16 — a reload mention is not a granted bonus action", loose, "Passive");
+    R.eq("item 16, a reload mention is not a granted bonus action", loose, "Passive");
 
     // The sweep: across every feature in both books, the label must not
     // contradict the text shown beneath it.
@@ -252,8 +252,8 @@ module.exports = async function (browser) {
       });
       return { total: feats.length, bad: bad.slice(0, 6), n: bad.length };
     });
-    R.check("item 16 — no feature's heading contradicts its excerpt",
-      sweep.n === 0, sweep.n + " of " + sweep.total + " — " + JSON.stringify(sweep.bad));
+    R.check("item 16, no feature's heading contradicts its excerpt",
+      sweep.n === 0, sweep.n + " of " + sweep.total + ", " + JSON.stringify(sweep.bad));
   }
 
   /* ---- content drift: counts must come from the data ---- */
@@ -261,7 +261,7 @@ module.exports = async function (browser) {
     const counts = await page.evaluate(() => {
       const T = window.TT;
       return { classes: T.D.classes.length + T.X.classes.length,
-               // ALL_SUBS, not two of the three sources — the count drifted once
+               // ALL_SUBS, not two of the three sources, the count drifted once
                // already because it was written out by hand.
                archetypes: T.ALL_SUBS.length,
                meta: (document.querySelector('meta[property="og:description"]') || {}).content || "" };
@@ -368,8 +368,8 @@ module.exports = async function (browser) {
     R.check("the classifier reads the same prose in either language", g.sameTypes, "types differ");
     R.check("nearly every action card is translated",
       g.n > 500 && g.changed > g.n * 0.9, g.changed + " of " + g.n);
-    // The leftovers are sentences that straddle a block boundary — an intro
-    // ending in a colon glued to the first list item — which no single book
+    // The leftovers are sentences that straddle a block boundary, an intro
+    // ending in a colon glued to the first list item, which no single book
     // entry covers. They fall back to English rather than to a wrong pairing.
     R.check("and the handful that are not is still a handful",
       g.stillEnglish <= 6, g.stillEnglish + " left: " + JSON.stringify(g.sample));
@@ -475,7 +475,7 @@ module.exports = async function (browser) {
     const state = await fresh.page.evaluate(() => ({
       isExample: !!(document.querySelector(".note b") &&
                     /example build/i.test(document.querySelector(".note b").textContent)),
-      // Play Sheet is the output, not an input — stepDone() never marks it,
+      // Play Sheet is the output, not an input, stepDone() never marks it,
       // so only the build steps before it are asserted.
       incomplete: [...document.querySelectorAll(".rail .step")]
         .slice(0, -1)

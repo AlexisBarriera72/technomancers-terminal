@@ -60,16 +60,16 @@ module.exports = async function (browser) {
         empty: G.rollExpr("")
       };
     });
-    R.check("item 14 — a bare constant is worth itself",
+    R.check("item 14, a bare constant is worth itself",
       !roll.missing && roll.five && roll.five.total === 5 && roll.five.ok !== false,
       JSON.stringify(roll.five));
-    R.check("item 14 — a leading constant is not dropped",
+    R.check("item 14, a leading constant is not dropped",
       !roll.missing && roll.mixed && roll.mixed.total >= 6 && roll.mixed.total <= 9,
       JSON.stringify(roll.mixed));
-    R.check("item 14 — dice still work",
+    R.check("item 14, dice still work",
       !roll.missing && roll.dice && roll.dice.total >= 5 && roll.dice.total <= 15,
       JSON.stringify(roll.dice));
-    R.check("item 14 — unparseable input is reported, not rolled as zero",
+    R.check("item 14, unparseable input is reported, not rolled as zero",
       !roll.missing && roll.junk && roll.junk.ok === false, JSON.stringify(roll.junk));
     await ctx.close();
   }
@@ -125,7 +125,7 @@ module.exports = async function (browser) {
       !(after["test-v2"] && !after["test-v1"] && after["test-v2"].indexOf("/app.js") < 0),
       JSON.stringify(after));
 
-    /* 4. and the app still loads offline afterwards — the whole point */
+    /* 4. and the app still loads offline afterwards, the whole point */
     state.fail = [];
     await ctx.setOffline(true);
     await page.reload({ waitUntil: "load" });

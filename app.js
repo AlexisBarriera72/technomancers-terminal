@@ -1,4 +1,4 @@
-/* Technomancer's Terminal — character forge + codex for The Technomancer's Textbook */
+/* Technomancer's Terminal, character forge + codex for The Technomancer's Textbook */
 (function () {
   "use strict";
   var D = window.TTB;
@@ -18,10 +18,10 @@
   };
 
   /* ------------------------------------------------------------------ data */
-  /* Bumped by hand on every deploy — there is no build step, and a commit
+  /* Bumped by hand on every deploy, there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-24 14:00";
+  var BUILD = "2026-09-24 16:00";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -29,7 +29,7 @@
   var ARRAY = [15, 14, 13, 12, 10, 8];
   var X = window.TTBX || { classes: [], subclasses: [], feats: [], systems: [], origins: null };
   var SRD = window.TTSRD || { meta: null, subclasses: [] };
-  /* Which classes are worth standing next to. Read-only here — the sheet never
+  /* Which classes are worth standing next to. Read-only here, the sheet never
      stores any of it, and a missing file costs the preview and nothing else. */
   var SY = window.TTSY || { roles: [], classRoles: {}, crewTiers: [], pairs: [] };
   var tableByTitle = {};
@@ -76,7 +76,7 @@
   function srdNotice(host) {
     if (!SRD.meta || !SRD.subclasses.length) return;
     var n = el("div", "note srd-note");
-    n.innerHTML = '<b>SRD</b> — ' + esc(SRD.meta.note) + "<br><small>" +
+    n.innerHTML = '<b>SRD</b>: ' + esc(SRD.meta.note) + "<br><small>" +
       esc(SRD.meta.notice) + "</small>";
     host.appendChild(n);
   }
@@ -141,7 +141,7 @@
     c.bg = "hacker";
     c.sub = "rogue-saboteur";
     c.skills = ["Stealth", "Perception", "Sleight of Hand", "Deception"];
-    // Attached to the level-4 slot, not the legacy flat list — takenFeats()
+    // Attached to the level-4 slot, not the legacy flat list, takenFeats()
     // derives from asi, so a bare c.feats was wiped on the first level-up edit.
     c.asi = [{ type: "feat", name: "Demolitions Expert" }];
     c.feats = ["Demolitions Expert"];
@@ -171,7 +171,7 @@
   /* ------------------------------------------------------------ persistence */
   var LS = "ttb.character.v1";
 
-  /* Storage can fail — a full quota, a private window, blocked site data — and
+  /* Storage can fail, a full quota, a private window, blocked site data, and
      every write here used to swallow the exception and carry on, so the app
      cheerfully reported saves that never happened. These return whether the
      write landed, and callers are expected to care. */
@@ -195,14 +195,14 @@
    * parseACBonus reads the armour table, weaponProficient reads a class's
    * weapon line. Characters then store class, archetype, skill and feat NAMES
    * as the very strings those lookups are keyed on. Translating the data in
-   * place would not merely risk a mistranslated rule — it would mislabel the
+   * place would not merely risk a mistranslated rule, it would mislabel the
    * action economy, drop armour bonuses, and fail every saved character at the
    * next validate.
    *
    * So nothing here touches window.TTB, TTBX or TTSRD. render() builds the page
    * in English exactly as it always did, and applyLang() then rewrites the text
    * nodes it produced. The table is keyed by the English text itself, so a miss
-   * simply leaves English on screen — which is the direction we want to fail in.
+   * simply leaves English on screen, which is the direction we want to fail in.
    * Change an English source string and it stops matching and reverts to
    * English, rather than showing a translation of something it no longer says.
    *
@@ -271,8 +271,8 @@
   }
   /* The captured run is put back through T() rather than passed through raw.
      A proper noun misses the table and survives unchanged, which is what we
-     want for "Add Sniper Rifle"; a word we do translate — a skill inside
-     "Say: “Roll Stealth.”", a step name inside "Go to Abilities" — comes back
+     want for "Add Sniper Rifle"; a word we do translate, a skill inside
+     "Say: “Roll Stealth.”", a step name inside "Go to Abilities", comes back
      in Spanish instead of leaving half the sentence behind. */
   function byPattern(s) {
     for (var i = 0; i < ES_PAT.length; i++) {
@@ -324,7 +324,7 @@
     }
     if (root === document.body) applyLangAttrs(document.documentElement);
   }
-  /* Opt-out for anything whose text is managed directly rather than rendered —
+  /* Opt-out for anything whose text is managed directly rather than rendered,
      the language button relabels itself, so letting the restore path have it
      too would put the two in a fight. */
   function noLang(node) {
@@ -345,7 +345,7 @@
     });
   }
 
-  /* The book text is the large half — it is fetched only when somebody actually
+  /* The book text is the large half, it is fetched only when somebody actually
      asks for Spanish, and the service worker keeps it from then on. Until it
      lands the interface is Spanish and the rules are English, which is the
      fallback working rather than an error. */
@@ -357,7 +357,7 @@
     s.onload = function () { esBook = "ready"; esRebuild(); render(); };
     s.onerror = function () {
       esBook = "failed";
-      toast("No se pudieron cargar las reglas en español — se muestran en inglés.");
+      toast("No se pudieron cargar las reglas en español, se muestran en inglés.");
     };
     document.head.appendChild(s);
   }
@@ -383,8 +383,8 @@
   }
   /* ---- validation -------------------------------------------------------
      Every way a character enters the app goes through here: share links, file
-     imports, roster opens and the local save. It used to check only shape —
-     "is this an array, is this an object" — and let the contents through
+     imports, roster opens and the local save. It used to check only shape,
+     "is this an array, is this an object", and let the contents through
      untouched, which is how markup reached the dossier and how a level of 2.5
      or an unknown class name reached code that assumed neither could happen.
      Validate contents, drop what cannot be trusted, and report what was
@@ -695,7 +695,7 @@
   function allSkills() {
     var set = {};
     bgSkills().concat(C.skills).forEach(function (s) { set[s] = 1; });
-    // Classes whose scaling picks ARE skills — the Stackborn's imprints are
+    // Classes whose scaling picks ARE skills, the Stackborn's imprints are
     // proficiencies granted by Muscle Memory, and used to be cosmetic.
     var spec = SCALING[C.cls];
     if (spec && spec.skills && C.picks && Array.isArray(C.picks[spec.key])) {
@@ -740,7 +740,7 @@
     C = c; swapDepth++;
     try { return fn(c); } finally { C = prev; swapDepth--; }
   }
-  /* One swap per character per render — harvest everything, then work on the
+  /* One swap per character per render, harvest everything, then work on the
      plain object it returns. GM code should never touch C itself. */
   function statsOf(c) {
     return withChar(c, function () {
@@ -785,7 +785,7 @@
     if (!spec) return null;
     return { abil: spec[0], label: spec[1], dc: 8 + d.pb + mod(d.sc[spec[0]]) };
   }
-  /* The class tables state weapon proficiency as prose — either an explicit
+  /* The class tables state weapon proficiency as prose, either an explicit
      list ("Dart gun, hunting rifle, machine pistol…") or the catch-all "Simple
      or martial firearms per your weapon proficiencies". Nothing parsed it, so
      every character added their proficiency bonus to every weapon they owned:
@@ -818,7 +818,7 @@
     var prof = weaponProficient(d.cls, gun, g.name);
     return { name: g.name, abil: abil, proficient: prof,
              bonus: mod(d.sc[abil]) + (prof ? d.pb : 0),
-             damage: row ? row[2] : "—", props: props };
+             damage: row ? row[2] : "-", props: props };
   }
 
   /* Progression tables are indexed by level, so the level must be a whole
@@ -869,7 +869,7 @@
     "Dissociated": ["gold", "Disadvantage on Persuasion against anyone who can see your chrome, and on Insight to read emotion."],
     "Fraying": ["gold", "DC 12 Wisdom save on a critical hit or at 0 HP, or attack the nearest creature."],
     "Flatlining": ["alert", "Disadvantage on Wisdom saves. Long rests restore half your Hit Dice. You no longer dream."],
-    "Cyberpsychosis": ["alert", "The character is lost — an NPC now. Only therapy and removing ware can bring them back."]
+    "Cyberpsychosis": ["alert", "The character is lost, an NPC now. Only therapy and removing ware can bring them back."]
   };
   function essence() {
     var cl = classByName[C.cls];
@@ -888,7 +888,7 @@
     //
     // Translated before the run-in is wrapped, not after. The wrap cuts the
     // paragraph into two text nodes, and "Belt Feed." on its own is not a
-    // translatable unit — doing it here means the key is the book's sentence
+    // translatable unit, doing it here means the key is the book's sentence
     // exactly as data.js holds it.
     return esc(T(text)).replace(/^([A-ZÁÉÍÓÚÑ][A-Za-z0-9à-ÿ'’\- ]{1,44}\.)(\s)/,
       '<span class="lead">$1</span>$2');
@@ -1004,7 +1004,7 @@
     bar.appendChild(fill);
     box.appendChild(bar);
     box.appendChild(el("div", "meter-note",
-      "Grown grafts cost Essence, not Humanity — nothing about you reads as artificial."));
+      "Grown grafts cost Essence, not Humanity: nothing about you reads as artificial."));
     return box;
   }
 
@@ -1071,7 +1071,7 @@
   /* What a feature costs to use.
    *
    * This used to scan the whole feature as one string, first match wins, with
-   * Bonus action ranked first — and its bonus-action pattern included a bare
+   * Bonus action ranked first, and its bonus-action pattern included a bare
    * "bonus action", which matches "firearms which require a bonus action to
    * reload". That is a description of a weapon property, not an ability the
    * feature grants, so Demolitions Expert was filed under Bonus actions with a
@@ -1127,7 +1127,7 @@
      never a key and T() would hand it straight back in English. Translating
      the block and splitting both sides pairs them up. A block whose two
      languages did not split into the same number of sentences contributes
-     nothing, and its sentences stay English — the wrong sentence in Spanish
+     nothing, and its sentences stay English, the wrong sentence in Spanish
      would be a worse answer than the right one in English. */
   function sentenceEs(f) {
     var map = {};
@@ -1208,19 +1208,19 @@
     "hit die": "The die you roll for health each level. A d10 class is tougher than a d6 class. This app adds the average for you.",
     "hit points": "Your health. Damage takes them away; at 0 you fall unconscious and start making death saving throws.",
     "proficiency bonus": "A number that grows with your level (+2 at 1st, +6 at 20th). You add it to anything you're trained in.",
-    "saving throw": "A roll to resist something happening to you — poison, an explosion, mind control. Your class is trained in two of them.",
+    "saving throw": "A roll to resist something happening to you: poison, an explosion, mind control. Your class is trained in two of them.",
     "skill": "A thing you can be trained in, like Stealth or Persuasion. Roll a d20, add the matching ability modifier, and add your proficiency bonus if you're trained.",
     "armour class": "How hard you are to hit. An attacker must roll this number or higher on a d20. Usually written AC.",
     "initiative": "The roll at the start of a fight that decides turn order. It's a d20 plus your Dexterity modifier.",
-    "action": "The main thing you do on your turn — attack, cast, run a program. One per turn.",
+    "action": "The main thing you do on your turn: attack, cast, run a program. One per turn.",
     "bonus action": "A quick extra thing, only when a feature says you can. One per turn, on top of your action.",
     "reaction": "Something you do out of turn, when a trigger described by a feature happens. One per round.",
     "long rest": "About eight hours of downtime. You get your health and most abilities back.",
     "short rest": "About an hour. You recover some abilities, and can spend Hit Dice to heal.",
-    "archetype": "A specialisation inside your class — the flavour of Rogue or Wirewalker you are. Also called a subclass.",
+    "archetype": "A specialisation inside your class, the flavour of Rogue or Wirewalker you are. Also called a subclass.",
     "feat": "A special package of abilities you can take instead of raising your ability scores.",
     "ability score improvement": "At levels 4, 8, 12, 16 and 19 you either raise your ability scores or take a feat. Often shortened to ASI.",
-    "dc": "Difficulty Class — the number you need to meet or beat on a roll. Your own DC is what enemies must beat to resist your abilities.",
+    "dc": "Difficulty Class, the number you need to meet or beat on a roll. Your own DC is what enemies must beat to resist your abilities.",
     "advantage": "Roll two d20s and keep the higher one. Disadvantage is the same but you keep the lower.",
     "humanity": "This book's tracker for how much of you is still a person. Every implant costs some. Run out and your character is lost.",
     "credits": "Money in this setting, written ₵. Cyberware is expensive; tier 4 runs to tens of millions.",
@@ -1234,7 +1234,7 @@
     // dotted term cuts its sentence into three text nodes, and three fragments
     // ("A", "skill", "is something you roll for…") cannot be translated
     // separately without getting the grammar wrong. The Spanish keeps the
-    // English term as the glossary key — [[skill|habilidad]] — because
+    // English term as the glossary key, [[skill|habilidad]], because
     // GLOSSARY is keyed on it.
     text = T(text);
     var frag = document.createDocumentFragment();
@@ -1267,36 +1267,36 @@
 
   var HELP = [
     { title: "What a class is",
-      what: "Your class is your character's job — what they're good at and what they reach for when things go wrong. It decides your [[hit die|health per level]], which [[saving throw|saving throws]] you're trained in, and most of what you can do.",
+      what: "Your class is your character's job, what they're good at and what they reach for when things go wrong. It decides your [[hit die|health per level]], which [[saving throw|saving throws]] you're trained in, and most of what you can do.",
       todo: ["Read the cards and pick whoever sounds like someone you'd enjoy being for a few months.",
-             "There is no wrong answer. Nothing is locked in — you can change class right up until your first session."],
-      tip: "The easiest to run at a table are Fighter, Barbarian and Chromehound — you mostly hit things and are hard to kill. Wirewalker and Puppeteer have the most moving parts." },
+             "There is no wrong answer. Nothing is locked in, you can change class right up until your first session."],
+      tip: "The easiest to run at a table are Fighter, Barbarian and Chromehound: you mostly hit things and are hard to kill. Wirewalker and Puppeteer have the most moving parts." },
     { title: "What an archetype is",
       what: "An [[archetype]] is a specialisation inside your class. Two Rogues can play completely differently depending on which one they took.",
-      todo: ["Every class offers a choice of archetypes — pick the one you want to play.",
-             "Read the features. Greyed-out ones are real — you just aren't high enough level yet."],
+      todo: ["Every class offers a choice of archetypes, pick the one you want to play.",
+             "Read the features. Greyed-out ones are real, you just aren't high enough level yet."],
       tip: "Features unlock as you level. Drag the level slider in the panel on the right to see what arrives later." },
     { title: "Background and origin",
       what: "Your background is what you did for money before any of this started. It hands you [[skill|skills]], tools, starting gear and a special ability. Your origin is where you came from, and gives a small perk plus a story hook.",
       todo: ["Pick one background. If it says “choose two from…”, buttons will appear for you to choose.",
-             "Pick or roll an origin — the d12 button rolls for you.",
+             "Pick or roll an origin, the d12 button rolls for you.",
              "The personality tables at the bottom are optional. Roll them if you want ideas for who this person actually is."],
       tip: "Backgrounds are as much about story as numbers. Pick one you'd enjoy explaining to the table." },
     { title: "What the six numbers mean",
-      what: "[[ability score|Ability scores]] describe your body and mind. What matters at the table is the [[modifier]] underneath each one — that's what you add to your dice.",
+      what: "[[ability score|Ability scores]] describe your body and mind. What matters at the table is the [[modifier]] underneath each one, that's what you add to your dice.",
       todo: ["Standard array is the simplest: you get 15, 14, 13, 12, 10 and 8 to assign.",
-             "Put your 15 in the ability marked as your class's primary — it's highlighted for you.",
+             "Put your 15 in the ability marked as your class's primary, it's highlighted for you.",
              "Put 14 and 13 in Constitution and whatever else your class leans on. Dump the 8 somewhere you don't care about."],
-      tip: "Constitution is never a bad place for a good number — it's your health and it matters for every class." },
+      tip: "Constitution is never a bad place for a good number, it's your health and it matters for every class." },
     { title: "Skills and proficiency",
       what: "A [[skill]] is something you roll for outside combat. Being trained in one means adding your [[proficiency bonus]] to that roll, which is a big deal.",
-      todo: ["Pick the number of skills your class allows — the counter at the top tracks it.",
+      todo: ["Pick the number of skills your class allows, the counter at the top tracks it.",
              "Anything your background already gave you is ticked and can't be picked twice."],
       tip: "Perception is the most-rolled skill in the game. If it's on your class list and nobody else has it, take it." },
     { title: "Levelling up",
       what: "At levels 4, 8, 12, 16 and 19 every character gets an [[ability score improvement]]: raise your numbers, or take a [[feat]] instead. Some classes also learn new things as they level.",
       todo: ["Spend each slot shown. If you're new, take the ability increase and put both points into your class's primary ability.",
-             "If your class learns programs, grafts or imprints, pick them here — the count grows every few levels."],
+             "If your class learns programs, grafts or imprints, pick them here, the count grows every few levels."],
       tip: "Feats are more interesting but ability increases are more reliably useful. There's no shame in +2 Dexterity." },
     { title: "Buying chrome",
       what: "Cyberware costs [[credits|money]] and [[humanity]]. The money is your DM's problem. The Humanity is yours: each implant takes a piece of the person you were, and at zero your character is gone.",
@@ -1306,7 +1306,7 @@
       tip: "Starting characters usually don't have millions of credits. Ask your DM what you can afford before you go shopping." },
     { title: "Your character sheet",
       what: "This is everything you've chosen, worked out into the numbers you'll actually use at the table.",
-      todo: ["Check the vitals strip — that's your [[armour class|AC]], [[hit points]], [[initiative]] and [[proficiency bonus]].",
+      todo: ["Check the vitals strip, that's your [[armour class|AC]], [[hit points]], [[initiative]] and [[proficiency bonus]].",
              "Read “What you can do”. Those are your options on a turn, sorted by [[action]], [[bonus action]] and [[reaction]].",
              "Print it, or copy it as Markdown and paste it wherever you keep notes."],
       tip: "Don't try to memorise it. Everyone reads their sheet at the table, including people who've played for years." }
@@ -1355,7 +1355,7 @@
         var g = skillGrant();
         var got = bgSkills().filter(function (s) { return g.from.indexOf(s) >= 0; }).length;
         if (g.n && got < g.n) return "Your background lets you choose " + g.n +
-          " skill" + (g.n === 1 ? "" : "s") + " — " + (g.n - got) + " still to pick.";
+          " skill" + (g.n === 1 ? "" : "s") + ", " + (g.n - got) + " still to pick.";
         return null;
       case 3:
         if (assignsFromMap()) {
@@ -1367,14 +1367,14 @@
         if (!cl) return "Pick a class first.";
         var need = cl.skillCount - C.skills.length;
         if (need > 0) return "Choose " + need + " more skill" + (need === 1 ? "" : "s") + ".";
-        if (need < 0) return "You've picked too many skills — remove " + (-need) + ".";
+        if (need < 0) return "You've picked too many skills, remove " + (-need) + ".";
         if (C.techSwap && !C.techReplaces) return "Choose which skill Technology replaces.";
         return null;
       case 5:
         if (!cl) return "Pick a class first.";
         var slots = asiSlotCount(), used = asiSlots().filter(function (x) { return x.type; }).length;
         if (used < slots) return (slots - used) + " level-up choice" + (slots - used === 1 ? "" : "s") +
-          " waiting — take an ability increase or a feat.";
+          " waiting, take an ability increase or a feat.";
         var sp = scalingSpec();
         if (sp) {
           var have = ((C.picks && C.picks[sp.spec.key]) || []).length;
@@ -1393,7 +1393,7 @@
         return null;
       case 6:
         return (C.cyber.length || C.augments.length || C.gear.length) ? null :
-          "Optional — but most characters want a weapon at least.";
+          "Optional, but most characters want a weapon at least.";
       default: return null;
     }
   }
@@ -1511,7 +1511,7 @@
   function rosterWrite(list) { return lsWrite("ttb.roster", JSON.stringify(list)); }
   function rosterPut(c) {
     var all = (rosterAll() || []).filter(function (r) { return r.id !== c.id; });
-    all.push({ id: c.id, name: c.name || "Unnamed", cls: c.cls || "—", level: c.level,
+    all.push({ id: c.id, name: c.name || "Unnamed", cls: c.cls || "-", level: c.level,
                updated: Date.now(), payload: JSON.stringify(c) });
     return rosterWrite(all);
   }
@@ -1561,14 +1561,14 @@
     toastT = setTimeout(function () { t.remove(); }, 2200);
   }
 
-  /* ====================================================== STEP: 1 — CLASS */
+  /* ====================================================== STEP: 1, CLASS */
   /* ------------------------------------------------- the synergy preview --
      A class card is a <button>, so this cannot live inside one: nested
      interactive elements are invalid and every click would bubble into
      selecting the class. It goes in a wrapper beside the card instead.
 
      Open state is kept out here because render() rebuilds the whole stage, and
-     choosing a class re-renders — without this, opening Fighter's preview and
+     choosing a class re-renders, without this, opening Fighter's preview and
      then picking Fighter would shut what you just opened. */
   var synOpen = {}, synPairOpen = {};
 
@@ -1643,6 +1643,16 @@
       var det = el("div", "syn-pv-det");
       det.hidden = !synPairOpen[key];
       det.appendChild(el("div", "syn-pv-line", esc(p.line)));
+      // what the pair actually does at the table: its own two nodes, so the
+      // label and the sentence each translate
+      if (p.effect) {
+        var ef = el("div", "syn-pv-effect");
+        ef.appendChild(el("span", "syn-pv-k", "What it does"));
+        var et = document.createElement("span");
+        et.textContent = p.effect;
+        ef.appendChild(et);
+        det.appendChild(ef);
+      }
       if (p.wired) det.appendChild(el("div", "syn-pv-wired", esc(p.wired)));
       t2.onclick = function () {
         synPairOpen[key] = !synPairOpen[key];
@@ -1725,7 +1735,7 @@
     if (cl && isExp(cl)) {
       var det = el("div");
       det.style.marginTop = "30px";
-      det.appendChild(el("div", "eyebrow", esc(cl.name) + " — class features"));
+      det.appendChild(el("div", "eyebrow", esc(cl.name) + ": class features"));
       var pr = el("div", "prose");
       paras(cl.description).forEach(function (p) { pr.appendChild(el("p", null, esc(p))); });
       det.appendChild(pr);
@@ -1744,7 +1754,7 @@
     nav(s, null, C.cls ? 1 : null);
   }
 
-  /* =================================================== STEP: 2 — ARCHETYPE */
+  /* =================================================== STEP: 2, ARCHETYPE */
   function stepArchetype(s) {
     var cl = classByName[C.cls];
     if (!cl) return needClass(s);
@@ -1790,7 +1800,7 @@
       var warn = el("div", "note");
       warn.innerHTML = "<b>Not yet</b><span>Your character is level " + C.level +
         ". The " + esc(sub.name) + " archetype comes online at level " +
-        sub.levelAvailable + " — raise the level in the dossier to unlock it.</span>";
+        sub.levelAvailable + ", raise the level in the dossier to unlock it.</span>";
       s.appendChild(warn);
     }
 
@@ -1863,11 +1873,11 @@
     nav(s, 0, 2);
   }
 
-  /* ================================================== STEP: 3 — BACKGROUND */
+  /* ================================================== STEP: 3, BACKGROUND */
   function stepBackground(s) {
     head(s, "Step 03", "Background & origin",
       "A background says what you did for money. An origin says what was done to you first. " +
-      "Take one of each — they answer different questions.");
+      "Take one of each, they answer different questions.");
 
     if (X.origins) {
       var ob = el("div");
@@ -1978,19 +1988,19 @@
     nav(s, 1, C.bg ? 3 : null);
   }
 
-  /* =================================================== STEP: 4 — ABILITIES */
+  /* =================================================== STEP: 4, ABILITIES */
   function stepAbilities(s) {
     var cl = classByName[C.cls];
     head(s, "Step 04", "Ability scores",
       "Point buy, the standard array, rolled, or typed straight in. These are your starting " +
-      "scores — ability score improvements and class features add to them, shown in green.");
+      "scores, ability score improvements and class features add to them, shown in green.");
 
     var bar = el("div", "toolbar");
     var seg = el("div", "seg");
     [["pointbuy", "Point buy"], ["array", "Standard array"], ["roll", "Roll 4d6"], ["manual", "Manual"]]
       .forEach(function (m) {
         var b = el("button", null, m[1] + (helpMode && m[0] === "array" ? " ★" : ""));
-        if (helpMode && m[0] === "array") b.title = "Easiest option — recommended if you're new";
+        if (helpMode && m[0] === "array") b.title = "Easiest option, recommended if you're new";
         b.setAttribute("aria-pressed", C.method === m[0]);
         b.onclick = function () {
           C.method = m[0];
@@ -2077,11 +2087,11 @@
         sel.setAttribute("aria-label", ABIL_FULL[a] + " score");
         sel.style.cssText = "background:var(--sunk);color:var(--ink);border:1px solid var(--line);" +
           "border-radius:2px;padding:3px 5px;font-family:var(--f-mono);font-size:12px";
-        var opts = ["—"].concat((pool || []).slice().sort(function (x, y) { return y - x; })
+        var opts = ["-"].concat((pool || []).slice().sort(function (x, y) { return y - x; })
           .filter(function (v, i, arr) { return arr.indexOf(v) === i; }));
         opts.forEach(function (o) {
           var op = el("option", null, o);
-          op.value = o === "—" ? "" : o;
+          op.value = o === "-" ? "" : o;
           if (String(C.arrayMap[a] || "") === String(op.value)) op.selected = true;
           sel.appendChild(op);
         });
@@ -2107,7 +2117,7 @@
     nav(s, 2, 4);
   }
 
-  /* =============================================== STEP: 5 — PROFICIENCIES */
+  /* =============================================== STEP: 5, PROFICIENCIES */
   function stepProf(s) {
     var cl = classByName[C.cls];
     if (!cl) return needClass(s);
@@ -2144,7 +2154,7 @@
     var tech = D.skillsAndTools[0];
     var box = el("div", "callout");
     box.style.borderColor = "var(--accent)";
-    box.innerHTML = "<h5 style='color:var(--accent)'>Technology — the book's new skill</h5>" +
+    box.innerHTML = "<h5 style='color:var(--accent)'>Technology: the book's new skill</h5>" +
       "<p>" + esc((tech.blocks[0] && tech.blocks[0].text) || "") + "</p>";
     var tb = el("button", "chip" + (C.techSwap ? " on" : ""),
       C.techSwap ? "✓ Taking Technology" : "Swap one skill for Technology");
@@ -2161,7 +2171,7 @@
         return a.indexOf(v) === i && v !== "Technology";
       });
       wrapT.appendChild(el("p", "slot-note",
-        pool.length ? "It replaces one proficiency you already have — choose which:"
+        pool.length ? "It replaces one proficiency you already have, choose which:"
                     : "Pick your skills above first, then choose which one Technology replaces."));
       var pc = el("div", "chips");
       pool.forEach(function (sk) {
@@ -2196,14 +2206,14 @@
       var note = el("div", "note");
       note.innerHTML = "<b>Firearm rule</b><span>If you're proficient with simple or martial " +
         "weapons, you're proficient with simple or martial firearms. Some classes get extra " +
-        "firearms on top — see the table below.</span>";
+        "firearms on top, see the table below.</span>";
       s.appendChild(note);
       s.appendChild(renderTable(fp));
     }
     nav(s, 3, 5);
   }
 
-  /* ==================================================== STEP: 6 — OPTIONS */
+  /* ==================================================== STEP: 6, OPTIONS */
   function optionList(s, title, items, sel, limit, note) {
     var sec = el("div");
     sec.style.marginBottom = "30px";
@@ -2240,7 +2250,7 @@
     head(s, "Step 06", "Level-up choices",
       "Every level you cross hands you something. " + cl.name + " ability score improvements " +
       "arrive at " + myAsiLevels().map(ordinal).join(", ").replace(/, ([^,]*)$/, " and $1") +
-      " — take the increase or a feat instead. Classes that learn things as they go pick " +
+      ", take the increase or a feat instead. Classes that learn things as they go pick " +
       "them here too.");
 
     /* ---- ASI / feat slots ---- */
@@ -2255,7 +2265,7 @@
     if (!slots.length) {
       var nextAsi = myAsiLevels().filter(function (l) { return l > C.level; })[0];
       sec.appendChild(el("p", "empty-state",
-        "None yet — your first arrives at level " + nextAsi + ". Move the level slider in the " +
+        "None yet, your first arrives at level " + nextAsi + ". Move the level slider in the " +
         "dossier to get there."));
     }
 
@@ -2291,7 +2301,7 @@
           b.onclick = function () {
             var arr = asiSlots(), sl = arr[i];
             if (!sl.a) sl.a = a;            // first +1
-            else if (!sl.b) sl.b = a;       // second +1 — same score again gives +2
+            else if (!sl.b) sl.b = a;       // second +1, same score again gives +2
             else { sl.a = sl.b; sl.b = a; } // both spent: roll the oldest off
             C.asi = arr; delete C.isExample; save(); render();
           };
@@ -2348,7 +2358,7 @@
               pickRow.appendChild(chips);
               if (!slot.abil) {
                 pickRow.appendChild(el("p", "origin-note",
-                  "Pick one — until you do, this feat's increase is not on your sheet."));
+                  "Pick one. Until you do, this feat's increase is not on your sheet."));
               }
             }
             e.appendChild(pickRow);
@@ -2485,7 +2495,7 @@
     if (hasStyle) {
       var fs = el("div");
       fs.style.marginBottom = "30px";
-      fs.appendChild(el("div", "eyebrow", "Fighting style — choose one"));
+      fs.appendChild(el("div", "eyebrow", "Fighting style: choose one"));
       D.fightingStyles.forEach(function (st2) {
         var on = C.style === st2.name;
         var e = el("div", "entry");
@@ -2509,7 +2519,7 @@
     nav(s, 4, 6);
   }
 
-  /* ============================================== STEP: 7 — CHROME & GEAR */
+  /* ============================================== STEP: 7, CHROME & GEAR */
   var gearQ = "";
   var featQ = {};
   function collapsible(title, badges, blocks, open) {
@@ -2532,7 +2542,7 @@
 
   function stepGear(s) {
     head(s, "Step 07", "Chrome & gear",
-      "Cyberware is rated by tier — higher tiers cost exponentially more credits and more of " +
+      "Cyberware is rated by tier: higher tiers cost exponentially more credits and more of " +
       "you. Every implant shows what it takes off your Humanity.");
 
     /* what's already installed, always in view */
@@ -2573,7 +2583,7 @@
 
     var hp = el("div", "callout");
     hp.style.borderColor = "var(--" + HSTATE[humanity().state][0] + ")";
-    hp.appendChild(el("h5", null, "Humanity — every implant is a piece of you that used to be meat"));
+    hp.appendChild(el("h5", null, "Humanity: every implant is a piece of you that used to be meat"));
     hp.appendChild(humanityMeter(false));
     var em = essenceMeter();
     if (em) hp.appendChild(em);
@@ -2720,7 +2730,7 @@
     nav(s, 5, 7);
   }
 
-  /* ==================================================== STEP: 8 — DOSSIER */
+  /* ==================================================== STEP: 8, DOSSIER */
   /* --------------------------------------------------------- sheet helpers */
   var CLASS_DC = { Wirewalker: ["Int", "Interface DC"], Puppeteer: ["Int", "Uplink DC"],
                    Streetdoc: ["Wis", "Medicine DC"], Firebrand: ["Cha", "Signal DC"],
@@ -2729,7 +2739,7 @@
   /* The Armor table holds two different kinds of value in one column: a base
      formula ("14 + Dex modifier (max 2)") and an additive bonus ("+2", which is
      the Ballistic Shield). The old parser was anchored to a leading digit, so
-     the shield parsed as null and was discarded — it added nothing at all. */
+     the shield parsed as null and was discarded, it added nothing at all. */
   function parseACBonus(formula) {
     var m = String(formula).match(/^\s*\+\s*(\d+)\s*$/);
     return m ? parseInt(m[1], 10) : null;
@@ -2800,7 +2810,7 @@
       var ft = ALL_FEATS.filter(function (x) { return x.name === n; })[0];
       if (ft) out.push({ f: { name: ft.name, level: 0, blocks: ft.blocks }, src: "Feat" });
     });
-    // Programs, grafts and imprints are the moment-to-moment kit — list them too.
+    // Programs, grafts and imprints are the moment-to-moment kit, list them too.
     var sp = scalingSpec();
     if (sp && C.picks && (C.picks[sp.spec.key] || []).length) {
       C.picks[sp.spec.key].forEach(function (n) {
@@ -2839,7 +2849,7 @@
         var row = cl.progression.rows[lv - 1], prev = lv > 1 ? cl.progression.rows[lv - 2] : null;
         cl.progression.headers.forEach(function (h, i) {
           if (i < 3 || !prev) return;
-          if (row[i] !== prev[i] && row[i] !== "—")
+          if (row[i] !== prev[i] && row[i] !== "-")
             gains.push(h + " " + prev[i] + " → " + row[i]);
         });
       }
@@ -2889,7 +2899,7 @@
     sh.title = "A link that rebuilds this exact character for whoever opens it";
     sh.onclick = function () {
       var url = shareLink();
-      if (url.length > 7500) { toast("Character too large to share as a link — export a file instead"); return; }
+      if (url.length > 7500) { toast("Character too large to share as a link, export a file instead"); return; }
       if (navigator.clipboard) navigator.clipboard.writeText(url).then(
         function () { toast("Share link copied"); }, function () { toast("Copy failed"); });
       else toast("Clipboard unavailable");
@@ -2945,7 +2955,7 @@
     var next = lad.filter(function (r) { return r.level > C.level && r.gains.length; })[0];
     if (next) {
       var nu = el("div", "next-up");
-      nu.innerHTML = "<b>Next level up</b> — at level " + next.level + " you gain " +
+      nu.innerHTML = "<b>Next level up</b>: at level " + next.level + " you gain " +
         esc(next.gains.join(", ")) + ".";
       s.appendChild(nu);
     }
@@ -2990,11 +3000,11 @@
       gdo.appendChild(g);
     });
     if (!any) gdo.appendChild(el("p", "empty-state",
-      "Nothing active yet — pick a class and archetype, then raise your level."));
+      "Nothing active yet, pick a class and archetype, then raise your level."));
     if (!isExp(cl))
       gdo.appendChild(el("p", "slot-note",
         "This lists what the Technomancer's Textbook and your choices add. " + cl.name +
-        "'s core features — Sneak Attack, Rage, Spellcasting and the rest — come from the " +
+        "'s core features, Sneak Attack, Rage, Spellcasting and the rest, come from the " +
         "Player's Handbook and aren't reproduced here, so keep that to hand as well."));
     grid.appendChild(gdo);
 
@@ -3041,7 +3051,7 @@
       row2.setAttribute("aria-label", "Set level " + r.level +
         (r.gains.length ? ": " + r.gains.join(", ") : ""));
       row2.innerHTML = '<span class="lv">' + (r.level === C.level ? "▸ " : "") + r.level +
-        '</span><span class="what">' + (r.gains.length ? esc(r.gains.join(", ")) : "—") + "</span>";
+        '</span><span class="what">' + (r.gains.length ? esc(r.gains.join(", ")) : "-") + "</span>";
       row2.onclick = function () { C.level = r.level; delete C.isExample; save(); render(); };
       lw.appendChild(row2);
     });
@@ -3087,13 +3097,13 @@
     g5.appendChild(el("h3", null, "Chrome & gear · " + fmtCredits(spend())));
     var ul5 = el("ul");
     C.cyber.forEach(function (x) {
-      ul5.appendChild(el("li", null, esc(x.name) + " (Tier " + esc(x.tier) + ") — " +
-        esc(cyberCost[x.name.toLowerCase() + "|" + x.tier] || "—")));
+      ul5.appendChild(el("li", null, esc(x.name) + " (Tier " + esc(x.tier) + "), " +
+        esc(cyberCost[x.name.toLowerCase() + "|" + x.tier] || "-")));
     });
     C.augments.forEach(function (a) {
-      ul5.appendChild(el("li", null, esc(a) + " — " + esc(augCost[a.toLowerCase()] || "—")));
+      ul5.appendChild(el("li", null, esc(a) + ", " + esc(augCost[a.toLowerCase()] || "-")));
     });
-    C.gear.forEach(function (g) { ul5.appendChild(el("li", null, esc(g.name) + " — " + esc(g.cost))); });
+    C.gear.forEach(function (g) { ul5.appendChild(el("li", null, esc(g.name) + ", " + esc(g.cost))); });
     if (!ul5.children.length) g5.appendChild(el("p", "empty-state", "No chrome installed."));
     g5.appendChild(ul5);
     grid.appendChild(g5);
@@ -3120,15 +3130,15 @@
 
     if (helpMode) {
       var wn = el("div", "whatnow");
-      wn.appendChild(el("h3", null, "You're done — what happens now"));
+      wn.appendChild(el("h3", null, "You're done: what happens now"));
       var ol = el("ol");
       [["Get it off the screen.", "Hit <em>Print sheet</em> for paper, or <em>Copy as Markdown</em> " +
         "to paste into Discord, Notion, a Google Doc or wherever your group keeps things."],
-       ["Show your DM.", "They'll tell you if anything needs changing for their game — " +
+       ["Show your DM.", "They'll tell you if anything needs changing for their game, " +
         "starting level, how much money you begin with, whether Humanity is being used at all."],
        ["Bring dice, or an app.", "You mostly need a d20. The other dice come up for damage and healing."],
        ["On your turn you get one " + "<em>action</em>, one <em>bonus action</em> if something grants it, " +
-        "and your movement.", "The \u201cWhat you can do\u201d list above is sorted that way on purpose — " +
+        "and your movement.", "The \u201cWhat you can do\u201d list above is sorted that way on purpose, " +
         "read it off the sheet, nobody memorises this."],
        ["When you level up, come back.", "Move the level slider, and the app will tell you exactly " +
         "what you gained and what you still need to choose."]
@@ -3147,8 +3157,8 @@
     var L = [];
     L.push("# " + (C.name || "Unnamed operator"));
     L.push("");
-    L.push("Level " + C.level + " " + (cl ? cl.name : "—") +
-      (sub && C.level >= sub.levelAvailable ? " — " + sub.name : "") + (b ? " — " + b.name : ""));
+    L.push("Level " + C.level + " " + (cl ? cl.name : "-") +
+      (sub && C.level >= sub.levelAvailable ? ", " + sub.name : "") + (b ? ", " + b.name : ""));
     L.push("");
     L.push("| | " + ABIL.join(" | ") + " |");
     L.push("|---|" + ABIL.map(function () { return "---|"; }).join(""));
@@ -3157,14 +3167,14 @@
     L.push("");
     var ac2 = armorClass();
     L.push("- **Armour class** " + ac2.ac + " (" + ac2.from + ")  ");
-    L.push("- **Hit points** " + (maxHP() || "—") + "  ");
+    L.push("- **Hit points** " + (maxHP() || "-") + "  ");
     L.push("- **Proficiency bonus** " + sgn(pb) + "  ");
     L.push("- **Saving throws** " + (cl ? cl.saves.map(function (a) {
       return ABIL_FULL[a] + " " + sgn(saveBonus(a));
-    }).join(", ") : "—"));
+    }).join(", ") : "-"));
     L.push("- **Skills** " + (allSkills().map(function (sk) {
       return sk + " " + sgn(skillBonus(sk));
-    }).join(", ") || "—"));
+    }).join(", ") || "-"));
     var dcs = cl ? saveDC() : null;
     if (dcs) L.push("- **" + dcs.label + "** " + dcs.dc);
     if (cl && cl.progression) {
@@ -3181,20 +3191,20 @@
     var hm = humanity();
     L.push("- **Humanity** " + hm.left + " / " + hm.base + " (" + hm.pct + "%, " + hm.state +
       ")" + (hm.tol ? ", buffer " + hm.tolLeft + "/" + hm.tol : "") +
-      " — " + hm.implants + " implants installed");
+      ", " + hm.implants + " implants installed");
     var es = essence();
     if (es) L.push("- **Essence** " + es.value + " (" + es.state + ")");
     if (C.origin) L.push("- **Origin** " + C.origin);
     L.push("");
     if (cl && isExp(cl)) {
-      L.push("## " + cl.name + " (Neon Ledger) — " + cl.resource);
+      L.push("## " + cl.name + " (Neon Ledger): " + cl.resource);
       cl.features.filter(function (f) { return C.level >= f.level; }).forEach(function (f) {
         L.push("- " + f.name + " *(level " + f.level + ")*");
       });
       L.push("");
     }
     if (sub) {
-      L.push("## Archetype — " + sub.name +
+      L.push("## Archetype: " + sub.name +
         (sub.page ? " (p. " + sub.page + ")" : " (" + sourceName(sub) + ")"));
       sub.features.filter(function (f) { return C.level >= f.level; }).forEach(function (f) {
         L.push("- " + f.name + " *(level " + f.level + ")*");
@@ -3205,7 +3215,7 @@
       L.push("");
     }
     if (b) {
-      L.push("## Background — " + b.name + " (p. " + b.page + ")");
+      L.push("## Background: " + b.name + " (p. " + b.page + ")");
       Object.keys(b.traits).forEach(function (k) { L.push("- **" + k + ":** " + b.traits[k]); });
       if (b.feature) L.push("- **Feature:** " + b.feature.name);
       Object.keys(C.traits).forEach(function (k) {
@@ -3228,7 +3238,7 @@
       L.push("");
       L.push("### " + k);
       bk[k].forEach(function (d) {
-        L.push("- **" + d.n + "**" + (d.u ? " *(" + d.u + ")*" : "") + " — " + d.g);
+        L.push("- **" + d.n + "**" + (d.u ? " *(" + d.u + ")*" : "") + ", " + d.g);
       });
     });
     L.push("");
@@ -3242,13 +3252,13 @@
     C.infusions.forEach(function (f) { opts.push("Infusion: " + f); });
     if (opts.length) { L.push("## Options"); opts.forEach(function (o) { L.push("- " + o); }); L.push(""); }
     if (C.cyber.length || C.augments.length || C.gear.length) {
-      L.push("## Chrome & gear — " + fmtCredits(spend()));
+      L.push("## Chrome & gear: " + fmtCredits(spend()));
       C.cyber.forEach(function (x) {
-        L.push("- " + x.name + " (Tier " + x.tier + ") — " +
-          (cyberCost[x.name.toLowerCase() + "|" + x.tier] || "—"));
+        L.push("- " + x.name + " (Tier " + x.tier + "), " +
+          (cyberCost[x.name.toLowerCase() + "|" + x.tier] || "-"));
       });
-      C.augments.forEach(function (a) { L.push("- " + a + " — " + (augCost[a.toLowerCase()] || "—")); });
-      C.gear.forEach(function (g) { L.push("- " + g.name + " — " + g.cost); });
+      C.augments.forEach(function (a) { L.push("- " + a + ", " + (augCost[a.toLowerCase()] || "-")); });
+      C.gear.forEach(function (g) { L.push("- " + g.name + ", " + g.cost); });
       L.push("");
     }
     L.push("---");
@@ -3284,16 +3294,16 @@
     head.innerHTML = '<div class="nm">' + esc(C.name || "Unnamed operator") + "</div>" +
       '<div class="meta">' +
       "<div><b>Class &amp; level</b>" + esc(cl.name) + " " + C.level + "</div>" +
-      "<div><b>Archetype</b>" + esc(sub && C.level >= sub.levelAvailable ? sub.name : "—") + "</div>" +
-      "<div><b>Background</b>" + esc(b ? b.name : "—") + "</div>" +
-      "<div><b>Origin</b>" + esc(C.origin || "—") + "</div>" +
-      "<div><b>Campaign</b>" + esc(camp ? camp.name : "—") + "</div>" +
+      "<div><b>Archetype</b>" + esc(sub && C.level >= sub.levelAvailable ? sub.name : "-") + "</div>" +
+      "<div><b>Background</b>" + esc(b ? b.name : "-") + "</div>" +
+      "<div><b>Origin</b>" + esc(C.origin || "-") + "</div>" +
+      "<div><b>Campaign</b>" + esc(camp ? camp.name : "-") + "</div>" +
       "<div><b>Player</b>&nbsp;</div></div>";
     p1.appendChild(head);
 
     var cols = el("div", "cs-cols");
 
-    // column 1 — abilities, saves, skills
+    // column 1, abilities, saves, skills
     var c1 = el("div");
     ABIL.forEach(function (a) {
       var box = el("div", "ab-box");
@@ -3322,7 +3332,7 @@
     c1.appendChild(sk);
     cols.appendChild(c1);
 
-    // column 2 — combat
+    // column 2, combat
     var c2 = el("div");
     var stat = el("div", "cs-stat");
     var dc = CLASS_DC[cl.name];
@@ -3337,7 +3347,7 @@
 
     var hp = el("div", "cs-box");
     hp.innerHTML = "<h4>Hit points</h4>" +
-      '<div class="cs-line"><span>Maximum</span><span class="b">' + (maxHP() || "—") + "</span></div>" +
+      '<div class="cs-line"><span>Maximum</span><span class="b">' + (maxHP() || "-") + "</span></div>" +
       '<div class="cs-line"><span>Current</span><span class="b">&nbsp;</span></div>' +
       '<div class="cs-write"></div><div class="cs-write"></div>' +
       '<div class="cs-line" style="margin-top:4px"><span>Temporary</span><span class="b">&nbsp;</span></div>' +
@@ -3388,7 +3398,7 @@
     c2.appendChild(hum);
     cols.appendChild(c2);
 
-    // column 3 — proficiencies, gear
+    // column 3, proficiencies, gear
     var c3 = el("div");
     var pf = el("div", "cs-box");
     pf.innerHTML = "<h4>Proficiencies</h4>" +
@@ -3428,11 +3438,11 @@
     p1.appendChild(cols);
     root.appendChild(p1);
 
-    // page 2 — features in full
+    // page 2, features in full
     var p2 = el("div", "cs-page");
     var h2 = el("div", "cs-head");
     h2.innerHTML = '<div class="nm" style="font-size:15pt">' + esc(C.name || "Unnamed operator") +
-      ' — features</div><div class="meta"><div><b>Level</b>' + C.level + "</div></div>";
+      ': features</div><div class="meta"><div><b>Level</b>' + C.level + "</div></div>";
     p2.appendChild(h2);
     var wrap = el("div", "two-col");
     activeFeatures().forEach(function (e) {
@@ -3465,7 +3475,7 @@
         '<div class="sub">Level ' + C.level + " " + esc(cl.name) +
         (sub && C.level >= sub.levelAvailable ? " · " + esc(sub.name) : "") + "</div>";
       var v = el("div", "pc-v");
-      [["AC", ac.ac], ["HP", maxHP() || "—"], ["INIT", sgn(initiative())], ["PROF", sgn(pb)],
+      [["AC", ac.ac], ["HP", maxHP() || "-"], ["INIT", sgn(initiative())], ["PROF", sgn(pb)],
        [dc ? "DC" : "P.PER", dc ? saveDC().dc : passiveSkill("Perception")]
       ].forEach(function (x) {
         v.innerHTML += '<div><div class="k">' + esc(x[0]) + '</div><div class="val">' +
@@ -3516,7 +3526,7 @@
     head.innerHTML = '<div style="font-family:\'Chakra Petch\',sans-serif;font-size:14pt">' +
       esc(C.name || "Unnamed operator") + '</div><div style="font-family:\'JetBrains Mono\',monospace;' +
       'font-size:7pt;letter-spacing:.1em;color:#555;text-transform:uppercase">Level ' + C.level +
-      " " + esc(C.cls) + " — cut along the dashed lines</div>";
+      " " + esc(C.cls) + ", cut along the dashed lines</div>";
     wrap.appendChild(head);
     var grid = el("div", "ac-grid");
     activeFeatures().forEach(function (e) {
@@ -3625,7 +3635,7 @@
       done.onclick = function () {
         var md = toMarkdown();
         if (navigator.clipboard) navigator.clipboard.writeText(md).then(
-          function () { toast("Sheet copied — you're ready to play"); },
+          function () { toast("Sheet copied, you're ready to play"); },
           function () { toast("Copy failed"); });
       };
       r.appendChild(done);
@@ -3644,7 +3654,7 @@
   function renderCodex(s) {
     var sec = CODEX[codexSec];
     var before;
-    head(s, "Codex", sec, "Straight from the book — " + D.meta.title + ", v" + D.meta.version + ".");
+    head(s, "Codex", sec, "Straight from the book: " + D.meta.title + ", v" + D.meta.version + ".");
     var inp = el("input", "search");
     inp.id = "codexSearch";
     inp.placeholder = "Filter " + sec.toLowerCase() + "…";
@@ -3739,7 +3749,7 @@
         e.appendChild(el("p", null, esc(sub.tagline)));
         var ul = el("ul");
         sub.features.forEach(function (f) {
-          ul.appendChild(el("li", null, "<strong>" + esc(f.name) + "</strong> — level " + f.level));
+          ul.appendChild(el("li", null, "<strong>" + esc(f.name) + "</strong>, level " + f.level));
         });
         e.appendChild(ul);
         var go = el("button", "btn", "Open in forge");
@@ -3795,7 +3805,7 @@
   function codexEmptyCheck(s, before) {
     if (codexQ && s.childElementCount <= before)
       s.appendChild(el("div", "no-results",
-        "Nothing in this section matches “" + esc(codexQ) + "”. Try another section — " +
+        "Nothing in this section matches “" + esc(codexQ) + "”. Try another section, " +
         "the filter only searches the one you're in."));
   }
 
@@ -4118,7 +4128,7 @@
           .reduce(function (a, r) { return a.concat(r.gains); }, []);
         if (myAsiLevels().some(function (l) { return l > was && l <= now; }) &&
             gained.indexOf("Ability Score Improvement") < 0) gained.push("Ability Score Improvement");
-        if (gained.length) toast("Level " + now + " — gained " + gained.slice(0, 3).join(", ") +
+        if (gained.length) toast("Level " + now + ": gained " + gained.slice(0, 3).join(", ") +
           (gained.length > 3 ? " +" + (gained.length - 3) + " more" : ""));
       }
     };
@@ -4127,7 +4137,7 @@
     body.appendChild(lv);
 
     var vit = el("div", "vitals");
-    [["HP", cl ? maxHP() : "—"], ["Prof", sgn(profBonus(C.level))],
+    [["HP", cl ? maxHP() : "-"], ["Prof", sgn(profBonus(C.level))],
      ["Init", sgn(cl ? initiative() : mod(sc.Dex))]].forEach(function (v) {
       var x = el("div", "vital");
       x.innerHTML = '<div class="k">' + v[0] + '</div><div class="v">' + v[1] + "</div>";
@@ -4224,7 +4234,7 @@
     refreshRoster();
   }
   function renderDossierSoft() {
-    // name edits shouldn't steal focus — only repaint the label
+    // name edits shouldn't steal focus, only repaint the label
     var lab = $(".dos-head .lab");
     if (lab) lab.textContent = C.isExample ? "Example build" : "Operator dossier";
   }
@@ -4241,14 +4251,14 @@
     var ok = rosterPut(C);
     refreshRoster();
     if (ok) toast("Saved to this browser");
-    else storageFailed("Not saved — this browser refused to store it.");
+    else storageFailed("Not saved, this browser refused to store it.");
   }
 
   /* A failed write is not a 2-second toast. It stays until acted on, and it
      offers the one thing that still works: getting the data out to a file. */
   function storageFailed(msg) {
     var host = $("#roster");
-    toast("Not saved — storage is blocked or full");
+    toast("Not saved, storage is blocked or full");
     if (!host) return;
     var old = $(".storage-alert");
     if (old) old.remove();
@@ -4256,7 +4266,7 @@
     box.style.borderLeftColor = "var(--alert)";
     var b = el("b", null, "Not saved");
     var sp = el("span");
-    sp.textContent = msg + " Your work is still on screen — download it now, " +
+    sp.textContent = msg + " Your work is still on screen, download it now, " +
       "then free up space or leave private browsing.";
     box.appendChild(b); box.appendChild(sp);
     var dl = el("button", "btn primary", "Download this character");
@@ -4283,7 +4293,7 @@
       warn.style.marginTop = "12px";
       host.appendChild(warn);
       host.appendChild(el("p", "empty-state",
-        "Can't read saved characters in this browser — site data may be blocked. " +
+        "Can't read saved characters in this browser, site data may be blocked. " +
         "Nothing has been deleted."));
       return;
     }
@@ -4359,8 +4369,8 @@
     };
     row.appendChild(exp); row.appendChild(imp);
     host.appendChild(row);
-    // Also called on its own after a delete or an import, when render() — and
-    // so applyLang() — is not running. Without this the roster redrew itself
+    // Also called on its own after a delete or an import, when render(), and
+    // so applyLang(), is not running. Without this the roster redrew itself
     // in English on a Spanish page.
     applyLang(host);
   }
@@ -4399,7 +4409,7 @@
       var qb = el("button", "btn primary", "Build one for me");
       qb.onclick = function () {
         quickBuild(); step = 7; render(); window.scrollTo(0, 0);
-        toast("Built a level 3 Chromehound — change anything you like");
+        toast("Built a level 3 Chromehound, change anything you like");
       };
       var st = el("button", "btn", "I'll choose myself");
       st.onclick = function () {
@@ -4417,13 +4427,13 @@
       sn.style.borderLeftColor = "var(--accent)";
       sn.innerHTML = "<b>Shared character</b><span>Someone sent you " +
         esc(C.name || "this character") + ". Changes won't be kept unless you hit " +
-        "<em>Save to roster</em> in the panel on the right — that makes a copy of your own.</span>";
+        "<em>Save to roster</em> in the panel on the right, that makes a copy of your own.</span>";
       s.appendChild(sn);
     }
     if (C.isExample) {
       var n = el("div", "note");
       n.innerHTML = "<b>Example build</b><span>Nyx Calderón is loaded so you can see a " +
-        "finished sheet. Change anything — or hit <em>New character</em> in the dossier — " +
+        "finished sheet. Change anything, or hit <em>New character</em> in the dossier, " +
         "and it becomes yours.</span>";
       s.appendChild(n);
     }
@@ -4466,7 +4476,7 @@
    * The rules text is machine translated and a mistranslated "ventaja" or a
    * dropped "no" changes how a rule works, so nobody should mistake it for a
    * checked translation. The English is one tap away, and the proper nouns are
-   * left in English on purpose because saved characters are keyed on them —
+   * left in English on purpose because saved characters are keyed on them,
    * both of which are worth saying rather than leaving people to work out. */
   function langNote() {
     var old = $(".lang-note");
@@ -4492,7 +4502,7 @@
   /* ---- GM tools: hidden until someone knows the address --------------------
      #gm=<token> unlocks and remembers on this device; #gm=off puts it away
      again. The token sits in a public file on a public deploy, so this is
-     obscurity, not security — the real guarantee is that nothing the GM keeps
+     obscurity, not security, the real guarantee is that nothing the GM keeps
      ever leaves the tablet.                                                */
   function gmUnlock(on) {
     gmOn = !!on;
@@ -4587,7 +4597,7 @@
       // character they already had in this browser.
       C = migrate(shared);
       C.isShared = true;
-      setTimeout(function () { toast("Shared character — Save to roster to keep it"); }, 400);
+      setTimeout(function () { toast("Shared character, Save to roster to keep it"); }, 400);
     } else {
       C = load() || migrate(example());
     }
