@@ -1121,7 +1121,44 @@ window.TTES.ui = {
   "{0} NPCs": "{0} PNJ",
   "{0} encounter": "{0} encuentro",
   "{0} encounters": "{0} encuentros",
-  "−{0} HUM": "−{0} HUM"
+  "−{0} HUM": "−{0} HUM",
+
+  // Encounter: order, NPC initiative, difficulty, morale
+  "Roll NPC initiative": "Tirar iniciativa de PNJ",
+  "Morale: on": "Moral: sí",
+  "Morale: off": "Moral: no",
+  "One roll for the whole pack": "Una tirada para toda la manada",
+  "{0} rolls, one for each kind of foe": "{0} tiradas, una por cada tipo de enemigo",
+  "Difficulty": "Dificultad",
+  "Import the party to see how hard this fight is.": "Importa el grupo para ver lo difícil que es este combate.",
+  "Low": "Baja",
+  "Moderate": "Moderada",
+  "High": "Alta",
+  "Over High": "Por encima de Alta",
+  "XP": "PX",
+  "{0} foe has no challenge rating and isn't counted.": "{0} enemigo no tiene valor de desafío y no cuenta.",
+  "{0} foes have no challenge rating and aren't counted.": "{0} enemigos no tienen valor de desafío y no cuentan.",
+  "Morale check": "Prueba de moral",
+  "Half their side is down. Each foe still standing makes a DC {0} Wisdom save; on a failure they run or give up.": "La mitad de su bando ha caído. Cada enemigo que sigue en pie hace una salvación de Sabiduría CD {0}; si falla, huye o se rinde.",
+  "Roll morale": "Tirar moral",
+  "holds": "aguanta",
+  "breaks": "se quiebra",
+  "Fled": "Huido",
+  "fled": "huido",
+  "Back in": "Vuelve",
+  "Nobody has rolled yet.": "Nadie ha tirado todavía.",
+  "Drag to change the order": "Arrastra para cambiar el orden",
+  "Move up in the order": "Subir en el orden",
+  "Move down in the order": "Bajar en el orden",
+  "To change the order, drag a combatant by its ⠿ handle, or use ▲ and ▼.": "Para cambiar el orden, arrastra a un combatiente por su asa ⠿, o usa ▲ y ▼.",
+  "Check the Difficulty bar before the first roll: it weighs the foes against the party's levels.": "Mira la barra de Dificultad antes de la primera tirada: compara a los enemigos con los niveles del grupo.",
+  "Turn Morale on for foes who can break. When half their side is down, the screen asks for a morale roll.": "Activa la Moral para enemigos que pueden quebrarse. Cuando cae la mitad de su bando, la pantalla pide una tirada de moral.",
+  "Drag the ⠿ handle to move someone, or tap ▲ ▼. A moved combatant takes the initiative of whoever it now sits next to, and the order sticks.": "Arrastra el asa ⠿ para mover a alguien, o toca ▲ ▼. Quien se mueve toma la iniciativa de quien queda a su lado, y el orden se mantiene.",
+  "Low, Moderate and High are the party's XP budgets for their levels. Foes without a challenge rating (ad-hoc ones) aren't counted.": "Baja, Moderada y Alta son los presupuestos de PX del grupo según sus niveles. Los enemigos sin valor de desafío (los improvisados) no cuentan.",
+  "Roll morale rolls a DC 10 Wisdom save for every foe still standing. Press Fled on the ones who break; they drop out of the turn order.": "Tirar moral hace una salvación de Sabiduría CD 10 por cada enemigo en pie. Pulsa Huido en los que se quiebren; salen del orden de turnos.",
+  "Roll one initiative per kind of foe; the party keeps theirs": "Una tirada de iniciativa por tipo de enemigo; el grupo conserva la suya",
+  "Turn morale checks on or off for this fight": "Activa o desactiva las pruebas de moral en este combate",
+  "Mark this foe as fled; they skip their turns": "Marca a este enemigo como huido; se salta sus turnos"
 };
 
 /* Patterns, for text the application builds from the data. Enumerating every
@@ -1129,6 +1166,7 @@ window.TTES.ui = {
    thing being named is a proper noun that stays English anyway. {*} matches a
    run and is passed straight through. Tried only after an exact match fails. */
 window.TTES.patterns = [
+  ["{*}: {*} XP", "{*}: {*} PX"],
   ["Level {*}: gained {*} +{*} more", "Nivel {*}: obtienes {*} y {*} más"],
   ["Level {*}: gained {*}", "Nivel {*}: obtienes {*}"],
   ["Character set to level {*} for {*}", "Personaje ajustado al nivel {*} para {*}"],

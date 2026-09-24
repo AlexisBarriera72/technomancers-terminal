@@ -690,6 +690,34 @@ details.item .body p,details.item .body ul{max-width:70ch}
 .gm-cb .who .m{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--ink-faint)}
 .gm-cb-state{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
   color:var(--alert)}
+.gm-grip{cursor:grab;touch-action:none;user-select:none;background:transparent;border:1px solid var(--line);
+  color:var(--ink-faint);font-size:18px;line-height:1;min-width:34px;min-height:40px;border-radius:var(--r)}
+.gm-grip:hover{color:var(--accent);border-color:var(--accent)}
+.gm-cb.dragging{outline:1px dashed var(--accent);outline-offset:-3px;opacity:.85}
+.gm-cb.drop-before{box-shadow:inset 0 3px 0 var(--accent)}
+.gm-cb.drop-after{box-shadow:inset 0 -3px 0 var(--accent)}
+.gm-mv{display:flex;flex-direction:column;gap:3px}
+.gm-mv .btn{min-height:26px;padding:2px 9px;font-size:11px}
+.gm-cb.fled .who .n{text-decoration:line-through}
+.gm-diff,.gm-morale{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);
+  padding:11px 14px;margin:0 0 13px}
+.gm-diff-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.gm-diff-band{font-family:var(--f-display);font-size:17px;text-transform:uppercase;letter-spacing:.05em}
+.gm-diff-xp{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:15px}
+.gm-diff-bar{position:relative;height:9px;background:var(--surface);border:1px solid var(--line-soft);
+  border-radius:5px;margin:9px 0 6px;overflow:visible}
+.gm-diff-fill{height:100%;border-radius:5px;background:var(--signal)}
+.gm-diff-fill.tone-gold{background:var(--gold)} .gm-diff-fill.tone-alert{background:var(--alert)}
+.gm-diff-mark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--ink-dim);transform:translateX(-1px)}
+.gm-diff-legend{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--f-mono);font-size:11px;
+  letter-spacing:.06em;color:var(--ink-faint)}
+.gm-diff-legend b{color:var(--ink);margin-left:5px;font-variant-numeric:tabular-nums}
+.gm-morale{border-left:3px solid var(--gold)}
+.gm-morale p{margin:4px 0 8px}
+.gm-morale-line{display:flex;gap:10px;align-items:center;padding:4px 0;border-top:1px solid var(--line-soft)}
+.gm-morale-line .num{font-family:var(--f-mono);min-width:26px;text-align:right}
+.gm-morale-line.fails span:last-of-type{color:var(--alert)}
+.gm-morale-line.holds span:last-of-type{color:var(--signal)}
 .gm-hp{margin-top:10px}
 .gm-hpbar{height:11px;background:var(--sunk);border-radius:6px;overflow:hidden}
 .gm-hpfill{height:100%;transition:width .12s linear;background:var(--signal)}

@@ -465,6 +465,22 @@ window.TTBGM = {
             "chews stims and denies it", "flinches at comms chatter no one else hears"]
   },
 
+  /* ---- encounter difficulty, from the SRD 5.2 (CC-BY-4.0) ---------------
+     XP by challenge rating, and the XP budget per character by level:
+     [Low, Moderate, High]. A fight's difficulty is its foes' XP against
+     the party's summed budget. */
+  xpByCr: { "0": 10, "1/8": 25, "1/4": 50, "1/2": 100, "1": 200, "2": 450, "3": 700,
+    "4": 1100, "5": 1800, "6": 2300, "7": 2900, "8": 3900, "9": 5000, "10": 5900,
+    "11": 7200, "12": 8400, "13": 10000, "14": 11500, "15": 13000, "16": 15000,
+    "17": 18000, "18": 20000, "19": 22000, "20": 25000, "21": 33000, "22": 41000,
+    "23": 50000, "24": 62000, "25": 75000, "26": 90000, "27": 105000, "28": 120000,
+    "29": 135000, "30": 155000 },
+  xpBudget: [null,
+    [50, 75, 100], [100, 150, 200], [150, 225, 400], [250, 375, 500], [500, 750, 1100],
+    [600, 1000, 1400], [750, 1300, 1700], [1000, 1700, 2100], [1300, 2000, 2600], [1600, 2300, 3100],
+    [1900, 2900, 4100], [2200, 3700, 4700], [2600, 4200, 5400], [2900, 4900, 6200], [3300, 5400, 7800],
+    [3800, 6100, 9800], [4500, 7200, 11700], [5000, 8700, 14200], [5500, 10700, 17200], [6400, 13200, 22000]],
+
   /* ---- how each GM screen works, shown while the ? guide is on ----------
      Steps are the order to do things in; hints sit under the controls they
      name; tips are the hover text on buttons. Data rather than inline strings
@@ -508,10 +524,16 @@ window.TTBGM = {
         "Press Next turn ▶ when someone finishes; ◀ Back if you moved on too early.",
         "Damage and healing: tap −10 … +10 on a combatant, or type a number in the box and press − (damage) or + (heal). tmp sets temporary hit points.",
         "Add conditions from the + condition menu; tap a condition to clear it.",
+        "To change the order, drag a combatant by its ⠿ handle, or use ▲ and ▼.",
+        "Check the Difficulty bar before the first roll: it weighs the foes against the party's levels.",
+        "Turn Morale on for foes who can break. When half their side is down, the screen asks for a morale roll.",
         "Press Save as template to reuse this fight later, and End encounter when it's over."
       ],
       hints: {
         bar: "Reaction check asks whether a meeting turns violent and whether anyone steps in, Street Cred is included. Reroll initiative gives everyone a new order.",
+        order: "Drag the ⠿ handle to move someone, or tap ▲ ▼. A moved combatant takes the initiative of whoever it now sits next to, and the order sticks.",
+        difficulty: "Low, Moderate and High are the party's XP budgets for their levels. Foes without a challenge rating (ad-hoc ones) aren't counted.",
+        morale: "Roll morale rolls a DC 10 Wisdom save for every foe still standing. Press Fled on the ones who break; they drop out of the turn order.",
         hp: "Red buttons hurt, green heal. For a big hit, type the number and press −. Anyone Concentrating gets their save reminder when they take damage.",
         library: "Run it loads a saved fight fresh: full hit points, no conditions."
       },
@@ -521,6 +543,9 @@ window.TTBGM = {
         next: "Pass the turn to the next in order",
         back: "Go back one turn",
         reroll: "Roll new initiative for everyone",
+        npcInit: "Roll one initiative per kind of foe; the party keeps theirs",
+        morale: "Turn morale checks on or off for this fight",
+        fled: "Mark this foe as fled; they skip their turns",
         react: "Roll how an NPC reacts to the party",
         template: "Save this fight to reuse later",
         end: "Clear the encounter",
@@ -2665,8 +2690,16 @@ window.TTGM = (function () {
       var cb = q(".gm-cb .gm-pad");
       if (cb) hintAt(cb, "encounter", "hp");
       hintAt(btnRow(s, "Run it"), "encounter", "library");
+      hintAt(q(".gm-diff"), "encounter", "difficulty");
+      hintAt(q(".gm-morale"), "encounter", "morale");
+      var order = q(".gm-init");
+      if (order && helpOn() && order.children.length > 1) {
+        var ho = hintEl("encounter", "order");
+        if (ho) order.parentNode.insertBefore(ho, order);
+      }
       tips(s, "encounter", [["+ Party", "party"], ["+ Ad-hoc", "adhoc"], ["Next turn", "next"], ["◀ Back", "back"],
-        ["Reroll initiative", "reroll"], ["Reaction check", "react"], ["Save as template", "template"],
+        ["Reroll initiative", "reroll"], ["Roll NPC initiative", "npcInit"], ["Morale:", "morale"], ["Fled", "fled"],
+        ["Reaction check", "react"], ["Save as template", "template"],
         ["End encounter", "end"], ["Run it", "run"]]);
     } else if (key === "rulings") {
       hintAt(q(".gm-picker"), "rulings", "picker", true);
@@ -3265,11 +3298,58 @@ window.TTGM = (function () {
   }
 
   /* ============================================== SECTION 2, ENCOUNTER  */
+  /* Ties are broken by `tie`, a rank a drag leaves behind, so a GM who drags
+     the Rogue above the tied drone keeps that order; then by name. */
   function ordered(enc) {
     return (enc.combatants || []).slice().sort(function (a, b) {
       if (b.init !== a.init) return b.init - a.init;
+      var ta = typeof a.tie === "number" ? a.tie : 1e6, tb = typeof b.tie === "number" ? b.tie : 1e6;
+      if (ta !== tb) return ta - tb;
       return (a.name || "").localeCompare(b.name || "");
     });
+  }
+  /* Moves one combatant to position `to` in the order. It takes the
+     initiative of whoever it now sits next to, and every tied group gets its
+     ranks rewritten in on-screen order, so the drag is exactly what sorts. */
+  function moveCombatant(enc, cid, to) {
+    var list = ordered(enc);
+    var from = -1;
+    list.forEach(function (c, i) { if (c.cid === cid) from = i; });
+    if (from < 0) return false;
+    to = Math.max(0, Math.min(list.length - 1, to));
+    if (to === from) return false;
+    var item = list.splice(from, 1)[0];
+    list.splice(to, 0, item);
+    var nb = list[to - 1] || list[to + 1];
+    if (nb) item.init = nb.init;
+    var rank = {};
+    list.forEach(function (c) {
+      rank[c.init] = rank[c.init] || 0;
+      c.tie = rank[c.init]++;
+    });
+    return true;
+  }
+  /* "Goblin B" and "Goblin" are the same kind of thing for a shared roll. */
+  function kindOf(c) {
+    return c.ref ? "ref:" + c.ref : "name:" + String(c.name || "").replace(/ [A-Z]$/, "");
+  }
+  /* One roll per kind of NPC, the way the book runs a pack: every Gutter
+     Ganger acts on the same count. Party initiative is left alone, players
+     roll their own. */
+  function rollNpcInitiative(enc) {
+    var lib = npcAll(), rolled = {};
+    enc.combatants.forEach(function (c) {
+      if (c.src === "pc") return;
+      var k = kindOf(c);
+      if (!(k in rolled)) {
+        var n = c.ref ? lib.filter(function (x) { return x.id === c.ref; })[0] : null;
+        rolled[k] = d20(n ? n.init || 0 : 0).total;
+      }
+      c.init = rolled[k];
+      delete c.tie;
+    });
+    setTurn(enc, ordered(enc)[0]);
+    return rolled;
   }
 
   /* Whose turn it is used to be an index into the list ordered() returns,
@@ -3290,15 +3370,20 @@ window.TTGM = (function () {
     enc.turnCid = cb ? cb.cid : null;
     delete enc.turnIx;                 // the old field is no longer authoritative
   }
+  /* Anyone who fled is skipped; if everyone has, the marker stays put. */
   function stepTurn(enc, delta) {
     var list = ordered(enc);
     if (!list.length) { enc.turnCid = null; return; }
     var cur = turnOf(enc);
     var i = list.indexOf(cur);
     if (i < 0) i = 0;
-    var next = i + delta;
-    if (next >= list.length) { next = 0; enc.round = (enc.round || 1) + 1; }
-    else if (next < 0) { next = list.length - 1; enc.round = Math.max(1, (enc.round || 1) - 1); }
+    var next = i;
+    for (var tries = 0; tries < list.length; tries++) {
+      next += delta;
+      if (next >= list.length) { next = 0; enc.round = (enc.round || 1) + 1; }
+      else if (next < 0) { next = list.length - 1; enc.round = Math.max(1, (enc.round || 1) - 1); }
+      if (!list[next].fled) break;
+    }
     setTurn(enc, list[next]);
   }
   function liveEnc() {
@@ -3425,6 +3510,7 @@ window.TTGM = (function () {
       var party = partyChars();
       encPatch(function (e) {
         e.combatants.forEach(function (c) {
+          delete c.tie;
           if (c.src === "pc") {
             var p = party.filter(function (x) { return x.rec.id === c.ref; })[0];
             c.init = d20(p ? combatInitiative(p, party) : 0).total;
@@ -3437,12 +3523,35 @@ window.TTGM = (function () {
       });
       redraw();
     }));
+    if (enc.combatants.some(function (c) { return c.src !== "pc"; })) {
+      nav.appendChild(btn("Roll NPC initiative", "", function () {
+        var kinds = 0;
+        encPatch(function (e) { kinds = Object.keys(rollNpcInitiative(e)).length; });
+        toast(kinds === 1 ? "One roll for the whole pack" : kinds + " rolls, one for each kind of foe");
+        redraw();
+      }));
+    }
+    nav.appendChild(btn(enc.morale ? "Morale: on" : "Morale: off", enc.morale ? "primary" : "", function () {
+      encPatch(function (e) { e.morale = !e.morale; });
+      redraw();
+    }));
     ctl.appendChild(nav);
     s.appendChild(ctl);
 
+    var diff = difficultyStrip(enc);
+    if (diff) s.appendChild(diff);
+    if (enc.morale) {
+      var mor = moraleCard(enc);
+      if (mor) s.appendChild(mor);
+    }
+
     /* the order */
     var rows = el("div", "gm-init");
-    list.forEach(function (cb) { rows.appendChild(combatantRow(cb, cur && cb.cid === cur.cid)); });
+    list.forEach(function (cb, ix) {
+      rows.appendChild(combatantRow(cb, cur && cb.cid === cur.cid,
+        { ix: ix, count: list.length, morale: !!enc.morale }));
+    });
+    wireDrag(rows);
     s.appendChild(rows);
 
     var end = row("gm-row end");
@@ -3465,6 +3574,183 @@ window.TTGM = (function () {
     renderEncLibrary(s, enc);
   }
 
+  /* ---- difficulty: the foes' XP against the party's budget ------------- */
+  function crXp(cr) {
+    var k = String(cr == null ? "" : cr).trim().replace(/^CR\s*/i, "");
+    return Object.prototype.hasOwnProperty.call(G.xpByCr, k) ? G.xpByCr[k] : null;
+  }
+  function encounterDifficulty(enc) {
+    var party = partyChars(), lib = npcAll(), levels = [];
+    var pcs = enc.combatants.filter(function (c) { return c.src === "pc"; });
+    if (pcs.length) {
+      pcs.forEach(function (c) {
+        var p = party.filter(function (x) { return x.rec.id === c.ref; })[0];
+        levels.push(p ? Number(p.c.level) : NaN);
+      });
+    } else {
+      party.forEach(function (p) { levels.push(Number(p.c.level)); });
+    }
+    levels = levels.filter(function (l) { return l >= 1; }).map(function (l) { return Math.min(20, Math.floor(l)); });
+    var budget = [0, 0, 0];
+    levels.forEach(function (l) { for (var i = 0; i < 3; i++) budget[i] += G.xpBudget[l][i]; });
+    var xp = 0, uncounted = 0, foes = 0;
+    enc.combatants.forEach(function (c) {
+      if (c.src === "pc") return;
+      foes++;
+      var n = c.ref ? lib.filter(function (x) { return x.id === c.ref; })[0] : null;
+      var v = n ? crXp(n.cr) : null;
+      if (v == null) uncounted++; else xp += v;
+    });
+    var band = null;
+    if (levels.length && foes) {
+      band = xp <= budget[0] ? "Low" : xp <= budget[1] ? "Moderate" : xp <= budget[2] ? "High" : "Over High";
+    }
+    return { xp: xp, budget: budget, band: band, pcs: levels.length, foes: foes, uncounted: uncounted };
+  }
+  function fmtNum(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ","); }
+  function difficultyStrip(enc) {
+    var d = encounterDifficulty(enc);
+    if (!d.foes) return null;
+    var w = el("div", "gm-diff");
+    var head = el("div", "gm-diff-head");
+    head.appendChild(txt("span", "gm-label", "Difficulty"));
+    if (!d.pcs) {
+      head.appendChild(txt("span", "gm-note", "Import the party to see how hard this fight is."));
+      w.appendChild(head);
+      return w;
+    }
+    var tone = d.band === "Low" ? "signal" : d.band === "Moderate" ? "gold" : "alert";
+    head.appendChild(txt("b", "gm-diff-band tone-" + tone, d.band));
+    head.appendChild(txt("span", "gm-diff-xp", fmtNum(d.xp)));
+    head.appendChild(txt("span", "gm-note", "XP"));
+    w.appendChild(head);
+    var top = Math.max(d.budget[2] * 1.25, d.xp, 1);
+    var bar = el("div", "gm-diff-bar");
+    var fill = el("div", "gm-diff-fill tone-" + tone);
+    fill.style.width = Math.min(100, (d.xp / top) * 100) + "%";
+    bar.appendChild(fill);
+    ["Low", "Moderate", "High"].forEach(function (name, i) {
+      var m = el("span", "gm-diff-mark");
+      m.style.left = Math.min(100, (d.budget[i] / top) * 100) + "%";
+      m.title = name + ": " + fmtNum(d.budget[i]) + " XP";
+      bar.appendChild(m);
+    });
+    w.appendChild(bar);
+    var legend = el("div", "gm-diff-legend");
+    ["Low", "Moderate", "High"].forEach(function (name, i) {
+      var k = el("span");
+      k.appendChild(txt("span", null, name));
+      k.appendChild(txt("b", null, fmtNum(d.budget[i])));
+      legend.appendChild(k);
+    });
+    w.appendChild(legend);
+    if (d.uncounted) {
+      w.appendChild(txt("div", "gm-note", d.uncounted === 1
+        ? "1 foe has no challenge rating and isn't counted."
+        : d.uncounted + " foes have no challenge rating and aren't counted."));
+    }
+    return w;
+  }
+
+  /* ---- morale: half their side is down, the rest may not stay ---------- */
+  var moraleRolls = {};
+  function moraleState(enc) {
+    var foes = enc.combatants.filter(function (c) { return c.src !== "pc"; });
+    var down = foes.filter(function (c) { return c.dead || c.fled; }).length;
+    var standing = foes.filter(function (c) { return !c.dead && !c.fled; });
+    return { foes: foes.length, down: down, standing: standing,
+             due: foes.length >= 2 && down * 2 >= foes.length && standing.length > 0 };
+  }
+  function rollMorale(enc) {
+    var lib = npcAll(), out = {};
+    moraleState(enc).standing.forEach(function (c) {
+      var n = c.ref ? lib.filter(function (x) { return x.id === c.ref; })[0] : null;
+      var wis = n && n.scores && typeof n.scores.Wis === "number" ? T.mod(n.scores.Wis) : 0;
+      var r = d20(wis);
+      out[c.cid] = { total: r.total, pass: r.total >= 10 };
+    });
+    moraleRolls = out;
+    return out;
+  }
+  function setFled(cid, fled) {
+    encPatch(function (e) {
+      e.combatants.forEach(function (x) { if (x.cid === cid) x.fled = !!fled; });
+      var active = turnOf(e);
+      if (fled && active && active.cid === cid) stepTurn(e, 1);
+    });
+  }
+  function moraleCard(enc) {
+    var st = moraleState(enc);
+    if (!st.due) return null;
+    var box = el("div", "gm-morale");
+    box.appendChild(txt("div", "gm-label", "Morale check"));
+    box.appendChild(txt("p", null, "Half their side is down. Each foe still standing makes a DC 10 Wisdom save; on a failure they run or give up."));
+    var go = row("gm-row");
+    go.appendChild(btn("Roll morale", "primary", function () { rollMorale(liveEnc()); redraw(); }));
+    box.appendChild(go);
+    var any = false;
+    st.standing.forEach(function (c) {
+      var r = moraleRolls[c.cid];
+      if (!r) return;
+      any = true;
+      var line = el("div", "gm-morale-line " + (r.pass ? "holds" : "fails"));
+      line.appendChild(txt("b", null, c.name));
+      line.appendChild(txt("span", "num", String(r.total)));
+      line.appendChild(txt("span", null, r.pass ? "holds" : "breaks"));
+      if (!r.pass) line.appendChild(btn("Fled", "tiny", function () { setFled(c.cid, true); redraw(); }));
+      box.appendChild(line);
+    });
+    if (!any) box.appendChild(txt("div", "gm-note", "Nobody has rolled yet."));
+    return box;
+  }
+
+  /* ---- drag to reorder, by pointer (mouse and touch) ------------------- */
+  function wireDrag(rows) {
+    [].forEach.call(rows.children, function (r, ix) {
+      var grip = r.querySelector(".gm-grip");
+      if (!grip) return;
+      grip.addEventListener("pointerdown", function (ev) {
+        if (ev.button != null && ev.button !== 0) return;
+        ev.preventDefault();
+        try { grip.setPointerCapture(ev.pointerId); } catch (e) {}
+        r.classList.add("dragging");
+        var kids = [].slice.call(rows.children);
+        function slot(y) {
+          for (var i = 0; i < kids.length; i++) {
+            var b = kids[i].getBoundingClientRect();
+            if (y < b.top + b.height / 2) return i;
+          }
+          return kids.length;
+        }
+        function mark(at) {
+          kids.forEach(function (k, i) {
+            k.classList.toggle("drop-before", i === at && at !== ix && at !== ix + 1);
+            k.classList.toggle("drop-after", at === kids.length && i === kids.length - 1 && ix !== kids.length - 1);
+          });
+        }
+        function move(e) { mark(slot(e.clientY)); }
+        function done(e, cancel) {
+          grip.removeEventListener("pointermove", move);
+          grip.removeEventListener("pointerup", up);
+          grip.removeEventListener("pointercancel", cancelled);
+          kids.forEach(function (k) { k.classList.remove("drop-before", "drop-after", "dragging"); });
+          if (cancel) return;
+          var at = slot(e.clientY);
+          var to = at > ix ? at - 1 : at;
+          if (to === ix) return;
+          var cid = r.getAttribute("data-cid");
+          encPatch(function (enc) { moveCombatant(enc, cid, to); });
+          redraw();
+        }
+        function up(e) { done(e, false); }
+        function cancelled(e) { done(e, true); }
+        grip.addEventListener("pointermove", move);
+        grip.addEventListener("pointerup", up);
+        grip.addEventListener("pointercancel", cancelled);
+      });
+    });
+  }
+
   function renderEncLibrary(s, enc) {
     var lib = encAll();
     if (!lib.length) return;
@@ -3482,7 +3768,7 @@ window.TTGM = (function () {
         // A template can be saved mid-fight, so every per-fight field resets,
         // temporary hit points included, which used to ride along forever.
         copy.combatants.forEach(function (c) {
-          c.cid = uid("k"); c.hp = c.hpMax; c.tmp = 0; c.conds = []; c.dead = false;
+          c.cid = uid("k"); c.hp = c.hpMax; c.tmp = 0; c.conds = []; c.dead = false; c.fled = false;
         });
         copy.turnCid = (ordered(copy)[0] || {}).cid || null;
         delete copy.turnIx;
@@ -3499,16 +3785,39 @@ window.TTGM = (function () {
     s.appendChild(wrap);
   }
 
-  function combatantRow(cb, isCurrent) {
-    var r = el("div", "gm-cb" + (isCurrent ? " on" : "") + (cb.dead ? " out" : ""));
+  function combatantRow(cb, isCurrent, pos) {
+    pos = pos || {};
+    var r = el("div", "gm-cb" + (isCurrent ? " on" : "") + (cb.dead || cb.fled ? " out" : "") + (cb.fled ? " fled" : ""));
+    r.setAttribute("data-cid", cb.cid);
 
     var head = el("div", "gm-cb-head");
+    if (pos.count > 1) {
+      var grip = txt("button", "gm-grip", "⠿");
+      grip.title = "Drag to change the order";
+      grip.setAttribute("aria-label", "Drag to change the order");
+      head.appendChild(grip);
+    }
     head.appendChild(txt("div", "init", cb.init));
     var nameBox = el("div", "who");
     nameBox.appendChild(txt("div", "n", cb.name));
     var meta = cb.src === "pc" ? "player character" : cb.src === "adhoc" ? "ad-hoc" : "NPC";
     nameBox.appendChild(txt("div", "m", meta + " · AC " + cb.ac));
     head.appendChild(nameBox);
+    if (pos.count > 1) {
+      var mv = el("div", "gm-mv");
+      var upB = btn("▲", "tiny", function () {
+        encPatch(function (e) { moveCombatant(e, cb.cid, pos.ix - 1); }); redraw();
+      });
+      upB.title = "Move up in the order"; upB.setAttribute("aria-label", "Move up in the order");
+      upB.disabled = pos.ix === 0;
+      var dnB = btn("▼", "tiny", function () {
+        encPatch(function (e) { moveCombatant(e, cb.cid, pos.ix + 1); }); redraw();
+      });
+      dnB.title = "Move down in the order"; dnB.setAttribute("aria-label", "Move down in the order");
+      dnB.disabled = pos.ix === pos.count - 1;
+      mv.appendChild(upB); mv.appendChild(dnB);
+      head.appendChild(mv);
+    }
     r.appendChild(head);
 
     /* hit points, updated in place. A full re-render here would blow away
@@ -3523,9 +3832,9 @@ window.TTGM = (function () {
       fill.style.width = pct + "%";
       fill.className = "gm-hpfill " + (pct > 50 ? "ok" : pct > 20 ? "hurt" : "bad");
       label.textContent = cb.hp + " / " + cb.hpMax + (cb.tmp ? "  +" + cb.tmp : "");
-      r.classList.toggle("out", !!cb.dead);
+      r.classList.toggle("out", !!cb.dead || !!cb.fled);
       var st = r.querySelector(".gm-cb-state");
-      if (st) st.textContent = cb.dead ? "down" : "";
+      if (st) st.textContent = cb.fled ? "fled" : cb.dead ? "down" : "";
     }
     function persist() {
       encPatch(function (e) {
@@ -3578,7 +3887,7 @@ window.TTGM = (function () {
     pad.appendChild(tmpB);
     hpWrap.appendChild(pad);
     r.appendChild(hpWrap);
-    r.appendChild(txt("div", "gm-cb-state", cb.dead ? "down" : ""));
+    r.appendChild(txt("div", "gm-cb-state", cb.fled ? "fled" : cb.dead ? "down" : ""));
 
     /* conditions */
     var cond = el("div", "gm-cond");
@@ -3628,6 +3937,11 @@ window.TTGM = (function () {
           tools.appendChild(b);
         });
       }
+    }
+    if (cb.fled) {
+      tools.appendChild(btn("Back in", "tiny", function () { setFled(cb.cid, false); redraw(); }));
+    } else if (pos.morale && cb.src !== "pc") {
+      tools.appendChild(btn("Fled", "tiny", function () { setFled(cb.cid, true); redraw(); }));
     }
     tools.appendChild(btn("Remove", "tiny", function () {
       encPatch(function (e) {
@@ -3751,6 +4065,8 @@ window.TTGM = (function () {
     importVault: importVault, loadDemo: loadDemo, exitDemo: exitDemo, inDemo: inDemo,
     storyState: storyState, rollVision: rollVision, storyStartClocks: storyStartClocks,
     storyAddNpcs: storyAddNpcs, cleanStory: cleanStory, help: HELP,
-    walkState: walkState, showWalk: showWalk, storyPatch: storyPatch
+    walkState: walkState, showWalk: showWalk, storyPatch: storyPatch,
+    moveCombatant: moveCombatant, rollNpcInitiative: rollNpcInitiative, stepTurn: stepTurn,
+    encounterDifficulty: encounterDifficulty, moraleState: moraleState, rollMorale: rollMorale, crXp: crXp
   };
 })();

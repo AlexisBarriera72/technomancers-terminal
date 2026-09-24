@@ -9,7 +9,8 @@ const SUITES = {
   rules: require("./rules.test"),
   browser: require("./browser.test"),
   sw: require("./sw.test"),
-  story: require("./story.test")
+  story: require("./story.test"),
+  city: require("./city.test")
 };
 
 (async () => {

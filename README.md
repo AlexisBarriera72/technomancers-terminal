@@ -230,7 +230,7 @@ Seven screens, the first five below, then Story and Campaign:
 | Screen | What it does |
 |---|---|
 | **Party** | Every PC's AC, HP, initiative, passives, saves, Humanity and class DC on one page. Plus *who's best at…* for any skill, the god's attention die, the table's Street Cred, and which named pairs this particular set of people makes. |
-| **Encounter** | Initiative order, hit points, temp HP, conditions, round counter. Tap a number pad to damage or heal. |
+| **Encounter** | Initiative order, hit points, temp HP, conditions, round counter. Tap a number pad to damage or heal. Drag a combatant by its ⠿ handle (or ▲ ▼) to change the order; **Roll NPC initiative** gives each kind of foe one shared roll; a **Difficulty** bar weighs the foes' XP (by CR) against the party's SRD 5.2 budget for their levels; **Morale** asks for a DC 10 Wisdom save when half the foes are down, and a foe who breaks is marked Fled and skipped. |
 | **Rulings** | What to make them roll and what to set it at, with each character's real modifier and the odds. A searchable catalogue sits under a generic picker that covers anything, and an NPC reaction roll for what someone makes of them. |
 | **NPCs** | Statblocks, from twelve templates or blank. Mooks are one line. Includes an improviser for the NPC you didn't prepare. |
 | **Clocks** | Segmented progress clocks and a session scratchpad. |
@@ -341,6 +341,7 @@ one side only would leave a line in English. CI runs both on every push.
 | `test/rules.test.js` | Ability scores, feats, per-class ASI levels, AC, proficiency, the import validator. |
 | `test/browser.test.js` | Injection, save failures, the GM vault export, share-link transitions, and that the app still works. |
 | `test/sw.test.js` | A failed update must not replace a working offline cache. |
+| `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale. |
 | `test/story.test.js` | The story holds together (every scene complete, every reference resolves), the Story tab tracks, rolls and persists, the demo walkthrough adds up, and every synergy says what it does. |
 
 ## Deploying a change
