@@ -186,34 +186,34 @@ window.TTCITY = {
      "Take it" starts. */
   bounties: {
     low: { name: "Jobs for a crew with a bad name (Street Cred below 0)", die: 8, rows: [
-      { job: "Carry a sealed box down the Spine without opening it", who: "A Gullet fence who won't give a name", pay: "600 grams", catch: "The box is ticking, and the fence has already sold the route to someone else.", seg: 4 },
-      { job: "Strip a crashed drone before the Watch arrives", who: "A scav crew boss", pay: "400 grams and a cut", catch: "The drone belongs to House Vigil, and it is still recording.", seg: 4 },
-      { job: "Stand at a door and look frightening while a debt is collected", who: "A House Thorn clerk", pay: "500 grams", catch: "The debtor is somebody the crew owes a favour to.", seg: 4 },
-      { job: "Find a runaway driller and bring him back to his shift", who: "A House Lathe foreman", pay: "800 grams", catch: "He ran because of what he saw in the new bore.", seg: 6 },
-      { job: "Clear squatters out of a Seventh Rib tenement", who: "A foreclosure agent", pay: "700 grams", catch: "The squatters are the family who still own it on paper.", seg: 6 },
-      { job: "Test an unlicensed implant by wearing it for a week", who: "An unlicensed carver", pay: "1,000 grams and the implant", catch: "It installs at +2 Humanity and carries a Remnant.", seg: 6 },
-      { job: "Steal back a pawned choir coin", who: "A desperate pilgrim", pay: "300 grams and a prayer", catch: "The pawnbroker is paying the Watch.", seg: 4 },
-      { job: "Guard a black clinic overnight", who: "Dr. Maret Vhoss", pay: "900 grams", catch: "House Lathe raids it tonight.", seg: 6 }
+      { job: "Carry a sealed box down the Spine without opening it", who: "A Gullet fence who won't give a name", pay: "1,200 grams", catch: "The box is ticking, and the fence has already sold the route to someone else.", seg: 4 },
+      { job: "Strip a crashed drone before the Watch arrives", who: "A scav crew boss", pay: "800 grams and a cut", catch: "The drone belongs to House Vigil, and it is still recording.", seg: 4 },
+      { job: "Stand at a door and look frightening while a debt is collected", who: "A House Thorn clerk", pay: "1,000 grams", catch: "The debtor is somebody the crew owes a favour to.", seg: 4 },
+      { job: "Find a runaway driller and bring him back to his shift", who: "A House Lathe foreman", pay: "1,600 grams", catch: "He ran because of what he saw in the new bore.", seg: 6 },
+      { job: "Clear squatters out of a Seventh Rib tenement", who: "A foreclosure agent", pay: "1,400 grams", catch: "The squatters are the family who still own it on paper.", seg: 6 },
+      { job: "Test an unlicensed implant by wearing it for a week", who: "An unlicensed carver", pay: "2,000 grams and the implant", catch: "It installs at +2 Humanity and carries a Remnant.", seg: 6 },
+      { job: "Steal back a pawned choir coin", who: "A desperate pilgrim", pay: "600 grams and a prayer", catch: "The pawnbroker is paying the Watch.", seg: 4 },
+      { job: "Guard a black clinic overnight", who: "Dr. Maret Vhoss", pay: "1,800 grams", catch: "House Lathe raids it tonight.", seg: 6 }
     ] },
     mid: { name: "Jobs for a crew the street knows (Street Cred 0 to 4)", die: 8, rows: [
-      { job: "Escort a ward-keeper to a ward that has started humming", who: "House Vigil", pay: "2,000 grams", catch: "The ward is humming because someone is trying to switch it off from the inside.", seg: 6 },
-      { job: "Recover a ledger page before the Weighing", who: "A family on Thorn's book", pay: "1,500 grams and a debt forgiven", catch: "The page is in the Counting Rib, in a room with no doors.", seg: 6 },
-      { job: "Map a new tunnel in the god's nervous system", who: "Ketch", pay: "2,500 grams", catch: "The second voice has already mapped it, and wants the crew to find something specific.", seg: 8 },
-      { job: "Deliver a bribe to a lift operator, and make sure it lands", who: "Mother Slate", pay: "1,800 grams", catch: "The operator has been bought already, twice.", seg: 4 },
-      { job: "Protect a witness until the Cantor hears her question", who: "A Sanctum Null priest", pay: "2,200 grams", catch: "Three Houses want her silent, and the queue is two days long.", seg: 8 },
-      { job: "Retrieve a shunt from a repossession warehouse", who: "A woman who missed one payment", pay: "1,200 grams", catch: "Something has grown into it since.", seg: 6 },
-      { job: "Win a duel on a debtor's behalf", who: "A Seventh Rib tenant", pay: "2,000 grams", catch: "The other champion is Ser Ambrel Dace's student.", seg: 4 },
-      { job: "Find out who is selling chrome that answers to its old owner", who: "House Lathe, quietly", pay: "3,000 grams", catch: "The old owner is alive and wants it back.", seg: 8 }
+      { job: "Escort a ward-keeper to a ward that has started humming", who: "House Vigil", pay: "4,000 grams", catch: "The ward is humming because someone is trying to switch it off from the inside.", seg: 6 },
+      { job: "Recover a ledger page before the Weighing", who: "A family on Thorn's book", pay: "3,000 grams and a debt forgiven", catch: "The page is in the Counting Rib, in a room with no doors.", seg: 6 },
+      { job: "Map a new tunnel in the god's nervous system", who: "Ketch", pay: "5,000 grams", catch: "The second voice has already mapped it, and wants the crew to find something specific.", seg: 8 },
+      { job: "Deliver a bribe to a lift operator, and make sure it lands", who: "Mother Slate", pay: "3,600 grams", catch: "The operator has been bought already, twice.", seg: 4 },
+      { job: "Protect a witness until the Cantor hears her question", who: "A Sanctum Null priest", pay: "4,400 grams", catch: "Three Houses want her silent, and the queue is two days long.", seg: 8 },
+      { job: "Retrieve a shunt from a repossession warehouse", who: "A woman who missed one payment", pay: "2,400 grams", catch: "Something has grown into it since.", seg: 6 },
+      { job: "Win a duel on a debtor's behalf", who: "A Seventh Rib tenant", pay: "4,000 grams", catch: "The other champion is Ser Ambrel Dace's student.", seg: 4 },
+      { job: "Find out who is selling chrome that answers to its old owner", who: "House Lathe, quietly", pay: "6,000 grams", catch: "The old owner is alive and wants it back.", seg: 8 }
     ] },
     high: { name: "Jobs for a crew with a name (Street Cred 5 and up)", die: 8, rows: [
-      { job: "Steal a minute at the Eye that someone else already paid for", who: "A House heir", pay: "8,000 grams", catch: "The minute was bought by the crew's own future.", seg: 8 },
-      { job: "Broker a truce between Thorn and Lathe for one night", who: "House Vigil", pay: "10,000 grams and a patron's favour", catch: "Somebody wants the truce broken, and they have hired a crew too.", seg: 8 },
-      { job: "Carry a Crown message down to the Marrowworks by hand", who: "An Archdeacon", pay: "6,000 grams", catch: "The message is a death warrant for the foreman who reads it.", seg: 6 },
-      { job: "Rescue a netrunner lost in the god's nervous system", who: "Her crew", pay: "7,500 grams", catch: "She doesn't want to come back.", seg: 8 },
+      { job: "Steal a minute at the Eye that someone else already paid for", who: "A House heir", pay: "16,000 grams", catch: "The minute was bought by the crew's own future.", seg: 8 },
+      { job: "Broker a truce between Thorn and Lathe for one night", who: "House Vigil", pay: "20,000 grams and a patron's favour", catch: "Somebody wants the truce broken, and they have hired a crew too.", seg: 8 },
+      { job: "Carry a Crown message down to the Marrowworks by hand", who: "An Archdeacon", pay: "12,000 grams", catch: "The message is a death warrant for the foreman who reads it.", seg: 6 },
+      { job: "Rescue a netrunner lost in the god's nervous system", who: "Her crew", pay: "15,000 grams", catch: "She doesn't want to come back.", seg: 8 },
       { job: "Stop a foreclosure in thirty days", who: "Eleven thousand tenants of the Seventh Rib", pay: "Whatever they can raise, and the street's love", catch: "The clause at the end of the contract is real.", seg: 12 },
       { job: "Guard the Cantor's nave on Choir Day", who: "The Cantor itself", pay: "A choir coin", catch: "Nine hundred voices, and one of them is silent, waiting.", seg: 6 },
-      { job: "Retrieve a drill head from the new bore", who: "House Lathe", pay: "12,000 grams", catch: "It isn't a drill head any more.", seg: 8 },
-      { job: "Find the people who keep singing the city to sleep", who: "House Reliquary", pay: "9,000 grams", catch: "They are the Hush, and they are right.", seg: 8 }
+      { job: "Retrieve a drill head from the new bore", who: "House Lathe", pay: "24,000 grams", catch: "It isn't a drill head any more.", seg: 8 },
+      { job: "Find the people who keep singing the city to sleep", who: "House Reliquary", pay: "18,000 grams", catch: "They are the Hush, and they are right.", seg: 8 }
     ] }
   },
 
@@ -223,74 +223,74 @@ window.TTCITY = {
   loot: {
     band: {
       below: { name: "Loot below the Nave", die: 10, rows: [
-        { item: "A driller's shift token, good for one hot meal in the Marrowworks", grams: 15 },
-        { item: "A cracked ichor ampule, a quarter full", grams: 400 },
-        { item: "A bone charm carved from a real rib splinter", grams: 60 },
-        { item: "A Gullet stallholder's ledger, in a private code", grams: 150 },
-        { item: "A rebreather mask stamped with House Lathe's mark", grams: 220 },
-        { item: "A pouch of loose grams, sticky with marrow", grams: 90 },
-        { item: "A pawn ticket for an implant nobody came back for", grams: 300 },
-        { item: "A scav's multitool, one blade still sharp", grams: 45 },
+        { item: "A driller's shift token, good for one hot meal in the Marrowworks", grams: 30 },
+        { item: "A cracked ichor ampule, a quarter full", grams: 800 },
+        { item: "A bone charm carved from a real rib splinter", grams: 120 },
+        { item: "A Gullet stallholder's ledger, in a private code", grams: 300 },
+        { item: "A rebreather mask stamped with House Lathe's mark", grams: 440 },
+        { item: "A pouch of loose grams, sticky with marrow", grams: 180 },
+        { item: "A pawn ticket for an implant nobody came back for", grams: 600 },
+        { item: "A scav's multitool, one blade still sharp", grams: 90 },
         { item: "A wax tablet with a debt written on it, and a signature", grams: 0 },
-        { item: "A second-hand cyberclaw, unkeyed, warm to the touch", grams: 1800 }
+        { item: "A second-hand cyberclaw, unkeyed, warm to the touch", grams: 3600 }
       ] },
       middle: { name: "Loot from the Nave to the Seventh Rib", die: 10, rows: [
-        { item: "A Watch patrol's route card for this week", grams: 500 },
-        { item: "A clerk's stamp from the Counting Rib", grams: 750 },
-        { item: "Lift passes for the Spine, six days' worth", grams: 180 },
-        { item: "A pilgrim's mask, the wards' marks still bright", grams: 1200 },
+        { item: "A Watch patrol's route card for this week", grams: 1000 },
+        { item: "A clerk's stamp from the Counting Rib", grams: 1500 },
+        { item: "Lift passes for the Spine, six days' worth", grams: 360 },
+        { item: "A pilgrim's mask, the wards' marks still bright", grams: 2400 },
         { item: "A folded foreclosure notice for a tenement that hasn't been served yet", grams: 0 },
-        { item: "A purse of grams and a prayer card", grams: 260 },
-        { item: "A ward-key blank, uncut", grams: 900 },
-        { item: "An operator's lift key, stolen", grams: 1400 },
+        { item: "A purse of grams and a prayer card", grams: 520 },
+        { item: "A ward-key blank, uncut", grams: 1800 },
+        { item: "An operator's lift key, stolen", grams: 2800 },
         { item: "A sealed petition to the Cantor, not yet asked", grams: 0 },
-        { item: "A clean smartlink, still in its House packaging", grams: 4500 }
+        { item: "A clean smartlink, still in its House packaging", grams: 9000 }
       ] },
       above: { name: "Loot from Lanternside to the Crown", die: 10, rows: [
-        { item: "A pilgrim hostel's donation box, full", grams: 700 },
-        { item: "A House heir's signet, which opens doors and closes others", grams: 3000 },
-        { item: "A bottle of the Crown's clear air, sealed", grams: 350 },
-        { item: "An indulgence certificate, transferable", grams: 2500 },
-        { item: "A minute at the Eye, prepaid, with someone else's name on it", grams: 5000 },
-        { item: "Jewellery with a House crest, hard to sell below the Nave", grams: 1800 },
-        { item: "A Reliquary shunt, recently repossessed", grams: 4000 },
+        { item: "A pilgrim hostel's donation box, full", grams: 1400 },
+        { item: "A House heir's signet, which opens doors and closes others", grams: 6000 },
+        { item: "A bottle of the Crown's clear air, sealed", grams: 700 },
+        { item: "An indulgence certificate, transferable", grams: 5000 },
+        { item: "A minute at the Eye, prepaid, with someone else's name on it", grams: 10000 },
+        { item: "Jewellery with a House crest, hard to sell below the Nave", grams: 3600 },
+        { item: "A Reliquary shunt, recently repossessed", grams: 8000 },
         { item: "A choir coin", grams: 0 },
-        { item: "A manor servant's key ring", grams: 600 },
-        { item: "A bone-carved pistol inlaid with ichor filigree", grams: 7500 }
+        { item: "A manor servant's key ring", grams: 1200 },
+        { item: "A bone-carved pistol inlaid with ichor filigree", grams: 15000 }
       ] }
     },
     house: {
       reliquary: { name: "Something of House Reliquary's", die: 6, rows: [
-        { item: "A blessed candle that does not burn down", grams: 120 },
-        { item: "A page from an indulgence ledger", grams: 300 },
-        { item: "A vial of holy water that hums near chrome", grams: 250 },
-        { item: "An Archdeacon's letter of passage", grams: 1500 },
-        { item: "A relic in a glass case: a finger bone, very old", grams: 2200 },
-        { item: "A minute-glass from the Eye's chapel", grams: 900 }
+        { item: "A blessed candle that does not burn down", grams: 240 },
+        { item: "A page from an indulgence ledger", grams: 600 },
+        { item: "A vial of holy water that hums near chrome", grams: 500 },
+        { item: "An Archdeacon's letter of passage", grams: 3000 },
+        { item: "A relic in a glass case: a finger bone, very old", grams: 4400 },
+        { item: "A minute-glass from the Eye's chapel", grams: 1800 }
       ] },
       thorn: { name: "Something of House Thorn's", die: 6, rows: [
-        { item: "A collector's writ, unsigned", grams: 400 },
+        { item: "A collector's writ, unsigned", grams: 800 },
         { item: "A debt ledger page naming someone the crew knows", grams: 0 },
-        { item: "A thorn pin: a collector's badge of office", grams: 650 },
-        { item: "A strongbox of seized goods", grams: 1700 },
-        { item: "A duelling glove, House-marked", grams: 300 },
-        { item: "A deed to a Seventh Rib tenement", grams: 3500 }
+        { item: "A thorn pin: a collector's badge of office", grams: 1300 },
+        { item: "A strongbox of seized goods", grams: 3400 },
+        { item: "A duelling glove, House-marked", grams: 600 },
+        { item: "A deed to a Seventh Rib tenement", grams: 7000 }
       ] },
       lathe: { name: "Something of House Lathe's", die: 6, rows: [
-        { item: "A carver's licence, blank", grams: 2000 },
-        { item: "A drill bit that bleeds a little when it's cold", grams: 800 },
-        { item: "A flask of raw ichor", grams: 1200 },
-        { item: "Surgical tools in a bone case", grams: 950 },
+        { item: "A carver's licence, blank", grams: 4000 },
+        { item: "A drill bit that bleeds a little when it's cold", grams: 1600 },
+        { item: "A flask of raw ichor", grams: 2400 },
+        { item: "Surgical tools in a bone case", grams: 1900 },
         { item: "A shift roster for the new bore", grams: 0 },
-        { item: "An implant blank carved from fresh marrow", grams: 4200 }
+        { item: "An implant blank carved from fresh marrow", grams: 8400 }
       ] },
       vigil: { name: "Something of House Vigil's", die: 6, rows: [
-        { item: "A Watch badge", grams: 500 },
-        { item: "A ward-key, one night's use", grams: 1600 },
-        { item: "A lift operator's licence", grams: 1100 },
+        { item: "A Watch badge", grams: 1000 },
+        { item: "A ward-key, one night's use", grams: 3200 },
+        { item: "A lift operator's licence", grams: 2200 },
         { item: "A census roll for one rib", grams: 0 },
-        { item: "A stun baton, charged", grams: 350 },
-        { item: "A map of which wards are failing", grams: 2400 }
+        { item: "A stun baton, charged", grams: 700 },
+        { item: "A map of which wards are failing", grams: 4800 }
       ] }
     }
   },

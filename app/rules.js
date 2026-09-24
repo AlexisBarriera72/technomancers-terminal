@@ -185,9 +185,9 @@ function maxHP() {
 }
 function spend() {
   var t = 0;
-  C.cyber.forEach(function (x) { t += parseCredits(cyberCost[x.name.toLowerCase() + "|" + x.tier]); });
-  C.augments.forEach(function (n) { t += parseCredits(augCost[n.toLowerCase()]); });
-  C.gear.forEach(function (g) { t += parseCredits(g.cost) * (g.qty > 0 ? g.qty : 1); });
+  C.cyber.forEach(function (x) { t += chromePrice(x); });
+  C.augments.forEach(function (n) { t += augPrice(n); });
+  C.gear.forEach(function (g) { t += gearPrice(g) * (g.qty > 0 ? g.qty : 1); });
   return t;
 }
 function mySub() {

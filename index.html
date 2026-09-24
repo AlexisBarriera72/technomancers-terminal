@@ -443,6 +443,10 @@ details.item .body p,details.item .body ul{max-width:70ch}
 .installed-bar .k{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;
   text-transform:uppercase;color:var(--accent);margin-bottom:5px}
 .installed-bar .list{display:flex;flex-wrap:wrap;gap:5px}
+.prices-note{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin:10px 0 0;font-size:14px;color:var(--ink-dim)}
+.prices-note b{color:var(--signal);font-family:var(--f-display);letter-spacing:.04em}
+.book-cost{font-size:.8em;color:var(--ink-faint);text-decoration:line-through;text-decoration-thickness:1px;white-space:nowrap}
+td.cost{white-space:nowrap}
 .no-results{color:var(--ink-faint);font-style:italic;padding:22px 0;text-align:center;
   border:1px dashed var(--line);border-radius:var(--r)}
 .hum-cost{color:var(--alert)}
@@ -915,6 +919,37 @@ details.item.gm-tool > .body{padding:4px 2px 10px;font-family:var(--f-body)}
 .map-area-text{margin:6px 0 0;font-size:14px;color:var(--ink-dim)}
 .map-note{max-width:72ch}
 .map-scenes,.map-dl{flex-wrap:wrap;align-items:center;margin-top:8px}
+/* the live table */
+.live-box .live-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.live-dot{width:10px;height:10px;border-radius:50%;background:var(--signal);box-shadow:0 0 10px var(--signal)}
+.live-dot.bad{background:var(--alert);box-shadow:none}
+.live-code,.gm-live-code,.map-other-code{font-family:var(--f-mono);letter-spacing:.18em;color:var(--accent)}
+.live-join{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.live-join input{width:9ch;text-transform:uppercase;font-family:var(--f-mono);letter-spacing:.2em;margin:0}
+.hp-track{border:1px solid var(--line);background:var(--surface);padding:12px 14px;margin:12px 0;border-left:3px solid var(--signal)}
+.hp-track.hurt{border-left-color:var(--gold)} .hp-track.down{border-left-color:var(--alert)}
+.hp-top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.hp-top .k{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+.hp-big{font-family:var(--f-display);font-size:34px;line-height:1}
+.hp-big .of{font-size:18px;color:var(--ink-dim)}
+.hp-temp{font-family:var(--f-mono);color:var(--accent)}
+.hp-bar{height:8px;background:var(--sunk);border-radius:4px;overflow:hidden;margin:8px 0}
+.hp-fill{height:100%;background:var(--signal)}
+.hp-track.hurt .hp-fill{background:var(--gold)} .hp-track.down .hp-fill{background:var(--alert)}
+.hp-btns{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.hp-btns .hp-amt{width:80px;margin:0}
+.gm-live-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:4px 0 8px}
+.gm-live-code{font-size:34px;font-family:var(--f-mono);font-weight:700}
+.gm-live-who{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.gm-stamp.live{color:var(--signal)}
+.map-other{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.mapview{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.mapview-room{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:12px;font-family:var(--f-body);font-size:16px}
+.mapview-room b{font-family:var(--f-mono);letter-spacing:.2em;color:#22d3ee}
+.mapview-join{display:flex;gap:8px;justify-content:center;margin-top:12px}
+.mapview-join input{width:9ch;font:600 22px/1.2 var(--f-mono);letter-spacing:.2em;text-transform:uppercase;text-align:center;
+  background:#0b0f17;color:#e8eef7;border:1px solid #1f2a3d;padding:8px 10px}
+.mapview-wait .tone-alert{font-family:var(--f-body);font-size:16px;margin-top:8px}
 /* the player screen: the map, black around it, and two buttons that fade */
 html.mapview-on,html.mapview-on body{overflow:hidden}
 .mapview{position:fixed;inset:0;z-index:1000;background:#02040a;color:#e8eef7}
@@ -1347,6 +1382,7 @@ body.previewing .print-root .sheet-block{background:#fff;margin:0 auto 22px;box-
 <script src="synergy.js"></script>
 <script src="story.js"></script>
 <script src="city.js"></script>
+<script src="sync.js"></script>
 <script src="mapdraw.js"></script>
 <script src="maps.js"></script>
 <script src="gm.js"></script>

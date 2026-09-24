@@ -30,7 +30,7 @@ var esc = function (s) {
 /* Bumped by hand on every deploy, there is no build step, and a commit
    cannot contain its own hash. Shown in the masthead so "did my change go
    live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-var BUILD = "2026-09-25 11:00";
+var BUILD = "2026-09-26 09:00";
 var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
 var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                   Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -118,6 +118,33 @@ function parseCredits(s) {
   return isNaN(n) ? 0 : n;
 }
 function fmtCredits(n) { return n.toLocaleString("en-US") + "₵"; }
+
+/* ---- prices ---------------------------------------------------------------
+   The book's prices climb tenfold a tier, past anything a crew earns: Tier 3
+   chrome is millions. A campaign can play on street prices instead (Cathedra
+   does): chrome drops harder the higher the tier, so Tier 3 is a goal rather
+   than a fantasy, and everything else costs half. The book's number is still
+   shown beside it, and the Codex keeps the book's tables as they are.     */
+var STREET_CHROME = { 1: 10, 2: 25, 3: 100, 4: 250 };
+function priceMode(c) {
+  var camp = c && c.campaign ? campById(c.campaign) : null;
+  return camp && camp.prices === "street" ? "street" : "book";
+}
+function streetRound(v) {
+  var step = v < 20 ? 1 : v < 100 ? 5 : v < 1000 ? 50 : v < 10000 ? 100 : 500;
+  return Math.max(1, Math.round(v / step) * step);
+}
+// kind "chrome" takes its tier; anything else is "gear" (augments, weapons, armor, kit)
+function priceOf(kind, bookCost, tier, c) {
+  var n = parseCredits(bookCost);
+  if (!n || priceMode(c || C) !== "street") return n;
+  return streetRound(kind === "chrome" ? n / (STREET_CHROME[tier] || 10) : n / 2);
+}
+function chromePrice(x) { return priceOf("chrome", cyberCost[x.name.toLowerCase() + "|" + x.tier], x.tier); }
+function augPrice(name) { return priceOf("gear", augCost[name.toLowerCase()]); }
+// what one of this item costs; custom items cost what their owner typed
+function gearPrice(g) { return g.custom ? parseCredits(g.cost) : priceOf("gear", g.cost); }
+function priceText(n) { return n ? fmtCredits(n) : "-"; }
 
 /* tiers a cyberware entry offers, e.g. "Tier 1, 2, or 3" */
 function tiersOf(entry) {

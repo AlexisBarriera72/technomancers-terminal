@@ -162,5 +162,60 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
+  /* ============================ street prices ============================ */
+  {
+    const loadout = { bg: "hacker", credits: 25000,
+      cyber: [{ name: "Auto-Injector", tier: "1" }, { name: "Bone Lacing", tier: "2" }], augments: ["Cranium Bomb"],
+      gear: [{ key: "Firearm List|Dart Gun", name: "Dart Gun", cost: "1,600₵" },
+             { key: "custom-1", name: "Grandma's knife", cost: "500₵", custom: true }] };
+    const { page, ctx, errors } = await withChar(browser, loadout);
+    const P = (kind, cost, tier) => page.evaluate(a => window.TT.priceOf(a[0], a[1], a[2]), [kind, cost, tier]);
+    R.eq("with no campaign, the book's prices", await page.evaluate(() => window.TT.spend()), 30000 + 350000 + 15000 + 1600 + 500);
+    await goStep(page, "Chrome");
+    R.check("the gear step says the prices are the book's", /Book prices/.test(await page.locator(".prices-note").innerText()), "");
+    await page.locator(".prices-note button").click();          // Playing in Cathedra? Use its prices
+    await page.waitForTimeout(100);
+    R.eq("the button puts the character in Cathedra", (await saved(page)).campaign, "cathedra");
+    // 30,000/10 + 350,000/25 + 15,000/2 + 1,600/2, and a custom item costs what its owner typed
+    R.eq("on street prices the same kit costs far less", await page.evaluate(() => window.TT.spend()), 3000 + 14000 + 7500 + 800 + 500);
+    R.eq("a Tier 1 Auto-Injector costs a tenth", await P("chrome", "30,000₵", "1"), 3000);
+    R.eq("a Tier 3 one costs a hundredth", await P("chrome", "3,000,000₵", "3"), 30000);
+    R.eq("a Tier 4 one costs a two-hundred-and-fiftieth", await P("chrome", "35,000,000₵", "4"), 140000);
+    R.eq("gear costs half, rounded to a round number", await P("gear", "1,750₵"), 900);
+    R.eq("cheap gear stays cheap", await P("gear", "3₵"), 2);
+    const cells = await page.evaluate(() => {
+      document.querySelectorAll(".sec-toggle").forEach(t => { if (/Firearm/.test(t.textContent)) t.click(); });
+      const td = [...document.querySelectorAll("td.cost")].find(x => /book/.test(x.textContent));
+      return td ? td.textContent : "";
+    });
+    R.check("the Forge shows the street price with the book's beside it", /^\d[\d,]*₵ book [\d,]+₵$/.test(cells), cells);
+    await goStep(page, "Play Sheet");
+    R.check("the play sheet lists street prices", /Auto-Injector \(Tier 1\), 3,000₵/.test(await page.locator(".sheet-sec").allInnerTexts().then(t => t.join("\n"))), "");
+    R.eq("no page errors with street prices", errors, []);
+    await ctx.close();
+  }
+
+  /* ============================ HP right now ============================ */
+  {
+    const { page, ctx, errors } = await withChar(browser, { level: 5 });
+    await goStep(page, "Play Sheet");
+    const hp = () => page.evaluate(() => { const c = JSON.parse(localStorage.getItem("ttb.character.v1")); return [c.hpNow, c.hpTemp || 0]; });
+    const max = await page.evaluate(() => { const b = document.querySelector(".hp-big"); return +b.textContent.split("/")[1]; });
+    await page.locator(".hp-amt").fill("4");
+    await page.getByRole("button", { name: "Set temp HP" }).click();
+    await page.getByRole("button", { name: "Take 5 damage" }).click();
+    R.eq("damage eats temp HP first", await hp(), [max - 1, 0]);
+    await page.getByRole("button", { name: "Heal 5" }).click();
+    R.eq("healing stops at the maximum", (await hp())[0], max);
+    await page.locator(".hp-amt").fill("999");
+    await page.getByRole("button", { name: "Damage", exact: true }).click();
+    R.eq("HP stops at 0", (await hp())[0], 0);
+    await page.getByRole("button", { name: "Long rest" }).click();
+    R.eq("a long rest fills it back up", await hp(), [max, 0]);
+    R.check("opened from a file, the sheet says live sync needs the website", /works on the website/.test(await page.locator(".live-box").innerText()), "");
+    R.eq("no page errors on the HP tracker", errors, []);
+    await ctx.close();
+  }
+
   return R;
 };

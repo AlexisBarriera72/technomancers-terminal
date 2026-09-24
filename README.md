@@ -19,8 +19,28 @@ git push
 
 A push to `main` is the deploy. Nothing else to run.
 
-To preview before you push, open `index.html` in a browser or serve the folder
-with `npx serve .`.
+To preview before you push, open `index.html` in a browser, or run
+`npm run serve` for the site plus its live-table API on http://localhost:8787
+(rooms kept in memory; open it from a phone on the same Wi-Fi to try a table).
+
+### Switching on the live table (once)
+
+The live table (players' sheets and the map on the table's screen following the
+GM, below) needs somewhere to keep its rooms. It uses a free Upstash Redis
+database, connected through Vercel:
+
+1. In Vercel, open the **technomancers-terminal** project, then **Storage**.
+2. **Create Database**, pick **Upstash for Redis** (the free plan is plenty),
+   give it any name and a region near you.
+3. **Connect** it to this project (all environments). That adds
+   `KV_REST_API_URL` and `KV_REST_API_TOKEN` to the project.
+4. **Redeploy** (Deployments, the newest one, Redeploy), so the function sees
+   the new variables.
+
+`/api/room` then answers `{"ok":true,"store":"upstash"}`. Until then it answers
+`{"ok":false}` and the Party screen says live sync isn't set up; everything else
+works as before. A database made directly on upstash.com works too: set
+`UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` on the project instead.
 
 ## The files
 
@@ -41,7 +61,10 @@ with `npx serve .`.
 | `es-ui.js` | `window.TTES.ui`, Spanish for the application's own text. Always loaded. |
 | `es-book.js` | `window.TTES.book`, Spanish for the rules text. Fetched on demand. |
 | `campaigns.js` | `window.TTBC`, your campaigns. **This is the one you edit.** |
-| `sw.js` | Service worker, so the site opens with no signal. |
+| `sw.js` | Service worker, so the site opens with no signal. It never touches `/api/`. |
+| `sync.js` | `window.TTSYNC`, the live table's browser side: joining a room, polling it, pushing sheets, HP and the map. |
+| `api/room.js` | The live table's only server code, a Vercel function with no dependencies. `api/_store.js` talks to Upstash Redis over its REST API. |
+| `tools/serve.js` | `npm run serve`: the site and `/api/room` on this machine, rooms in memory. The sync tests use it. |
 
 `es-ui.js` is in the service worker's `SHELL`, so the interface works in Spanish
 offline. `es-book.js` is not, it is the large half, fetched on first use and cached
@@ -192,11 +215,43 @@ replacing you.
   Frame HP and Uplink spent are saved on the character (`frames`,
   `uplinkUsed`).
 
+- **Hit points now.** Under the vitals, the play sheet tracks current and
+  temporary HP (`hpNow`, `hpTemp`): −5, −1, +1, +5, an amount with **Damage**,
+  **Heal** or **Set temp HP**, and **Long rest**. Damage eats temp HP first;
+  HP stops at 0 and at the maximum.
+
+### Street prices
+
+The book prices chrome for Night City money: each tier costs ten times the
+last, Tier 3 is millions, and a crew earns hundreds or thousands a job. A
+campaign can play on **street prices** instead (`prices: "street"`), and
+Cathedra does:
+
+| | Book | Street |
+|---|---|---|
+| Tier 1 chrome | 25,000–40,000₵ | a tenth: 2,500–4,000 |
+| Tier 2 chrome | 250,000–450,000₵ | a twenty-fifth: 10,000–18,000 |
+| Tier 3 chrome | 2.5–4.5 million₵ | a hundredth: 25,000–45,000 |
+| Tier 4 chrome | 25–40 million₵ | a two-hundred-and-fiftieth: 100,000–160,000 |
+| Augments, weapons, armor, gear | as printed | half |
+
+Prices are rounded to a round number, and custom items cost what their owner
+typed. `priceOf()` in `app/core.js` does the sums from the character's campaign;
+the Forge shows the street price with the book's beside it, and the play sheet,
+Markdown, print and credits left all use it. The Codex keeps the book's tables
+as printed. A character with no campaign gets a **Playing in Cathedra? Use its
+prices** button on the Chrome & gear step, and joining a live table puts them on
+the table's campaign. New campaigns start on street prices; the campaign
+editor switches between the two. Cathedra's bounty board and loot tables pay
+double what they used to, so a good job buys a Tier 1 implant and Tier 3 is
+something to save up for.
+
 ## Where characters are stored
 
-In the visitor's browser (`localStorage`), never on a server. Sharing works by
-encoding the character into the URL after `#c=`, anyone who opens that link
-gets the character and can save their own copy. Nothing is uploaded.
+In the visitor's browser (`localStorage`). Sharing works by encoding the
+character into the URL after `#c=`, anyone who opens that link gets the
+character and can save their own copy. At a live table (below) the sheet is
+also copied into the table's room, so the GM can see it.
 
 ## The GM tools
 
@@ -403,8 +458,21 @@ changes it.
 tab with the players' view. Only holding the corner **GM** button for a second
 brings the GM screen back, so a player's tap can't.
 
-The player screen follows the GM only on the same device, because the site has
-no server. A second device can use the downloaded files instead.
+**On an iPad in the middle of the table** (or any other device): start a live
+table on the Party screen, then open the map link on the iPad (`#mapview=CODE`),
+or open its player screen and type the code. It follows the GM's computer:
+the map sent to players, and every reveal. For the table:
+
+- Add it to the Home Screen (Share, Add to Home Screen) so it opens without
+  Safari's bars, and press **Full screen** on it (iPad Safari takes the
+  `webkit` full-screen call, which the player screen uses when it must).
+- A pinch or a double tap doesn't zoom the page, and the screen asks to stay
+  awake while the map is up (Safari 16.4 and later).
+- Guided Access (Settings, Accessibility) locks the iPad to that one page, so a
+  curious player can't wander off it.
+
+Without a live table the player screen follows the GM only on the same device,
+and a second device can use the downloaded files instead.
 
 Fog, the chosen map and the toggles live in `ttb.gm.play` (`maps`), are cleaned
 on load and on import (`cleanMaps` drops maps and areas that don't exist), go out
@@ -475,10 +543,36 @@ betrayal or a rescue.
 
 ### Getting the party in
 
-There is no server, so the GM screen works on snapshots you import. Each player
-opens their Play Sheet, hits **Copy share link**, and sends it to you; you paste
-it into the box on the Party screen. When someone levels up they send a fresh
-link and it replaces the old one.
+**The live table.** On the Party screen, **Start a live table** makes a room
+and shows its six-letter code. Players open their Play sheet, type the code
+under **Live table** and press **Join** (or open the player link,
+`#join=CODE`). From then on:
+
+- Every change on a player's sheet (a level, HP, chrome, gear, credits) reaches
+  the GM's screen a few seconds later and replaces their party card, which
+  says it's live and when it last changed.
+- In a running encounter, a player's max HP follows their sheet, and current HP
+  goes both ways: damage the GM deals shows on the phone, and healing the player
+  marks on the phone shows in the encounter. The last change to reach the
+  server wins; the server stamps the time, so a phone with its clock wrong
+  can't cheat either way.
+- The map on the table's screen joins the same room with the map link
+  (`#mapview=CODE`), or by typing the code on the player screen. It shows what
+  **Show players this map** sends, and every reveal, from any device.
+
+How it works: `api/room.js` keeps one Redis hash per room (the sheets, HP and
+the map), bumps a version on every write, and deletes the room 14 days after
+the last write. Screens poll every 2.5 seconds (phones every 5), stop while
+hidden, and get back just the version number when nothing changed, so an
+evening costs a few tens of thousands of Redis reads. The code is the only key
+a player needs, so anyone with it can add a sheet to that table; only the GM's
+browser holds the key that changes the map or ends the table. `sw.js` never
+caches `/api/`. Opened from a file, there's no server and the screens say so.
+
+**Without it**, the GM screen works on snapshots: each player opens their Play
+Sheet, hits **Copy share link**, and sends it to you; you paste it into the box
+on the Party screen. When someone levels up they send a fresh link and it
+replaces the old one.
 
 Everything the GM stores lives in that one browser under `ttb.gm.*`. Clearing
 site data deletes the lot, so **Export GM vault** on the Party screen writes the
@@ -520,6 +614,7 @@ one side only would leave a line in English. CI runs both on every push.
 | `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale; the city's data (tables sized to their dice, districts climbing) and the City and Toolkit screens. |
 | `test/player.test.js` | The level-up panel, inventory and credits (weights, counts, custom items, old saves), the turn cards and the Puppeteer's frames. |
 | `test/untranslated.test.js` | Every screen drawn in Spanish; fails on English text that isn't in `untranslated-baseline.txt`. |
+| `test/sync.test.js` | The room API on its own (codes, sizes, the GM's key, newest HP wins, no database), then a GM, a phone and an iPad as separate browsers through `tools/serve.js`: joining, a level-up and gear reaching the GM, HP both ways, the map and a reveal on the iPad. |
 | `test/maps.test.js` | The maps as data (everything inside its map, keys unique, every scene covered, every feature drawable), the drawing (no NaN, fog, and a players' view that hides everything the GM's does), that `maps/` is up to date, and the Maps screen: tap to reveal, the player window following in a second page, hand-off, the Story link and the vault. |
 | `test/story.test.js` | The story holds together (every scene complete, every reference resolves), the Story tab tracks, rolls and persists, the demo walkthrough adds up, and every synergy says what it does. |
 

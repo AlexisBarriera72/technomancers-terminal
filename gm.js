@@ -488,8 +488,9 @@ window.TTBGM = {
   help: {
     party: {
       steps: [
-        "Ask each player to open their Play Sheet and press Copy share link, then send it to you.",
-        "Paste the link below, type the player's name if you like, and press Add to party. Paste it again after they level up, cards are snapshots.",
+        "Press Start a live table and read out the code, or send the player link. Each player joins from their Play sheet, under Live table.",
+        "Their cards then follow them: levels, HP, chrome and gear show up here a few seconds after they change. Damage you deal in an encounter shows on their phone.",
+        "No live table? Ask for their share link (Play sheet, Copy share link) and paste it below. A pasted card is a snapshot, so paste again after they level.",
         "At the start of every session, press Roll the god's attention once.",
         "Move Street Cred with −1 / +1 when the street sees them do something: a job done well, folding in public.",
         "After every session, press Export GM vault so a cleared browser can't lose your table."
@@ -501,7 +502,8 @@ window.TTBGM = {
         cred: "Street Cred is the whole table's reputation. It is already added to every Charisma check on the Ruling desk and to the reaction roll.",
         card: "Full sheet shows their whole character as text for rules questions. Remove takes them off this device's party only, their own sheet is untouched.",
         vault: "Export writes everything on these screens to one file. Import merges a file back: characters, NPCs and encounters by id; clocks, Street Cred and story progress are replaced.",
-        demo: "Fills every screen with a made-up game so you can see how it all looks. Your own table is set aside and comes back when you exit."
+        demo: "Fills every screen with a made-up game so you can see how it all looks. Your own table is set aside and comes back when you exit.",
+        live: "The code works for anyone who has it, and the table is deleted 14 days after it was last used. The map link is for the screen in the middle of the table."
       },
       tips: {
         add: "Add this character to your party",
@@ -514,7 +516,11 @@ window.TTBGM = {
         remove: "Remove from this device's party",
         export: "Save everything on the GM screens to a file",
         importVault: "Load a GM vault file and merge it in",
-        demo: "Load a made-up game to look around"
+        demo: "Load a made-up game to look around",
+        live: "Make a table code the players can join",
+        playerLink: "Copy a link that joins this table from a phone",
+        mapLink: "Copy a link that shows the map on another device",
+        endLive: "Delete the live table; cards stay as they are"
       }
     },
     encounter: {
@@ -708,6 +714,7 @@ window.TTBGM = {
         "Open player screen opens a second window for the TV: drag it there and press Full screen. It shows only what you reveal.",
         "Show players this map sends the map you're looking at to that window. Read ahead on another map and the players see nothing of it.",
         "Tap an area on the map, or Reveal in the key, to show it to the players; tap again to hide it. Reveal all and Hide all do the whole map.",
+        "An iPad in the middle of the table: start a live table on the Party screen, then open the map link on the iPad, or open its player screen and type the code.",
         "Passing a tablet round instead? Show on this screen covers this tab with the players' view. Hold the GM button for a second to come back.",
         "The letters are yours: the players never see them, the secret doors or anything marked for the GM."
       ],
@@ -1508,7 +1515,8 @@ window.TTGM = (function () {
   /* ================================================== SECTION 1, PARTY  */
   function renderParty(s) {
     sectionHead(s, "The table", "Party",
-      "Every number a player is about to be asked for. Sheets arrive as the share codes they already make, this is a snapshot, so ask for a fresh one when someone levels.");
+      "Every number a player is about to be asked for. Start a live table and their sheets follow them as they change; a pasted share link is a snapshot.");
+    s.appendChild(liveStrip());
 
     /* ---- import ---- */
     var box = el("div", "gm-import");
@@ -1993,8 +2001,14 @@ window.TTGM = (function () {
     card.appendChild(tools);
 
     var updated = new Date(p.rec.updated || p.rec.added || Date.now());
-    card.appendChild(txt("div", "gm-stamp", "snapshot taken " + updated.toLocaleDateString() +
-      " · re-paste their link after they level"));
+    if (p.rec.source === "live") {
+      var hpNow = p.c.hpNow == null ? null : p.c.hpNow;
+      card.appendChild(txt("div", "gm-stamp live", "live from their phone · updated " + updated.toLocaleTimeString() +
+        (hpNow == null ? "" : " · HP " + hpNow + " / " + p.d.hp + (p.c.hpTemp ? " +" + p.c.hpTemp : ""))));
+    } else {
+      card.appendChild(txt("div", "gm-stamp", "snapshot taken " + updated.toLocaleDateString() +
+        " · re-paste their link after they level"));
+    }
     return card;
   }
 
@@ -2869,13 +2883,15 @@ window.TTGM = (function () {
       hintAt(q(".gm-import .gm-row"), "party", "fromFile");
       hintAt(q(".gm-god"), "party", "god");
       hintAt(q(".gm-rep"), "party", "cred");
+      hintAt(q(".gm-live"), "party", "live", true);
       var firstCard = q(".gm-party .gm-card");
       if (firstCard) hintAt(firstCard, "party", "card", true);
       hintAt(btnRow(s, "Export GM vault"), "party", "vault");
       hintAt(btnRow(s, "Load a demo table") || btnRow(s, "Or load a demo table"), "party", "demo");
       tips(s, "party", [["Add to party", "add"], ["From a file", "file"], ["From this browser", "browser"],
         ["Roll the god", "god"], ["−1", "credDown"], ["+1", "credUp"], ["Full sheet", "full"], ["Remove", "remove"],
-        ["Export GM vault", "export"], ["Import", "importVault"], ["Load a demo", "demo"], ["Or load a demo", "demo"]]);
+        ["Export GM vault", "export"], ["Import", "importVault"], ["Load a demo", "demo"], ["Or load a demo", "demo"],
+        ["Start a live table", "live"], ["Copy player link", "playerLink"], ["Copy map link", "mapLink"], ["End the live table", "endLive"]]);
     } else if (key === "encounter") {
       hintAt(btnRow(s, "+ Party"), "encounter", "bar");
       var cb = q(".gm-cb .gm-pad");
@@ -2955,6 +2971,7 @@ window.TTGM = (function () {
   /* ---------------------------------------------------------- dispatch --- */
   function renderStage(s, sec) {
     rememberMode("table");
+    liveHook();
     s.classList.add("gm");
     if (inDemo()) demoBanner(s);
     var fns = [renderParty, renderEncounter, renderRulings, renderNPCs, renderClocks, renderStory, renderCampaignGM,
@@ -4086,6 +4103,8 @@ window.TTGM = (function () {
           x.hp = cb.hp; x.tmp = cb.tmp; x.dead = cb.dead; x.conds = cb.conds; x.notes = cb.notes;
         });
       });
+      // a player at the live table sees the damage on their phone
+      if (cb.src === "pc") livePushHp(cb.ref, cb.hp, cb.tmp);
       refreshDossier();
     }
     function apply(delta) {
@@ -5199,6 +5218,151 @@ window.TTGM = (function () {
     s.appendChild(wrap);
   }
 
+  /* =============================================== SECTION, LIVE TABLE ===
+     The GM makes a room (api/room.js) and gets a six-letter code. Players
+     join it from their play sheet; each change they make arrives here as a
+     whole sheet and replaces their party card. HP goes both ways: the
+     player's tracker and the encounter's buttons both write it, newest wins.
+     The map screen on the table joins the same room and follows play.maps.
+     sync.js does the requests; this is what the GM's side does with them. */
+  var SYNC = window.TTSYNC || null;
+  var liveHooked = false, livePending = false, liveErr = "";
+  var hpSeen = {};                              // id -> the room's stamp on the last HP we took in
+  function liveCode() { return SYNC ? SYNC.status("gm").code : null; }
+  function liveLink(kind) {
+    return location.origin + location.pathname + "#" + kind + "=" + liveCode();
+  }
+  function livePushHp(id, now, temp) {
+    if (SYNC && liveCode()) SYNC.pushHp("gm", id, now, temp);
+  }
+  function liveMapState() {
+    var ms = mapsState();
+    return { live: ms.live, revealed: ms.live ? mapRevealed(ms, ms.live) : [], grid: ms.grid, fog: ms.fog };
+  }
+  function livePushMap() { if (SYNC && liveCode()) SYNC.pushMap(liveMapState()); }
+
+  /* Anything the GM is typing into survives: redraw once they leave the field. */
+  function softRedraw() {
+    var a = document.activeElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.closest && a.closest("#stage")) {
+      if (livePending) return;
+      livePending = true;
+      a.addEventListener("blur", function () { livePending = false; setTimeout(redraw, 30); }, { once: true });
+      return;
+    }
+    redraw();
+  }
+  function onLive(data, st) {
+    if (!data) { if (st && st.err !== liveErr) { liveErr = st.err || ""; if (T.getMode() === "table") softRedraw(); } return; }
+    liveErr = "";
+    var changed = false, byId = {};
+    partyAll().forEach(function (r) { byId[r.id] = r; });
+    (data.chars || []).forEach(function (x) {
+      var c = T.migrate(x.char);
+      if (!c || !c.id || !c.cls) return;
+      var rec = byId[c.id], json = JSON.stringify(c);
+      if (rec && rec.payload === json && rec.source === "live") return;
+      partyPut(c, rec ? rec.player : "", "live");
+      changed = true;
+    });
+    // the running encounter follows: max HP from the sheet, current HP newest-wins
+    var p = playState(), enc = p.enc;
+    if (enc && Array.isArray(enc.combatants)) {
+      var touched = false;
+      enc.combatants.forEach(function (cb) {
+        if (cb.src !== "pc") return;
+        var rec = partyAll().filter(function (r) { return r.id === cb.ref; })[0];
+        var c = rec ? charOf(rec) : null;
+        if (c) {
+          var max = T.statsOf(c).hp || cb.hpMax;
+          if (max !== cb.hpMax) { cb.hpMax = max; cb.hp = Math.min(cb.hp, max); touched = true; }
+        }
+        // only a write newer than the last one taken in: the GM's own
+        // change, not yet on the server, isn't overwritten by the old value
+        var h = data.hp && data.hp[cb.ref];
+        if (h && h.now != null && h.at > (hpSeen[cb.ref] || 0)) {
+          hpSeen[cb.ref] = h.at;
+          if (h.now !== cb.hp || (h.temp || 0) !== (cb.tmp || 0)) {
+            cb.hp = Math.min(cb.hpMax, h.now); cb.tmp = h.temp || 0;
+            cb.dead = cb.hp <= 0;
+            touched = true;
+          }
+        }
+      });
+      if (touched) { playWrite(p); changed = true; }
+    }
+    if (changed && T.getMode() === "table") softRedraw();
+  }
+  function liveHook() {
+    if (liveHooked || !SYNC) return;
+    liveHooked = true;
+    SYNC.on("gm", onLive);
+    SYNC.resume();
+  }
+  function startLive() {
+    if (!SYNC) return;
+    // the table's campaign decides the players' prices; Cathedra unless another is open
+    SYNC.create((T.campSel && T.campSel()) || cathedra().id || null).then(function (r) {
+      if (r.error) { liveErr = r.error; toast(r.error); redraw(); return; }
+      liveErr = "";
+      livePushMap();
+      toast("Live table " + r.code);
+      redraw();
+    });
+  }
+  function copyText(t, done) {
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { toast(done); }, function () { toast("Copy failed"); });
+    else toast("Clipboard unavailable");
+  }
+  function liveStrip() {
+    liveHook();
+    var box = el("div", "gm-strip gm-live");
+    box.appendChild(txt("div", "gm-label", "Live table"));
+    if (!SYNC || !SYNC.available()) {
+      box.appendChild(txt("p", "gm-note", "Live sync works on the website, not from a file. Players can still send share links."));
+      return box;
+    }
+    var code = liveCode();
+    if (!code) {
+      box.appendChild(txt("p", "gm-note",
+        "Start one and give the players the code: their sheets show up here and follow every level, item and hit point. The map screen on the table joins with the same code."));
+      var r = row("gm-row");
+      r.appendChild(btn("Start a live table", "primary", startLive));
+      box.appendChild(r);
+      if (liveErr) box.appendChild(txt("p", "tone-alert", liveErr));
+      return box;
+    }
+    var top = el("div", "gm-live-top");
+    var big = txt("span", "gm-live-code", code);
+    big.setAttribute("data-nolang", "");
+    top.appendChild(big);
+    var st = SYNC.status("gm");
+    top.appendChild(txt("span", "gm-note", st.err ? st.err : "Players: Play sheet → Live table → type this code"));
+    box.appendChild(top);
+    var r2 = row("gm-row");
+    r2.appendChild(btn("Copy player link", "tiny", function () { copyText(liveLink("join"), "Player link copied"); }));
+    r2.appendChild(btn("Copy map link", "tiny", function () { copyText(liveLink("mapview"), "Map link copied"); }));
+    r2.appendChild(btn("End the live table", "tiny", function () {
+      if (!window.confirm("End the live table? Players' sheets stay in your party as they are now.")) return;
+      SYNC.end(); redraw();
+    }));
+    box.appendChild(r2);
+    var live = partyAll().filter(function (x) { return x.source === "live"; });
+    if (live.length) {
+      var ul = el("div", "gm-live-who");
+      live.forEach(function (x) {
+        var ch = el("span", "chip");
+        ch.appendChild(stxt("b", null, x.name));
+        ch.appendChild(txt("span", null, " " + new Date(x.updated).toLocaleTimeString()));
+        ul.appendChild(ch);
+      });
+      box.appendChild(ul);
+    } else {
+      box.appendChild(txt("p", "gm-note", "No one has joined yet."));
+    }
+    return box;
+  }
+
   /* ===================================================== SECTION, MAPS ===
      The battle maps in maps.js, drawn by mapdraw.js. The GM sees the whole
      map with its key letters and a tint over what the players haven't seen;
@@ -5237,7 +5401,10 @@ window.TTGM = (function () {
              revealed: rev, grid: flags.grid, keys: flags.keys, fog: flags.fog };
   }
   function mapsState() { return cleanMaps(playState().maps); }
-  function mapsPatch(fn) { playPatch(function (p) { p.maps = cleanMaps(p.maps); fn(p.maps); }); }
+  function mapsPatch(fn) {
+    playPatch(function (p) { p.maps = cleanMaps(p.maps); fn(p.maps); });
+    livePushMap();
+  }
 
   /* The map the GM last looked at, else the current scene's, else the first. */
   function mapCurrent() {
@@ -5542,6 +5709,17 @@ window.TTGM = (function () {
       mountPlayerView(true);
     }));
     s.appendChild(pl);
+    var other = el("div", "gm-note map-other");
+    if (liveCode()) {
+      other.appendChild(txt("span", null, "On another device, like an iPad on the table: open the map link, or open the player screen and type"));
+      var oc = txt("b", "map-other-code", liveCode());
+      oc.setAttribute("data-nolang", "");
+      other.appendChild(oc);
+      other.appendChild(btn("Copy map link", "tiny", function () { copyText(liveLink("mapview"), "Map link copied"); }));
+    } else {
+      other.appendChild(txt("span", null, "To show the map on another device, like an iPad on the table, start a live table on the Party screen."));
+    }
+    s.appendChild(other);
 
     // the view: grid, letters, fog, zoom
     var viewer = mapViewer(m, ms);
@@ -5605,28 +5783,72 @@ window.TTGM = (function () {
      handoff: false is the #mapview window, which reads storage and follows
      the GM; true covers this tab until the GM holds the corner button, so a
      player's tap can't land on the GM screen underneath.                    */
-  function mountPlayerView(handoff) {
+  function mountPlayerView(handoff, code) {
     var stage = el("div", "mapview" + (handoff ? " handoff" : ""));
     var screen = el("div", "mapview-map");
     var ctl = el("div", "mapview-ctl");
     stage.appendChild(screen);
     stage.appendChild(ctl);
-    var last = null;
+    var last = null, joinErr = "";
+    // From another device (the iPad on the table) the map comes from the live room.
+    var viaRoom = function () { return !handoff && SYNC && SYNC.status("map").code; };
     function state() {
       if (handoff) return mapsState();
+      if (viaRoom()) {
+        var d = SYNC.status("map").data, m = d && d.map;
+        if (!m) return cleanMaps(null);
+        var rev = {};
+        if (m.live) rev[m.live] = m.revealed || [];
+        return cleanMaps({ live: m.live, revealed: rev, grid: m.grid, fog: m.fog });
+      }
       var p = lsGet(K_PLAY, null);
       return cleanMaps(p && typeof p === "object" ? p.maps : null);
     }
+    function waiting() {
+      var w = el("div", "mapview-wait");
+      w.appendChild(txt("p", null, "Waiting for the GM"));
+      var st = SYNC ? SYNC.status("map") : null;
+      if (viaRoom()) {
+        var t = el("div", "mapview-room");
+        t.appendChild(txt("span", null, st.err || "Table"));
+        var c = txt("b", null, st.code);
+        c.setAttribute("data-nolang", "");
+        t.appendChild(c);
+        t.appendChild(btn("Leave", "tiny", function () { SYNC.leave("map"); last = null; draw(); }));
+        w.appendChild(t);
+        w.appendChild(txt("p", "hint", "The map shows here when the GM puts one on the player screen."));
+      } else if (!handoff && SYNC && SYNC.available()) {
+        w.appendChild(txt("p", "hint", "On a different device from the GM? Type the table code from the GM's Party screen."));
+        var f = el("div", "mapview-join");
+        var inp = document.createElement("input");
+        inp.maxLength = 6; inp.placeholder = "Table code"; inp.autocomplete = "off"; inp.spellcheck = false;
+        inp.setAttribute("autocapitalize", "characters");
+        inp.setAttribute("aria-label", "Table code");
+        var go = function () {
+          SYNC.join("map", inp.value).then(function (r) {
+            joinErr = r.error || ""; last = null; draw();
+          });
+        };
+        inp.onkeydown = function (e) { if (e.key === "Enter") go(); };
+        f.appendChild(inp);
+        f.appendChild(btn("Join", "primary", go));
+        w.appendChild(f);
+        if (joinErr) w.appendChild(txt("p", "tone-alert", joinErr));
+        w.appendChild(txt("p", "hint", "On an iPad: Share, then Add to Home Screen opens this without the browser bars, and Guided Access keeps it on the map."));
+      } else {
+        w.appendChild(txt("p", "hint", "The map shows here when the GM puts one on the player screen."));
+      }
+      return w;
+    }
     function draw() {
       var ms = state(), m = mapById(ms.live), text = m ? playerMapSvg(m, ms) : "";
-      if (text === last) return;          // the GM's tab writes often; most writes aren't the map
-      last = text;
+      var key = text || "wait:" + (viaRoom() ? SYNC.status("map").code + (SYNC.status("map").err || "") : "") + joinErr;
+      if (key === last) return;           // most writes aren't the map
+      last = key;
       while (screen.firstChild) screen.removeChild(screen.firstChild);
       var svg = m && svgNode(text);
       if (!svg) {
-        var w = el("div", "mapview-wait");
-        w.appendChild(txt("p", null, "Waiting for the GM"));
-        w.appendChild(txt("p", "hint", "The map shows here when the GM puts one on the player screen."));
+        var w = waiting();
         screen.appendChild(w);
         if (T.applyLang) T.applyLang(w);
         return;
@@ -5636,16 +5858,35 @@ window.TTGM = (function () {
       screen.appendChild(svg);
     }
 
-    ctl.appendChild(btn("Full screen", "tiny mapview-fs", function () {
-      var d = document.documentElement;
+    /* Full screen and staying awake. iPad Safari still wants the webkit
+       names; an iPhone has no element full screen at all, so it gets the
+       Home Screen tip instead. */
+    var doc = document, de = doc.documentElement;
+    var fsNow = function () { return doc.fullscreenElement || doc.webkitFullscreenElement; };
+    var wakeLock = null;
+    function keepAwake() {
       try {
-        if (document.fullscreenElement) document.exitFullscreen();
-        else if (d.requestFullscreen) { var pr = d.requestFullscreen(); if (pr && pr["catch"]) pr["catch"](function () {}); }
+        if (!navigator.wakeLock || (wakeLock && !wakeLock.released)) return;
+        navigator.wakeLock.request("screen").then(function (l) { wakeLock = l; }, function () {});
       } catch (e) {}
-      // keep a TV or tablet from going to sleep mid-session, where it's supported
-      try { if (navigator.wakeLock) navigator.wakeLock.request("screen")["catch"](function () {}); } catch (e) {}
+    }
+    ctl.appendChild(btn("Full screen", "tiny mapview-fs", function () {
+      try {
+        if (fsNow()) (doc.exitFullscreen || doc.webkitExitFullscreen).call(doc);
+        else if (de.requestFullscreen || de.webkitRequestFullscreen) {
+          var pr = (de.requestFullscreen || de.webkitRequestFullscreen).call(de);
+          if (pr && pr["catch"]) pr["catch"](function () {});
+        } else toast("Add this page to your Home Screen to hide the browser bars");
+      } catch (e) {}
+      keepAwake();
     }));
-    var onStorage = function (e) { if (!e.key || e.key === K_PLAY) draw(); };
+    doc.addEventListener("visibilitychange", function () { if (!doc.hidden) keepAwake(); });
+    // a pinch or a double tap must not zoom the page out from under the map
+    ["gesturestart", "gesturechange", "dblclick"].forEach(function (ev) {
+      stage.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
+    });
+    stage.addEventListener("touchmove", function (e) { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+
     if (handoff) {
       var gm = txt("button", "btn tiny mapview-gm", "GM");
       gm.title = "Hold for a second to go back to the GM screen";
@@ -5656,8 +5897,8 @@ window.TTGM = (function () {
         gm.classList.add("holding");
         timer = setTimeout(function () {
           timer = null;
-          try { if (document.fullscreenElement) document.exitFullscreen(); } catch (x) {}
-          document.documentElement.classList.remove("mapview-on");
+          try { if (fsNow()) (doc.exitFullscreen || doc.webkitExitFullscreen).call(doc); } catch (x) {}
+          de.classList.remove("mapview-on");
           if (stage.parentNode) stage.parentNode.removeChild(stage);
           redraw();
         }, 1000);
@@ -5666,7 +5907,8 @@ window.TTGM = (function () {
       gm.addEventListener("contextmenu", function (e) { e.preventDefault(); });
       ctl.appendChild(gm);
     } else {
-      window.addEventListener("storage", onStorage);
+      window.addEventListener("storage", function (e) { if (!viaRoom() && (!e.key || e.key === K_PLAY)) draw(); });
+      if (SYNC) SYNC.on("map", function () { draw(); });
       document.title = T.T ? T.T("Player screen") : "Player screen";
     }
     // the buttons fade when nobody is touching the screen
@@ -5675,14 +5917,19 @@ window.TTGM = (function () {
       stage.classList.remove("idle");
       clearTimeout(idle);
       idle = setTimeout(function () { stage.classList.add("idle"); }, 3000);
+      keepAwake();
     };
     stage.addEventListener("pointermove", wake);
     stage.addEventListener("pointerdown", wake);
     wake();
-    document.documentElement.classList.add("mapview-on");
+    de.classList.add("mapview-on");
     document.body.appendChild(stage);
     if (T.applyLang) T.applyLang(ctl);
     draw();
+    if (!handoff && SYNC) {
+      if (code) SYNC.join("map", code).then(function (r) { joinErr = r.error || ""; last = null; draw(); });
+      else SYNC.resume();
+    }
     return stage;
   }
 

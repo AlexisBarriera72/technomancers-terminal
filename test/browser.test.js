@@ -1214,7 +1214,7 @@ module.exports = async function (browser) {
     R.check("Hide guide takes the guide and every hint away", !off.guide && off.hints === 0, JSON.stringify(off));
     R.check("tooltips stay when the guide is off", off.tips >= 1, JSON.stringify(off));
     R.check("the ? button brings it back", off.back, "");
-    R.check("in Spanish the guide reads in Spanish", /Cómo usar esta pantalla/.test(off.es) && /^Pide a cada jugador/.test(off.esStep),
+    R.check("in Spanish the guide reads in Spanish", /Cómo usar esta pantalla/.test(off.es) && /^Pulsa Abrir una mesa en directo/.test(off.esStep),
       JSON.stringify([off.es, off.esStep]));
     R.eq("no page errors with the guides", errors, []);
     await ctx.close();

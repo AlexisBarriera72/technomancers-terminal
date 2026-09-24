@@ -549,6 +549,7 @@ window.TT = {
   allSkills: allSkills, humanity: humanity, activeFeatures: activeFeatures,
   blockText: blockText, actionType: actionType, actionEntries: actionEntries,
   usageOf: usageOf, toMarkdown: toMarkdown,
+  priceOf: priceOf, priceMode: priceMode, spend: function () { return spend(); },
   // character plumbing
   migrate: migrate, blank: blank, b64u: b64u, unb64u: unb64u, slimChar: slimChar,
   rosterAll: rosterAll, campAll: campAll, campById: campById, campSel: function () { return campSel; },
@@ -559,6 +560,50 @@ window.TT = {
   gmLock: function () { gmUnlock(false); render(); },
   render: render
 };
+
+/* ---- the live table, player side ---------------------------------------
+   A #join=CODE link opens the play sheet and joins that table. HP the GM
+   changes comes back through the poll and lands on this sheet.           */
+function joinHash() {
+  var m = /[#&]join=([A-Za-z0-9]{6})/.exec(location.hash || "");
+  if (!m) return false;
+  try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+  mode = "forge"; step = 7;
+  render(); window.scrollTo(0, 0);
+  if (C.isExample) { liveMsg = ""; toast("Build or load your character first, then press Join"); liveCodeWanted = m[1].toUpperCase(); render(); }
+  else joinTable(m[1]);
+  return true;
+}
+var liveCodeWanted = "";
+function onPlayerSync(data) {
+  // hpAt is the room's stamp on the last HP taken in, so only newer writes land
+  var h = data && data.hp && C && data.hp[C.id];
+  if (h && h.at > (C.hpAt || 0)) {
+    var differs = h.now !== C.hpNow || (h.temp || 0) !== (C.hpTemp || 0);
+    if (h.now != null) C.hpNow = h.now;
+    C.hpTemp = h.temp || 0;
+    C.hpAt = h.at;
+    save();
+    if (differs) {
+      if (mode === "forge" && step === 7) render(); else renderDossier();
+      toast("HP from the GM: " + (h.now == null ? "-" : h.now));
+      return;
+    }
+  }
+  if (mode === "forge" && step === 7) {
+    var live = document.querySelector(".live-box");
+    if (live) live.parentNode.replaceChild(liveBox(), live);
+  }
+}
+function liveStart() {
+  var S = window.TTSYNC;
+  if (!S) return;
+  S.on("player", onPlayerSync);
+  S.resume();
+  // a player who already joined pushes this sheet once on load, in case it changed offline
+  if (S.status("player").code && !C.isExample && !C.isShared) S.pushChar(slimChar(C));
+  joinHash();
+}
 
 function init() {
   // Just the version on screen; the rest is one hover away for whoever
@@ -575,8 +620,10 @@ function init() {
   var unlocked = gmHash();
   if (window.TTGM && window.TTGM.boot) window.TTGM.boot(window.TT);
   // The player screen for the TV: the map and nothing else. It only reads.
-  if (/^#mapview\b/.test(location.hash) && window.TTGM && window.TTGM.mountPlayerView) {
-    window.TTGM.mountPlayerView(false);
+  // #mapview=CODE follows a live table from another device.
+  var mv = /^#mapview(?:=([A-Za-z0-9]{6}))?/.exec(location.hash);
+  if (mv && window.TTGM && window.TTGM.mountPlayerView) {
+    window.TTGM.mountPlayerView(false, mv[1] ? mv[1].toUpperCase() : null);
     return;
   }
   var shared = readShared();
@@ -639,10 +686,12 @@ function init() {
     if (t) document.documentElement.setAttribute("data-theme", t);
   } catch (e) {}
   render();
+  liveStart();
 
   // A hash-only navigation (pasting a share link while already here) doesn't reload.
   window.addEventListener("hashchange", function () {
     if (gmHash()) { render(); window.scrollTo(0, 0); toast(gmOn ? "GM tools unlocked" : "GM tools locked"); return; }
+    if (joinHash()) return;
     var sh = readShared();
     if (!sh) return;
     C = migrate(sh); C.isShared = true;

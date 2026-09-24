@@ -1,0 +1,180 @@
+/* The live table: one small room per session, shared by the GM's screen, the
+ * players' phones and the map on the table.
+ *
+ *   GET  /api/room                     is sync set up here?   {ok, store}
+ *   GET  /api/room?code=K7Q2MX&since=5 the room, or just {v} if nothing changed
+ *   POST /api/room {op:"create", campaign}          -> {code, gmKey}
+ *   POST /api/room {op:"char", code, id, char}      a player's sheet
+ *   POST /api/room {op:"hp", code, id, now, temp}   current HP, the last write wins
+ *   POST /api/room {op:"map", code, gmKey, map}     what the table's screen shows
+ *   POST /api/room {op:"end", code, gmKey}          delete the room
+ *
+ * The code is all a player needs, so anyone at the table (or anyone they tell)
+ * can write a sheet into the room; the map and ending the room need the GM's
+ * key, which only the GM's browser holds. Rooms hold character sheets and the
+ * map's state, nothing else, and are gone 14 days after the last write.
+ */
+"use strict";
+const crypto = require("crypto");
+const { store } = require("./_store");
+
+const TTL = 14 * 24 * 3600;
+const MAX_BODY = 100 * 1024;
+const MAX_SHEET = 60 * 1024;
+const MAX_CHARS = 12;
+const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // no 0/O, 1/I
+const CODE = /^[A-HJ-NP-Z2-9]{6}$/;
+const ID = /^[\w.-]{1,64}$/;
+const roomKey = code => "tt:room:" + code;
+
+class Bad extends Error { constructor(status, msg) { super(msg); this.status = status; } }
+
+function send(res, status, obj) {
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.end(JSON.stringify(obj));
+}
+
+async function readBody(req) {
+  const b = req.body;
+  if (b && typeof b === "object" && !Buffer.isBuffer(b)) {
+    // already parsed by the platform; its size still counts
+    if (JSON.stringify(b).length > MAX_BODY) throw new Bad(413, "too big");
+    return b;
+  }
+  let raw = typeof b === "string" ? b : Buffer.isBuffer(b) ? b.toString("utf8") : null;
+  if (raw === null) {
+    raw = await new Promise((ok, no) => {
+      let n = 0; const parts = [];
+      req.on("data", c => {
+        n += c.length;
+        if (n > MAX_BODY) { no(new Bad(413, "too big")); req.destroy(); return; }
+        parts.push(c);
+      });
+      req.on("end", () => ok(Buffer.concat(parts).toString("utf8")));
+      req.on("error", no);
+    });
+  }
+  if (raw.length > MAX_BODY) throw new Bad(413, "too big");
+  try { return JSON.parse(raw || "{}"); } catch (e) { throw new Bad(400, "not JSON"); }
+}
+
+function newCode() {
+  return Array.from(crypto.randomBytes(6), x => ALPHA[x % 32]).join("");
+}
+function sameKey(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
+function int(v, lo, hi) {
+  const n = Math.round(Number(v));
+  return isFinite(n) ? Math.max(lo, Math.min(hi, n)) : null;
+}
+function parse(s) { try { return JSON.parse(s); } catch (e) { return null; } }
+
+// what the table's screen is told to draw: one map, what's revealed on it, two switches
+function cleanMap(m) {
+  if (!m || typeof m !== "object") throw new Bad(400, "no map");
+  return {
+    live: typeof m.live === "string" && ID.test(m.live) ? m.live : null,
+    revealed: (Array.isArray(m.revealed) ? m.revealed : [])
+      .filter(x => typeof x === "string" && ID.test(x)).slice(0, 300),
+    grid: m.grid !== false, fog: m.fog !== false
+  };
+}
+
+async function roomMeta(s, code) {
+  if (!CODE.test(code || "")) throw new Bad(400, "bad code");
+  const meta = parse(await s.hget(roomKey(code), "meta"));
+  if (!meta) throw new Bad(404, "no such table");
+  return meta;
+}
+async function write(s, code, fields) {
+  const k = roomKey(code);
+  await s.hset(k, fields);
+  const v = await s.hincrby(k, "v", 1);
+  await s.expire(k, TTL);
+  return v;
+}
+
+async function state(s, code, since) {
+  if (!CODE.test(code || "")) throw new Bad(400, "bad code");
+  const k = roomKey(code);
+  const v = await s.hget(k, "v");
+  if (v === null || v === undefined) throw new Bad(404, "no such table");
+  if (since != null && String(since) === String(v)) return { v: +v };
+  const all = await s.hgetall(k) || {};
+  const meta = parse(all.meta) || {};
+  const out = { v: +all.v || +v, campaign: meta.campaign || null, chars: [], hp: {}, map: parse(all.map) };
+  Object.keys(all).forEach(f => {
+    if (f.indexOf("char:") === 0) {
+      const c = parse(all[f]);
+      if (c) out.chars.push({ id: f.slice(5), char: c.char, at: c.at });
+    } else if (f.indexOf("hp:") === 0) {
+      const h = parse(all[f]);
+      if (h) out.hp[f.slice(3)] = h;
+    }
+  });
+  return out;
+}
+
+async function handle(req, res) {
+  const s = store();
+  const url = new URL(req.url, "http://x");
+  if (req.method === "GET") {
+    const code = url.searchParams.get("code");
+    if (!code) return send(res, 200, { ok: !!s, store: s ? s.kind : null });
+    if (!s) throw new Bad(503, "not-set-up");
+    return send(res, 200, await state(s, code.toUpperCase(), url.searchParams.get("since")));
+  }
+  if (req.method !== "POST") throw new Bad(405, "GET or POST");
+  if (!s) throw new Bad(503, "not-set-up");
+  const b = await readBody(req);
+  const code = typeof b.code === "string" ? b.code.toUpperCase() : "";
+
+  if (b.op === "create") {
+    let c = newCode(), tries = 0;
+    while (await s.hget(roomKey(c), "meta") && ++tries < 5) c = newCode();
+    const gmKey = crypto.randomBytes(18).toString("base64url");
+    const campaign = typeof b.campaign === "string" && ID.test(b.campaign) ? b.campaign : null;
+    await write(s, c, { meta: JSON.stringify({ gmKey, campaign, created: Date.now() }) });
+    return send(res, 200, { code: c, gmKey, campaign });
+  }
+
+  const meta = await roomMeta(s, code);
+  if (b.op === "char") {
+    if (typeof b.id !== "string" || !ID.test(b.id)) throw new Bad(400, "bad id");
+    if (!b.char || typeof b.char !== "object" || Array.isArray(b.char)) throw new Bad(400, "no sheet");
+    const sheet = JSON.stringify({ char: b.char, at: Date.now() });
+    if (sheet.length > MAX_SHEET) throw new Bad(413, "sheet too big");
+    const k = roomKey(code);
+    if (!(await s.hget(k, "char:" + b.id))) {
+      const n = Object.keys(await s.hgetall(k) || {}).filter(f => f.indexOf("char:") === 0).length;
+      if (n >= MAX_CHARS) throw new Bad(409, "table full");
+    }
+    return send(res, 200, { v: await write(s, code, { ["char:" + b.id]: sheet }) });
+  }
+  if (b.op === "hp") {
+    if (typeof b.id !== "string" || !ID.test(b.id)) throw new Bad(400, "bad id");
+    // Stamped here, not by the device: a phone's clock can be minutes out, and
+    // "the last write to arrive wins" needs one clock to mean anything.
+    const at = Math.max(Date.now(), (parse(await s.hget(roomKey(code), "hp:" + b.id)) || {}).at + 1 || 0);
+    const hp = { now: b.now == null ? null : int(b.now, 0, 9999), temp: int(b.temp, 0, 9999) || 0, at };
+    return send(res, 200, { v: await write(s, code, { ["hp:" + b.id]: JSON.stringify(hp) }) });
+  }
+  if (b.op === "map" || b.op === "end") {
+    if (!sameKey(b.gmKey, meta.gmKey)) throw new Bad(403, "only the GM can do that");
+    if (b.op === "end") { await s.del(roomKey(code)); return send(res, 200, { ended: true }); }
+    return send(res, 200, { v: await write(s, code, { map: JSON.stringify(cleanMap(b.map)) }) });
+  }
+  throw new Bad(400, "unknown op");
+}
+
+module.exports = async function (req, res) {
+  try { await handle(req, res); }
+  catch (e) {
+    if (e instanceof Bad) return send(res, e.status, { error: e.message });
+    send(res, 500, { error: "server error" });
+  }
+};

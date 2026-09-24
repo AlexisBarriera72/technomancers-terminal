@@ -148,7 +148,7 @@ function buildClassic(root) {
   });
   C.gear.forEach(function (g) {
     gr.innerHTML += '<div class="cs-line"><span>' + esc(g.name) + '</span><span class="b">' +
-      esc(g.cost) + "</span></div>";
+      esc(priceText(gearPrice(g))) + "</span></div>";
   });
   if (!C.cyber.length && !C.augments.length && !C.gear.length)
     for (var j = 0; j < 6; j++) gr.innerHTML += '<div class="cs-write"></div>';

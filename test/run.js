@@ -13,6 +13,7 @@ const SUITES = {
   city: require("./city.test"),
   player: require("./player.test"),
   maps: require("./maps.test"),
+  sync: require("./sync.test"),
   untranslated: require("./untranslated.test")
 };
 

@@ -187,7 +187,10 @@ function setLang(next) {
 function save() {
   if (swapDepth) return true;       // borrowed sheet; never write it to our slot
   if (C && C.isShared) return true; // someone else's link; leave their slot alone
-  return lsWrite(LS, JSON.stringify(C));
+  var ok = lsWrite(LS, JSON.stringify(C));
+  // at a live table, the GM's screen gets every change a second later
+  if (window.TTSYNC && !C.isExample) window.TTSYNC.pushChar(slimChar(C));
+  return ok;
 }
 function load() {
   try {
@@ -299,6 +302,12 @@ function migrate(c) {
   if (!out.frames.length) delete out.frames;
   var uu = intIn(c.uplinkUsed, 0, 99);
   if (uu) out.uplinkUsed = uu;
+  // hit points right now, kept on the sheet and shared with the GM at a live table
+  var hn = intIn(c.hpNow, 0, 9999);
+  if (hn !== null) out.hpNow = hn;
+  var ht = intIn(c.hpTemp, 0, 9999);
+  if (ht) out.hpTemp = ht;
+  if (typeof c.hpAt === "number" && isFinite(c.hpAt) && c.hpAt > 0) out.hpAt = c.hpAt;
 
   // --- level-up slots ---------------------------------------------------
   var rawAsi = Array.isArray(c.asi) ? c.asi : [];

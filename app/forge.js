@@ -981,6 +981,40 @@ function humCostFor(tier) {
   return c;
 }
 
+/* a price in the Forge's lists: on street prices the book's number sits beside it */
+function costHtml(n, book) {
+  if (priceMode(C) !== "street") return esc(book);
+  return esc(priceText(n)) + ' <span class="book-cost"><span>book</span> ' + esc(book) + "</span>";
+}
+/* which prices this character pays, and a way onto a campaign's street prices */
+function pricesNote() {
+  var box = el("div", "prices-note");
+  var camp = C.campaign ? campById(C.campaign) : null;
+  if (priceMode(C) === "street") {
+    box.appendChild(el("b", null, "Street prices"));
+    var nm = el("span", "chip", esc(camp.name));
+    nm.setAttribute("data-nolang", "");
+    box.appendChild(nm);
+    box.appendChild(el("span", null,
+      "Chrome costs far less than the book says, the more so the higher the tier, and everything else costs half."));
+    return box;
+  }
+  box.appendChild(el("b", null, "Book prices"));
+  var street = camp ? null : campAll().filter(function (x) { return x.prices === "street"; })[0];
+  if (street) {
+    var b = el("button", "chip", esc("Playing in " + street.name + "? Use its prices"));
+    b.onclick = function () {
+      C.campaign = street.id;
+      delete C.isExample; save(); render();
+      toast("Street prices, from " + street.name);
+    };
+    box.appendChild(b);
+  } else {
+    box.appendChild(el("span", null, camp ? "This campaign plays the book's prices." : "The prices printed in the book."));
+  }
+  return box;
+}
+
 function stepGear(s) {
   head(s, "Step 07", "Chrome & gear",
     "Cyberware is rated by tier: higher tiers cost exponentially more credits and more of " +
@@ -1021,6 +1055,7 @@ function stepGear(s) {
     list.appendChild(el("span", "empty-state", "Nothing installed yet."));
   ib.appendChild(list);
   s.appendChild(ib);
+  s.appendChild(pricesNote());
 
   var hp = el("div", "callout");
   hp.style.borderColor = "var(--" + HSTATE[humanity().state][0] + ")";
@@ -1070,7 +1105,7 @@ function stepGear(s) {
       var on = C.cyber.some(function (x) { return x.name === c.name && x.tier === t; });
       var b = el("button", "chip" + (on ? " on" : " tier"),
         "T" + t + ' · <span class="hum-cost">−' + humCostFor(t) + " HUM</span>" +
-        (cost ? " · " + esc(cost) : ""));
+        (cost ? " · " + costHtml(priceOf("chrome", cost, t), cost) : ""));
       b.onclick = function (ev) {
         ev.preventDefault(); ev.stopPropagation();
         var i = -1;
@@ -1096,7 +1131,7 @@ function stepGear(s) {
     var cost = augCost[a.name.toLowerCase()];
     var chips = el("span", "chips");
     var b = el("button", "chip" + (on ? " on" : ""),
-      (on ? "✓ " : "") + '<span class="hum-cost">−1 HUM</span>' + (cost ? " · " + esc(cost) : ""));
+      (on ? "✓ " : "") + '<span class="hum-cost">−1 HUM</span>' + (cost ? " · " + costHtml(priceOf("gear", cost), cost) : ""));
     b.onclick = function (ev) {
       ev.preventDefault(); ev.stopPropagation();
       var i = C.augments.indexOf(a.name);
@@ -1167,7 +1202,9 @@ function stepGear(s) {
       };
       cell.appendChild(b);
       row.appendChild(cell);
-      r.forEach(function (c) { row.appendChild(el("td", null, esc(c))); });
+      r.forEach(function (c, ci) {
+        row.appendChild(el("td", ci === 1 ? "cost" : null, ci === 1 && c ? costHtml(priceOf("gear", c), c) : esc(c)));
+      });
       body.appendChild(row);
     });
     tb.appendChild(body); w.appendChild(tb); panel.appendChild(w);

@@ -10,7 +10,7 @@
  *
  * Bump CACHE on every deploy that changes a file below.
  */
-var CACHE = "ttb-v31";
+var CACHE = "ttb-v32";
 var SHELL = [
   "./",
   "./index.html",
@@ -22,6 +22,7 @@ var SHELL = [
   "./synergy.js",
   "./story.js",
   "./city.js",
+  "./sync.js",
   "./mapdraw.js",
   "./maps.js",
   "./gm.js",
@@ -91,6 +92,10 @@ self.addEventListener("fetch", function (e) {
   if (req.method !== "GET") return;
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;   // fonts etc., leave alone
+  // The live table's API is live by definition: a cached answer would freeze
+  // every screen on the first thing it heard (and ignoreSearch below would
+  // hand any room's reply to any other).
+  if (url.pathname.indexOf("/api/") >= 0) return;
 
   e.respondWith(
     caches.match(req, { ignoreSearch: true }).then(function (hit) {

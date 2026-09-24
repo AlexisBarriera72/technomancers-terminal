@@ -107,7 +107,7 @@ function inventoryPanel() {
       q.appendChild(plus);
       line.appendChild(q);
       line.appendChild(el("span", "wt", g.wt != null ? esc(String(Math.round(g.wt * gearQty(g) * 10) / 10)) + " lb" : "-"));
-      line.appendChild(el("span", "cost", esc(g.cost || "-")));
+      line.appendChild(el("span", "cost", esc(priceText(gearPrice(g)))));
       var rm = el("button", "chip warn", "✕");
       rm.setAttribute("aria-label", "Remove " + g.name);
       rm.onclick = function () { C.gear.splice(i, 1); delete C.isExample; save(); render(); };
@@ -519,6 +519,125 @@ function ladder() {
   return rows;
 }
 
+/* ---- the live table ----------------------------------------------------
+   Join the GM's table with its six-letter code and this sheet shows on the
+   GM's screen: save() pushes every change, and HP comes back the other way
+   when the GM hands out damage. sync.js does the talking.                 */
+var liveMsg = "";
+function joinTable(code) {
+  var S = window.TTSYNC;
+  if (!S) return;
+  if (C.isShared) { toast("This is someone else's shared character. Save it to your roster first."); return; }
+  S.join("player", code).then(function (r) {
+    if (r.error) { liveMsg = r.error; render(); return; }
+    liveMsg = "";
+    if (r.campaign && !C.campaign && campById(r.campaign)) C.campaign = r.campaign;
+    delete C.isExample;
+    save();
+    toast("Joined table " + r.code);
+    render();
+  });
+}
+function liveBox() {
+  var S = window.TTSYNC;
+  var box = el("div", "callout live-box");
+  box.appendChild(el("h5", null, "Live table"));
+  if (!S) return box;
+  var st = S.status("player");
+  if (st.code) {
+    var line = el("div", "live-line");
+    line.appendChild(el("span", "live-dot" + (st.err ? " bad" : ""), ""));
+    line.appendChild(el("span", null, esc(st.err || "On the GM's screen")));
+    var cd = el("b", "live-code", esc(st.code));
+    cd.setAttribute("data-nolang", "");
+    line.appendChild(cd);
+    var lv = el("button", "chip", "Leave");
+    lv.onclick = function () { S.leave("player"); render(); };
+    line.appendChild(lv);
+    box.appendChild(line);
+    box.appendChild(el("p", "slot-note",
+      "Level-ups, gear, chrome and HP show on the GM's screen a few seconds after you change them, and damage the GM deals shows here."));
+    return box;
+  }
+  if (!S.available()) {
+    box.appendChild(el("p", "slot-note", "Live sync works on the website, not from a file"));
+    return box;
+  }
+  box.appendChild(el("p", "slot-note",
+    "Playing with a GM? Type the code from their screen and this sheet shows up there, and stays up to date."));
+  var row = el("div", "live-join");
+  var inp = el("input");
+  inp.className = "search"; inp.placeholder = "Table code"; inp.maxLength = 6;
+  if (typeof liveCodeWanted === "string" && liveCodeWanted) inp.value = liveCodeWanted;
+  inp.setAttribute("aria-label", "Table code");
+  inp.setAttribute("autocapitalize", "characters"); inp.autocomplete = "off"; inp.spellcheck = false;
+  inp.onkeydown = function (e) { if (e.key === "Enter") joinTable(inp.value); };
+  var jb = el("button", "btn primary", "Join");
+  jb.onclick = function () { joinTable(inp.value); };
+  row.appendChild(inp); row.appendChild(jb);
+  box.appendChild(row);
+  if (liveMsg) box.appendChild(el("p", "tone-alert", esc(liveMsg)));
+  return box;
+}
+/* The HP the character has right now. Damage eats temp HP first. */
+function hpNowOf() {
+  var max = maxHP() || 0;
+  return { max: max, now: C.hpNow == null ? max : Math.min(C.hpNow, max), temp: C.hpTemp || 0 };
+}
+function setHp(now, temp) {
+  var h = hpNowOf();
+  C.hpNow = Math.max(0, Math.min(h.max, Math.round(now)));
+  C.hpTemp = Math.max(0, Math.round(temp || 0));
+  delete C.isExample;
+  save();
+  if (window.TTSYNC) window.TTSYNC.pushHp("player", C.id, C.hpNow, C.hpTemp);
+  render();
+}
+function hpTracker() {
+  var h = hpNowOf();
+  var box = el("div", "hp-track" + (h.now === 0 ? " down" : h.now <= h.max / 2 ? " hurt" : ""));
+  var top = el("div", "hp-top");
+  top.appendChild(el("span", "k", "Hit points now"));
+  var big = el("span", "hp-big", esc(String(h.now)) + '<span class="of"> / ' + esc(String(h.max)) + "</span>");
+  top.appendChild(big);
+  if (h.temp) top.appendChild(el("span", "hp-temp", "+" + h.temp + " temp"));
+  box.appendChild(top);
+  var bar = el("div", "hp-bar");
+  var fill = el("div", "hp-fill");
+  fill.style.width = (h.max ? Math.round(h.now / h.max * 100) : 0) + "%";
+  bar.appendChild(fill);
+  box.appendChild(bar);
+  var row = el("div", "hp-btns");
+  function hurt(n) {                      // temp HP soaks damage first
+    var t = h.temp, soak = Math.min(t, n);
+    setHp(h.now - (n - soak), t - soak);
+  }
+  [[-5, "−5"], [-1, "−1"], [1, "+1"], [5, "+5"]].forEach(function (x) {
+    var b = el("button", "chip" + (x[0] < 0 ? " warn" : ""), x[1]);
+    b.setAttribute("aria-label", x[0] < 0 ? "Take " + -x[0] + " damage" : "Heal " + x[0]);
+    b.onclick = function () { if (x[0] < 0) hurt(-x[0]); else setHp(h.now + x[0], h.temp); };
+    row.appendChild(b);
+  });
+  var amt = el("input");
+  amt.type = "number"; amt.min = "0"; amt.inputMode = "numeric"; amt.className = "search hp-amt";
+  amt.setAttribute("aria-label", "Amount");
+  amt.placeholder = "0";
+  row.appendChild(amt);
+  var val = function () { return Math.max(0, Math.round(+amt.value) || 0); };
+  var dmg = el("button", "btn", "Damage");
+  dmg.onclick = function () { if (val()) hurt(val()); };
+  var heal = el("button", "btn", "Heal");
+  heal.onclick = function () { if (val()) setHp(h.now + val(), h.temp); };
+  var tmp = el("button", "btn", "Set temp HP");
+  tmp.onclick = function () { setHp(h.now, val()); };
+  var rest = el("button", "btn", "Long rest");
+  rest.title = "Back to full HP, temp HP gone";
+  rest.onclick = function () { setHp(h.max, 0); };
+  [dmg, heal, tmp, rest].forEach(function (b) { row.appendChild(b); });
+  box.appendChild(row);
+  return box;
+}
+
 function stepSheet(s) {
   var cl = classByName[C.cls];
   if (!cl) return needClass(s);
@@ -531,6 +650,7 @@ function stepSheet(s) {
 
   var slug = (C.name || "operator").replace(/[^a-z0-9]+/gi, "-").toLowerCase().replace(/^-|-$/g, "");
 
+  s.appendChild(liveBox());
   s.appendChild(el("div", "eyebrow", "Print"));
   var ptools = el("div", "toolbar");
   PRINT_KINDS.forEach(function (k) {
@@ -594,6 +714,7 @@ function stepSheet(s) {
     vs.appendChild(x);
   });
   s.appendChild(vs);
+  s.appendChild(hpTracker());
 
   /* ---- resources from the class table ---- */
   if (cl.progression) {
@@ -762,13 +883,13 @@ function stepSheet(s) {
   var ul5 = el("ul");
   C.cyber.forEach(function (x) {
     ul5.appendChild(el("li", null, esc(x.name) + " (Tier " + esc(x.tier) + "), " +
-      esc(cyberCost[x.name.toLowerCase() + "|" + x.tier] || "-")));
+      esc(priceText(chromePrice(x)))));
   });
   C.augments.forEach(function (a) {
-    ul5.appendChild(el("li", null, esc(a) + ", " + esc(augCost[a.toLowerCase()] || "-")));
+    ul5.appendChild(el("li", null, esc(a) + ", " + esc(priceText(augPrice(a)))));
   });
   C.gear.forEach(function (g) {
-    var li5 = el("li", null, esc(g.name) + (gearQty(g) > 1 ? " ×" + gearQty(g) : "") + ", " + esc(g.cost || "-") +
+    var li5 = el("li", null, esc(g.name) + (gearQty(g) > 1 ? " ×" + gearQty(g) : "") + ", " + esc(priceText(gearPrice(g))) +
       (g.wt != null ? ' <span class="page-ref">' + esc(String(Math.round(g.wt * gearQty(g) * 10) / 10)) + " lb</span>" : ""));
     if (g.custom) li5.setAttribute("data-nolang", "");
     ul5.appendChild(li5);
@@ -930,11 +1051,11 @@ function toMarkdown() {
     L.push("## Chrome & gear: " + fmtCredits(spend()));
     C.cyber.forEach(function (x) {
       L.push("- " + x.name + " (Tier " + x.tier + "), " +
-        (cyberCost[x.name.toLowerCase() + "|" + x.tier] || "-"));
+        priceText(chromePrice(x)));
     });
-    C.augments.forEach(function (a) { L.push("- " + a + ", " + (augCost[a.toLowerCase()] || "-")); });
+    C.augments.forEach(function (a) { L.push("- " + a + ", " + priceText(augPrice(a))); });
     C.gear.forEach(function (g) {
-      L.push("- " + g.name + (gearQty(g) > 1 ? " ×" + gearQty(g) : "") + ", " + (g.cost || "-") +
+      L.push("- " + g.name + (gearQty(g) > 1 ? " ×" + gearQty(g) : "") + ", " + priceText(gearPrice(g)) +
         (g.wt != null ? " (" + Math.round(g.wt * gearQty(g) * 10) / 10 + " lb)" : ""));
     });
     if (C.credits != null) L.push("- Credits left: " + fmtCredits(C.credits - spend()));

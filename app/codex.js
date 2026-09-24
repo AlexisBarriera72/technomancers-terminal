@@ -280,7 +280,7 @@ function renderCampaign(s) {
   var add = el("button", "chip tier", "+ New campaign");
   add.onclick = function () {
     var nc = { id: "c" + Date.now().toString(36), name: "Untitled campaign", dm: "", blurb: "",
-               tone: [], startingLevel: 1, startingCredits: "", humanity: true,
+               tone: [], startingLevel: 1, startingCredits: "", prices: "street", humanity: true,
                rules: [], npcs: [], places: [], items: [], sessions: [], hooks: [] };
     campSave(nc); setCamp(nc.id); campSecIx = 0; render();
     toast("Campaign created");
@@ -399,9 +399,23 @@ function renderCampaign(s) {
       ls.oninput = function () { c.startingLevel = +ls.value; campSave(c); };
       lv.appendChild(ls);
       g.appendChild(lv);
+      var pl = el("div", "trait-line");
+      pl.innerHTML = '<span class="k">Prices</span>';
+      var ps = el("select");
+      ps.className = "search"; ps.style.cssText = "margin:0;width:auto";
+      ps.setAttribute("aria-label", "Prices");
+      [["book", "Book prices"], ["street", "Street prices"]].forEach(function (o) {
+        var op = el("option", null, o[1]); op.value = o[0];
+        if ((c.prices === "street" ? "street" : "book") === o[0]) op.selected = true;
+        ps.appendChild(op);
+      });
+      ps.onchange = function () { c.prices = ps.value; campSave(c); };
+      pl.appendChild(ps);
+      g.appendChild(pl);
     } else {
       [["Run by", c.dm], ["Starting level", c.startingLevel],
        ["Starting credits", c.startingCredits],
+       ["Prices", c.prices === "street" ? "Street prices" : "Book prices"],
        ["Humanity track", c.humanity === false ? "Not in play" : "In play"],
        ["Tone", (c.tone || []).join(" · ")]].forEach(function (x) {
         if (!x[1]) return;

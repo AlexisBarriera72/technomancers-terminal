@@ -19,6 +19,7 @@
      tone:          ["Heist", "Body horror"],        // short tags
      startingLevel: 3,
      startingCredits: "25,000₵",
+     prices:        "street",                        // "book" or "street" (see app/core.js)
      humanity:      true,                            // is the Humanity track in play
      rules:     [{ title: "", text: "" }],           // house rules
      npcs:      [{ name: "", role: "", notes: "" }],
@@ -45,6 +46,8 @@ window.TTBC = {
       tone: ["Divine industry", "Body horror", "House politics", "Vertical city"],
       startingLevel: 3,
       startingCredits: "25,000 grams",
+      // Book chrome is priced for Night City money; Cathedra pays in grams.
+      prices: "street",
       humanity: true,
       rules: [
         { title: "The god is still dying",
