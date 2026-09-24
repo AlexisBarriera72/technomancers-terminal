@@ -4,9 +4,9 @@
  *   window.TTBGM  reference data you can edit by hand, the unlock token, the
  *                 DC ladder, conditions, the rulings catalogue, NPC templates
  *                 and the name lists the improviser draws from.
- *   window.TTGM   the code. app.js hands it a namespace (window.TT) on boot;
+ *   window.TTGM   the code. The app (app/*.js) hands it a namespace (window.TT) on boot;
  *                 nothing here runs at load time and nothing here reaches into
- *                 app.js directly.
+ *                 the app directly.
  *
  * Rulings schema, every field but id/q/roll is optional:
  *   id    slug
@@ -740,7 +740,7 @@ window.TTGM = (function () {
       return o;
     }).sort(function (a, b) { return a.height - b.height; });
   }
-  var T = null;                       // app.js's namespace, handed over by boot()
+  var T = null;                       // the app's namespace, handed over by boot()
   var $, el, esc, toast;
 
   function boot(api) {
@@ -960,7 +960,7 @@ window.TTGM = (function () {
   }
 
   /* ---------------------------------------------------------- UI helpers --
-     esc() in app.js does not escape single quotes, and everything on this
+     esc() in app/core.js does not escape single quotes, and everything on this
      screen is free text the GM typed. So: no user text ever goes through
      innerHTML. txt() and field() below are the only way it reaches the DOM. */
   function txt(tag, cls, text) {
@@ -1068,7 +1068,7 @@ window.TTGM = (function () {
   }
 
   /* ------------------------------------------------------- party synergies --
-     app.js computes one character at a time, statsOf() takes a single `c` and
+     The app computes one character at a time, statsOf() takes a single `c` and
      has no way to know who else is at the table. That is correct for a player's
      own sheet, which genuinely does not know. Everything below therefore lives
      here, where partyChars() has already put the whole party in one array.
@@ -1098,7 +1098,7 @@ window.TTGM = (function () {
 
   /* The one synergy that is a number rather than a line to read. Both halves
      have to be present, and the bonus belongs to the pair, a Fighter standing
-     next to them gets nothing. Same shape as app.js's initiative(), which
+     next to them gets nothing. Same shape as the app's initiative(), which
      already hardcodes Chromehound and Firebrand for the same reason: it is a
      single known case, not a rule that wants a parser. */
   function ambushTeamBonus(cls, party) {
@@ -2002,7 +2002,7 @@ window.TTGM = (function () {
      Drop-downs build their contents the first time they open: twelve scenes
      of sixteen categories each is a lot of DOM to make for a tab you may only
      glance at. Open state is kept out here because render() rebuilds the
-     stage, the same reason app.js keeps synOpen. */
+     stage, the same reason app/forge.js keeps synOpen. */
   var ST = window.TTST || null;
   var storyOpen = {};
   var FEEDS = [["mercy", "Mercy"], ["violence", "Violence"], ["lies", "Lies"], ["questions", "Questions"]];

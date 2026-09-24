@@ -16,7 +16,7 @@ const ROOT = path.join(__dirname, "..");
 // Built from parts so this file does not match itself.
 const BAD = new RegExp([String.fromCharCode(0x2014), "\\\\u" + "2014",
   "&md" + "ash;", "&#82" + "12;", "&#x20" + "14;"].join("|"), "i");
-const DIRS = [".", "test", "tools"];
+const DIRS = [".", "app", "test", "tools"];
 const EXT = /\.(js|html|md|json|css|txt)$|^\.gitignore$/;
 const SKIP = { "package-lock.json": 1, "strings.json": 1 };
 

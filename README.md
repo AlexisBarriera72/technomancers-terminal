@@ -27,7 +27,7 @@ with `npx serve .`.
 | File | What it is |
 |---|---|
 | `index.html` | Shell markup and all the CSS. |
-| `app.js` | The player-facing application. Vanilla JS, one IIFE, no framework. |
+| `app/*.js` | The player-facing application, vanilla JS with no framework and no build step, in nine files loaded in order: `core` (helpers, book data, the character, storage), `i18n`, `rules` (migrate and the numbers), `guide` (beginner guide, share links, roster), `forge` (steps 1 to 7), `sheet` (the play sheet, inventory, level-up panel, turn cards, frames, Markdown), `print`, `codex` (step chrome, Codex, Campaign screen) and `boot` (rail, dossier, render, `window.TT`, start-up). They share one script scope, the way the old single IIFE did. |
 | `gm.js` | The GM tools, `window.TTBGM` (rulings, conditions, NPC templates, Street Cred bands) and `window.TTGM` (the code). |
 | `data.js` | `window.TTB`, everything extracted from the Textbook. |
 | `expansion.js` | `window.TTBX`, the Neon Ledger expansion. |
@@ -46,8 +46,9 @@ by the worker's ordinary fetch handler from then on.
 
 `vercel.json` sets cache headers. `manifest.json` and `icon.svg` make it installable.
 
-`app.js` hands `gm.js` a namespace (`window.TT`) at startup, the book lookups, the
-DOM helpers and the derived-stat functions. Everything else in `app.js` stays private.
+The app hands `gm.js` a namespace (`window.TT`) at startup, the book lookups, the
+DOM helpers and the derived-stat functions. That is the only interface: `gm.js`
+never reaches into the app's other names, even though the app's files share a scope.
 
 ## The look
 
@@ -64,7 +65,7 @@ is at least 4.5:1 against every background it sits on, in both themes.
   panel draws its own diagonal with `::after`, and the glow is inset because a
   clip-path would cut an outer one off. Focus rings on cut things sit inside
   them for the same reason.
-- **Roles** each have an icon and a colour (`ROLE_ICON` in `app.js`, the
+- **Roles** each have an icon and a colour (`ROLE_ICON` in `app/forge.js`, the
   `.role-*` rules in `index.html`), shown on class cards, the synergy preview,
   the GM's coverage chips and each GM party card.
 - **Motion** is two things: a card lights up once when it is picked, and the
@@ -341,7 +342,7 @@ The heist, the net and the chase live in `ttb.gm.play` (`heist`, `netrun`,
 ### Street Cred and what the party is
 
 Two things on the GM's side read the whole table at once, which nothing else in
-the app can do. `app.js` computes one character at a time, `statsOf(c)` takes a
+the app can do. The app computes one character at a time, `statsOf(c)` takes a
 single character and has no way to know who else is there, which is correct,
 because a player's own sheet genuinely does not know. So both live in `gm.js`
 next to `partyChars()`, the one place the party is already in one array, and
@@ -376,7 +377,7 @@ with all 21 classes appearing at least once. Each has a line to read when both
 are in the room and a small, real bonus (`effect`), such as Shield Wall's +1 AC
 against melee attacks while the two stand next to each other. The GM applies
 those at the table, with one exception: Ranger + Rogue is **Ambush Team**, worth
-+1 initiative to both, computed in `combatInitiative()` the way `app.js`'s
++1 initiative to both, computed in `combatInitiative()` the way the app's
 `initiative()` already hardcodes Chromehound and Firebrand.
 Under the pairs, every class carries one or two of six roles, and the party is
 told which it covers and which it does not. A narrow crew is a shape, not a
@@ -424,7 +425,7 @@ visiting.
 
 The site itself still has no dependencies and no build step. The tests are
 dev-only, the app needs a DOM, so even the rules checks run inside a real
-browser against `window.TT`, the namespace `app.js` publishes for `gm.js`.
+browser against `window.TT`, the namespace the app publishes for `gm.js`.
 
 ```
 npm install
@@ -454,7 +455,7 @@ one side only would leave a line in English. CI runs both on every push.
 A push to `main` is the deploy, but **bump both version markers in the same commit**
 or people keep seeing the old site:
 
-- `BUILD` in `app.js`, printed in the masthead, so you can tell at a glance which
+- `BUILD` in `app/core.js`, printed in the masthead, so you can tell at a glance which
   version a device is actually running. That is the quickest way to answer "did my
   change go live?"
 - `CACHE` in `sw.js`, the service worker serves its cached copy first, so without a
@@ -483,12 +484,12 @@ application itself are original.
 mechanics are the SRD's, unchanged: same triggers, same dice, same durations, so a
 table using the printed rules and a table using this site are playing the same game.
 Only the surrounding description is written for Cathedra, and that split is load
-bearing rather than stylistic, `actionEntries()` in `app.js` infers a feature's
+bearing rather than stylistic, `actionEntries()` in `app/rules.js` infers a feature's
 action cost by reading its own prose, so rewriting a rule sentence for flavour would
 quietly change what the sheet prints.
 
 Each source shows its own chip, Book, Neon Ledger or SRD, from `sourceName()` in
-`app.js`. Add a fourth by giving its records an `origin` and adding one line to
+`app/core.js`. Add a fourth by giving its records an `origin` and adding one line to
 `SOURCES`.
 
 > This work includes material taken from the System Reference Document 5.1

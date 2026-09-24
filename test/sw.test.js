@@ -1,7 +1,7 @@
 /* Service worker: a partial install must not replace a working cache.
  *
  * Serves the site over HTTP (service workers need a real origin). The second
- * install is served a bumped CACHE name AND a failing app.js, which is exactly
+ * install is served a bumped CACHE name AND a failing app/boot.js, which is exactly
  * the real-world case: a deploy reached a phone on a weak connection. */
 "use strict";
 const http = require("http");
@@ -108,9 +108,9 @@ module.exports = async function (browser) {
     R.check("offline reload serves the app", await page.evaluate(() => !!window.TT));
     await ctx.setOffline(false);
 
-    /* 3. a new version whose app.js 503s must not destroy the good cache */
+    /* 3. a new version whose app/boot.js 503s must not destroy the good cache */
     state.cache = "test-v2";
-    state.fail = ["/app.js"];
+    state.fail = ["/app/boot.js"];
     await page.evaluate(async () => {
       const r = await navigator.serviceWorker.getRegistration();
       if (r) { try { await r.update(); } catch (e) {} }
@@ -118,11 +118,11 @@ module.exports = async function (browser) {
     await page.waitForTimeout(3000);
 
     const after = await cacheMap();
-    const intact = Object.keys(after).filter(k => (after[k] || []).indexOf("/app.js") >= 0);
+    const intact = Object.keys(after).filter(k => (after[k] || []).indexOf("/app/boot.js") >= 0);
     R.check("a complete cache survives a failed update", intact.length >= 1,
       JSON.stringify(after));
     R.check("the incomplete cache did not replace the good one",
-      !(after["test-v2"] && !after["test-v1"] && after["test-v2"].indexOf("/app.js") < 0),
+      !(after["test-v2"] && !after["test-v1"] && after["test-v2"].indexOf("/app/boot.js") < 0),
       JSON.stringify(after));
 
     /* 4. and the app still loads offline afterwards, the whole point */

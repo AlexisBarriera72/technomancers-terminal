@@ -2,7 +2,7 @@
 /* Collect every English string that actually reaches the screen.
  *
  * The translation table is keyed by the text applyLang() sees, not by the
- * string literals in app.js, those are concatenation fragments and half of
+ * string literals in app/*.js, those are concatenation fragments and half of
  * them never appear on their own. So this drives the real application through
  * every screen it has and reads the DOM back.
  *

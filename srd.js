@@ -3,7 +3,7 @@
  * Everything here is mechanically the System Reference Document's, unchanged:
  * same triggers, same dice, same durations, same save DCs. Only the framing
  * prose is written for Cathedra. That split is deliberate, the surrounding
- * application infers mechanics from this text (see ACT_RULES in app.js), so
+ * application infers mechanics from this text (see ACT_RULES in app/rules.js), so
  * rewriting a rule sentence for flavour would quietly change what the sheet
  * prints. Flavour goes in `description` and in the gloss paragraph under each
  * feature; the rule sentence itself is left alone.

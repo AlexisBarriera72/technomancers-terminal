@@ -863,7 +863,9 @@ module.exports = async function (browser) {
     const ui = win.TTES.ui;
     const numKey = s => { let i = 0; return s.replace(/\d+/g, () => "{" + (i++) + "}"); };
     const missing = [];
-    for (const f of ["app.js", "gm.js"]) {
+    const appFiles = fs.readdirSync(path.join(root, "app")).filter(f => f.endsWith(".js")).map(f => "app/" + f);
+    R.check("the toast check reads every app file", appFiles.length >= 9, JSON.stringify(appFiles));
+    for (const f of appFiles.concat(["gm.js"])) {
       const src = fs.readFileSync(path.join(root, f), "utf8");
       const re = /toast\(\s*("(?:[^"\\]|\\.)*")\s*\)/g;
       let m;

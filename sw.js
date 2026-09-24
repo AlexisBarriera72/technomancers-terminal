@@ -10,7 +10,7 @@
  *
  * Bump CACHE on every deploy that changes a file below.
  */
-var CACHE = "ttb-v29";
+var CACHE = "ttb-v30";
 var SHELL = [
   "./",
   "./index.html",
@@ -23,7 +23,15 @@ var SHELL = [
   "./story.js",
   "./city.js",
   "./gm.js",
-  "./app.js",
+  "./app/core.js",
+  "./app/i18n.js",
+  "./app/rules.js",
+  "./app/guide.js",
+  "./app/forge.js",
+  "./app/sheet.js",
+  "./app/print.js",
+  "./app/codex.js",
+  "./app/boot.js",
   "./manifest.json",
   "./icon.svg"
 ];
