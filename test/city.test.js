@@ -2,7 +2,16 @@
  * order, shared NPC initiative, difficulty and morale; later, the City and
  * Toolkit screens. Driven in the browser the way a GM would use them. */
 "use strict";
+const fs = require("fs");
+const path = require("path");
 const { Results, appPage, FILE_URL } = require("./lib");
+
+const ROOT = path.join(__dirname, "..");
+function load(file) {
+  const win = {};
+  new Function("window", fs.readFileSync(path.join(ROOT, file), "utf8"))(win);
+  return win;
+}
 
 module.exports = async function (browser) {
   const R = new Results();
@@ -151,6 +160,198 @@ module.exports = async function (browser) {
       es.buttons.indexOf("Moral: sí") >= 0, JSON.stringify(es.buttons));
 
     R.eq("no page errors on the Encounter screen", errors, []);
+    await ctx.close();
+  }
+
+  /* ============================ the city's data ============================ */
+  {
+    const CITY = load("city.js").TTCITY;
+    const CATH = load("campaigns.js").TTBC.campaigns.find(c => c.id === "cathedra");
+    const GM = load("gm.js").TTBGM;
+    const tables = [["weather", CITY.weather]];
+    Object.keys(CITY.street).forEach(b => ["day", "night"].forEach(t => tables.push(["street " + b + " " + t, CITY.street[b][t]])));
+    Object.keys(CITY.bounties).forEach(b => tables.push(["bounties " + b, CITY.bounties[b]]));
+    R.eq("every city table has one row per face of its die",
+      tables.filter(t => t[1].rows.length !== t[1].die).map(t => t[0] + " " + t[1].rows.length + "/" + t[1].die), []);
+    R.eq("four Houses", CATH.houses.map(h => h.id), ["reliquary", "thorn", "lathe", "vigil"]);
+    R.eq("eleven districts, from the Marrowworks to the Crown",
+      [CATH.districts.length, CATH.districts[0].id, CATH.districts[10].id], [11, "marrowworks", "crown"]);
+    R.check("each district higher than the one below it by more than a Long Fall",
+      CATH.districts.every((d, i) => !i || d.height - CATH.districts[i - 1].height > 60),
+      JSON.stringify(CATH.districts.map(d => d.height)));
+    R.eq("every district belongs to a real House and a real street table",
+      CATH.districts.filter(d => (d.house && !CATH.houses.some(h => h.id === d.house)) || !CITY.street[d.band]).map(d => d.id), []);
+    const tmpl = GM.npcTemplates.map(t => t.name), badNpc = [];
+    Object.keys(CITY.street).forEach(b => ["day", "night"].forEach(t => CITY.street[b][t].rows.forEach(r => {
+      if (r.npc && tmpl.indexOf(r.npc.t) < 0) badNpc.push(r.npc.t);
+    })));
+    R.eq("every street encounter's NPCs are a real template", badNpc, []);
+    R.check("holy days fall on real dates",
+      CITY.holyDays.every(h => h.month >= 1 && h.month <= 12 && h.day >= 1 && h.day <= CITY.calendar.days && h.name && h.effect), "");
+    R.check("the standing ladder runs -3 to +3", CITY.standing.map(x => x.n).join() === "-3,-2,-1,0,1,2,3", "");
+    R.check("every bounty has a job, a payer, pay, a catch and a clock size",
+      Object.keys(CITY.bounties).every(b => CITY.bounties[b].rows.every(j => j.job && j.who && j.pay && j.catch && j.seg >= 2 && j.seg <= 12)), "");
+  }
+
+  /* ============================ the City screen ============================ */
+  {
+    const { page, ctx, errors } = await appPage(browser, { url: FILE_URL + "#gm=cathedra" });
+    await page.waitForTimeout(250);
+    const top = await page.evaluate(() => {
+      window.TTGM.loadDemo();
+      const T = window.TT; T.setMode("table"); T.gmSec(7); T.render();
+      return { rail: [...document.querySelectorAll(".rail .step")].map(x => x.textContent.replace(/^[\s·\d]+/, "").trim()),
+               h2: document.querySelector("#stage h2").textContent,
+               date: document.querySelector(".gm-cal-date").textContent,
+               next: [...document.querySelectorAll(".gm-holy")].map(x => x.textContent),
+               houses: [...document.querySelectorAll(".gm-house h4")].map(x => x.textContent),
+               log: [...document.querySelectorAll(".gm-cred-log li")].map(x => x.textContent),
+               chart: !!document.querySelector(".gm-cred-chart path") };
+    });
+    R.check("the GM rail has City", top.rail.indexOf("City") >= 0 && top.h2 === "City", JSON.stringify(top.rail));
+    R.eq("the demo is on day 64: the 4th of Marrowtide", top.date, "4 Marrowtide, year 900");
+    R.check("and the next holy day is Tapping Day, in 3 days", /In 3 days/.test(top.next[0]) && /Tapping Day/.test(top.next[0]), JSON.stringify(top.next));
+    R.eq("the four Houses are listed", top.houses, ["House Reliquary", "House Thorn", "House Lathe", "House Vigil"]);
+    R.check("the Street Cred history shows the demo's three moves, newest first, with a chart",
+      top.log.length === 3 && /All three petitioners/.test(top.log[0]) && top.chart, JSON.stringify(top.log));
+
+    // standing moves and sticks, renames stick, and both go out in the vault
+    await page.evaluate(() => {
+      const card = [...document.querySelectorAll(".gm-house")].find(c => /Thorn/.test(c.querySelector("h4").textContent));
+      [...card.querySelectorAll("button")].find(b => b.textContent === "+").click();
+      const orig = window.prompt; window.prompt = () => "The Collectors";
+      const card2 = [...document.querySelectorAll(".gm-house")].find(c => /Thorn/.test(c.querySelector("h4").textContent));
+      [...card2.querySelectorAll("button")].find(b => b.textContent === "Rename").click();
+      window.prompt = orig;
+    });
+    await page.reload();
+    await page.waitForFunction(() => !!window.TT);
+    await page.waitForTimeout(250);
+    const stand = await page.evaluate(() => {
+      const T = window.TT; T.setMode("table"); T.gmSec(7); T.render();
+      const card = [...document.querySelectorAll(".gm-house")][1];
+      let captured = null; const orig = T.saveAs; T.saveAs = (n, t) => { captured = t; };
+      T.gmSec(0); T.render();
+      [...document.querySelectorAll("button")].find(b => /export gm vault/i.test(b.textContent)).click();
+      T.saveAs = orig;
+      const v = JSON.parse(captured);
+      return { name: card.querySelector("h4").textContent, band: card.querySelector(".gm-house-band b").textContent,
+               vault: v.play.city.houses.thorn, vname: v.play.city.names.thorn };
+    });
+    R.eq("+ moves House Thorn from Hostile to Wary, and a rename sticks through a reload",
+      [stand.name, stand.band], ["The Collectors", "Wary"]);
+    R.eq("both go out in the vault export", [stand.vault, stand.vname], [-1, "The Collectors"]);
+
+    // every Street Cred move is logged with its reason
+    const cred = await page.evaluate(() => {
+      const T = window.TT, G = window.TTGM;
+      T.setMode("table"); T.gmSec(0); T.render();
+      const up = [...document.querySelectorAll(".gm-rep button")].find(b => b.textContent === "+1");
+      up.click(); up.click();
+      T.gmSec(5); T.render();
+      [...document.querySelectorAll("#stage button")].find(b => /Expand everything/.test(b.textContent)).click();
+      const sc = [...document.querySelectorAll("details.st-scene")].find(d => /Burned/.test(d.querySelector("summary").textContent));
+      const btn = sc ? [...sc.querySelectorAll(".st-cat-cred button")].find(b => /Street Cred/.test(b.textContent)) : null;
+      if (btn) btn.click();
+      const log = JSON.parse(localStorage.getItem("ttb.gm.play")).repLog;
+      [...document.querySelectorAll("#stage button")].find(b => /Collapse everything/.test(b.textContent)).click();
+      return { log: log.slice(-2), n: log.length, clicked: !!btn };
+    });
+    R.eq("two +1 taps on the Party screen fold into one logged move", [cred.log[0].why, cred.log[0].to - cred.log[0].from], ["Moved by hand", 2]);
+    R.check("a story scene's Street Cred button logs the scene and the reason",
+      cred.clicked && /^Burned/.test(cred.log[1].why), JSON.stringify(cred.log));
+
+    // a new day ticks daily clocks and clears yesterday's weather
+    const day = await page.evaluate(() => {
+      const T = window.TT;
+      T.setMode("table"); T.gmSec(4); T.render();
+      const box = document.querySelector(".gm-clock .gm-clock-daily input");
+      box.checked = true; box.dispatchEvent(new Event("change"));
+      const before = JSON.parse(localStorage.getItem("ttb.gm.play")).clocks[0].filled;
+      T.gmSec(2); T.render();
+      const wxBefore = !!document.querySelector(".gm-picker .gm-weather-line");
+      T.gmSec(7); T.render();
+      [...document.querySelectorAll("#stage button")].find(b => /Advance a day/.test(b.textContent)).click();
+      const p = JSON.parse(localStorage.getItem("ttb.gm.play"));
+      T.gmSec(2); T.render();
+      const wxAfter = !!document.querySelector(".gm-picker .gm-weather-line");
+      return { before, after: p.clocks[0].filled, day: p.city.day, wxBefore, wxAfter };
+    });
+    R.eq("Advance a day moves the calendar and fills a daily clock", [day.day, day.after - day.before], [65, 1]);
+    R.eq("the weather shows on the Ruling Desk only on the day it was rolled", [day.wxBefore, day.wxAfter], [true, false]);
+    const wx = await page.evaluate(() => {
+      const T = window.TT; T.setMode("table"); T.gmSec(7); T.render();
+      const orig = Math.random; Math.random = () => 0.2;          // row 3 of 12: ichor rain
+      [...document.querySelectorAll("#stage button")].find(b => /Roll today's weather/.test(b.textContent)).click();
+      Math.random = orig;
+      T.gmSec(2); T.render();
+      return (document.querySelector(".gm-picker .gm-weather-line") || {}).textContent || "";
+    });
+    R.check("rolled weather and its DC effects appear next to the DC picker", /Ichor rain/.test(wx) && /\+2 DC/.test(wx), wx);
+
+    // the bounty board
+    const board = await page.evaluate(() => {
+      const T = window.TT; T.setMode("table"); T.gmSec(7); T.render();
+      const clocksBefore = JSON.parse(localStorage.getItem("ttb.gm.play")).clocks.length;
+      [...document.querySelectorAll("#stage button")].find(b => /Post three jobs/.test(b.textContent)).click();
+      const jobs = [...document.querySelectorAll(".gm-job h5")].map(x => x.textContent);
+      [...document.querySelectorAll(".gm-job button")][0].click();
+      const p = JSON.parse(localStorage.getItem("ttb.gm.play"));
+      return { jobs, clocks: p.clocks.length - clocksBefore, name: p.clocks[p.clocks.length - 1].name,
+               taken: p.city.board[0].taken, logged: p.city.jobs.length,
+               takenCard: !!document.querySelector(".gm-job.taken") };
+    });
+    R.check("Post three jobs puts three different jobs on the board", board.jobs.length === 3 && new Set(board.jobs).size === 3, JSON.stringify(board.jobs));
+    R.eq("Take it starts a clock named for the job", [board.clocks, board.name], [1, board.jobs[0]]);
+    R.check("and marks the job taken", board.taken && board.logged === 1 && board.takenCard, JSON.stringify(board));
+
+    // street encounters, and the NPCs they name
+    const street = await page.evaluate(() => {
+      const T = window.TT; T.setMode("table"); T.gmSec(7); T.render();
+      const sel = document.querySelector(".gm-street select");
+      sel.value = "gullet"; sel.dispatchEvent(new Event("change"));
+      const orig = Math.random; Math.random = () => 0;             // night, row 1: the stair tax
+      [...document.querySelectorAll("#stage button")].find(b => b.textContent === "Roll the street").click();
+      Math.random = orig;
+      const text = (document.querySelector(".gm-street-result p") || {}).textContent || "";
+      const before = JSON.parse(localStorage.getItem("ttb.gm.play")).enc.combatants.length;
+      const add = [...document.querySelectorAll(".gm-street-result button")][0];
+      const label = add ? add.textContent : "";
+      if (add) add.click();
+      const after = JSON.parse(localStorage.getItem("ttb.gm.play")).enc.combatants.length;
+      return { text, label, added: after - before };
+    });
+    R.check("rolling the Gullet at night uses the below-the-Nave night table", /taxing the only lit stair/.test(street.text), street.text);
+    R.eq("and its NPCs go into the encounter in one tap", [street.label, street.added], ["Add 4 × Gutter Ganger to the encounter", 4]);
+
+    // the Humanity dashboard on the Party screen, and the districts on the Campaign screen
+    const more = await page.evaluate(() => {
+      const T = window.TT; T.setMode("table"); T.gmSec(0); T.render();
+      const hum = [...document.querySelectorAll(".gm-hum-line")].map(l => [l.querySelector(".n").textContent, Number(l.querySelector(".pct").textContent.replace("%", ""))]);
+      T.gmSec(6); T.render();
+      const chip = [...document.querySelectorAll("#stage .toolbar .chip")].find(b => b.textContent === "City");
+      if (chip) chip.click();
+      const districts = [...document.querySelectorAll("#stage .entry h4")].map(x => x.textContent);
+      return { hum, districts };
+    });
+    R.check("the Humanity dashboard lists everyone, worst first",
+      more.hum.length === 5 && more.hum[0][0] === "Brick Halloran" && more.hum.every((h, i) => !i || h[1] >= more.hum[i - 1][1]), JSON.stringify(more.hum));
+    R.check("the Campaign screen lists Cathedra's Houses and districts",
+      more.districts.indexOf("House Vigil") >= 0 && more.districts.indexOf("The Crown") >= 0 && more.districts.indexOf("Weepwater") >= 0,
+      JSON.stringify(more.districts));
+
+    const es = await page.evaluate(() => {
+      const T = window.TT; T.setLang("es"); T.setMode("table"); T.gmSec(7); T.render();
+      const out = { rail: [...document.querySelectorAll(".rail .step")].map(x => x.textContent).join("|"),
+                    label: document.querySelector(".gm-cal .gm-label").textContent,
+                    date: document.querySelector(".gm-cal-date").textContent };
+      T.setLang("en");
+      return out;
+    });
+    R.check("in Spanish the City screen's labels translate", /Ciudad/.test(es.rail) && es.label === "Hoy", JSON.stringify(es));
+    R.check("but the city's own words stay English", /Marrowtide/.test(es.date), es.date);
+
+    R.eq("no page errors on the City screen", errors, []);
     await ctx.close();
   }
 

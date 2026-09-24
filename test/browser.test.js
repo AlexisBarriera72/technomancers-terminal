@@ -1173,7 +1173,9 @@ module.exports = async function (browser) {
       window.TTGM.loadDemo();
       const T = window.TT, out = [];
       T.setHelp(true);
-      for (let i = 0; i < 7; i++) {
+      T.setMode("table"); T.gmSec(0); T.render();
+      const screens = document.querySelectorAll(".rail .step").length;
+      for (let i = 0; i < screens; i++) {
         T.setMode("table"); T.gmSec(i); T.render();
         out.push({ guide: !!document.querySelector("#stage .gm-guide"),
                    hints: document.querySelectorAll("#stage .gm-hint").length,

@@ -32,6 +32,7 @@ with `npx serve .`.
 | `data.js` | `window.TTB`, everything extracted from the Textbook. |
 | `expansion.js` | `window.TTBX`, the Neon Ledger expansion. |
 | `srd.js` | `window.TTSRD`, SRD 5.1 material, currently the Wild Magic Sorcerer. |
+| `city.js` | `window.TTCITY`, the City and Toolkit screens' tables: calendar, holy days, weather, street encounters, bounties. |
 | `synergy.js` | `window.TTSY`, the class roles and the named pairs. Read by both halves. |
 | `story.js` | `window.TTST`, "The Fourth Minute", the GM-only campaign behind the Story tab. |
 | `es-ui.js` | `window.TTES.ui`, Spanish for the application's own text. Always loaded. |
@@ -225,15 +226,49 @@ does on hover, guide or no guide. The text lives in one place, `TTBGM.help` in
 `gm.js`, and a test holds every line of it to having a Spanish translation.
 **Hide guide** (or **?**) turns it all off once you know it.
 
-Seven screens, the first five below, then Story and Campaign:
+Eight screens: the five below, then Story, Campaign and City (and, next, Toolkit):
 
 | Screen | What it does |
 |---|---|
-| **Party** | Every PC's AC, HP, initiative, passives, saves, Humanity and class DC on one page. Plus *who's best at…* for any skill, the god's attention die, the table's Street Cred, and which named pairs this particular set of people makes. |
+| **Party** | Every PC's AC, HP, initiative, passives, saves, Humanity and class DC on one page. Plus *who's best at…* for any skill, the god's attention die, the table's Street Cred, which named pairs this particular set of people makes, and a **Humanity dashboard**: everyone's band, worst first. |
 | **Encounter** | Initiative order, hit points, temp HP, conditions, round counter. Tap a number pad to damage or heal. Drag a combatant by its ⠿ handle (or ▲ ▼) to change the order; **Roll NPC initiative** gives each kind of foe one shared roll; a **Difficulty** bar weighs the foes' XP (by CR) against the party's SRD 5.2 budget for their levels; **Morale** asks for a DC 10 Wisdom save when half the foes are down, and a foe who breaks is marked Fled and skipped. |
 | **Rulings** | What to make them roll and what to set it at, with each character's real modifier and the odds. A searchable catalogue sits under a generic picker that covers anything, and an NPC reaction roll for what someone makes of them. |
 | **NPCs** | Statblocks, from twelve templates or blank. Mooks are one line. Includes an improviser for the NPC you didn't prepare. |
-| **Clocks** | Segmented progress clocks and a session scratchpad. |
+| **Clocks** | Segmented progress clocks and a session scratchpad. A clock marked *Ticks with each day* fills a segment whenever the City screen advances a day. |
+
+### The City screen
+
+Cathedra's four Houses and eleven districts are part of the campaign
+(`campaigns.js`: `houses`, `districts`, each district with its height above the
+Marrowworks floor). The book named two Houses and a handful of places; Lathe
+(drills, refining, carvers' licences), Vigil (wards, the Watch, the lift
+operators) and the rest of the stack were written to fill it out. The Campaign
+screen lists them under **City**. Everything rolled lives in `city.js`
+(`window.TTCITY`): the calendar and ten holy days, a d12 weather table, street
+encounters by height and time of day, and a bounty board by Street Cred band.
+Like the story, those words stay English; the screen's labels are translated.
+
+The screen tracks:
+
+- **Today**: the date in Cathedra's calendar (twelve months of thirty days,
+  counted from the Fall), today's or the next holy day, and **Advance a day**,
+  which fills one segment on every clock marked to tick with the days.
+- **Weather**, rolled once a day. Any effect on rolls also shows next to the
+  Ruling Desk's DC picker and in the side panel, only on the day it was rolled.
+- **Standing with the Houses**, −3 (Enemy) to +3 (Patron), with what each step
+  means. A House can be renamed for your table; the rename is GM state, since
+  the built-in campaign is read-only.
+- **Street Cred history**: every change with its reason and a small chart.
+  `repSet(value, why)` takes the reason; the Party screen's controls log
+  "Moved by hand" (a drag or a run of taps folds into one line), story buttons
+  log the scene, and a vault import logs itself.
+- **Bounty board**: three jobs for the crew's Street Cred band. **Take it**
+  starts a clock named for the job.
+- **Street encounter**: pick a district and day or night and roll; when the
+  encounter names who turns up, one tap adds them to the fight.
+
+All of it lives in `ttb.gm.play` (`city`, `repLog`), goes out in the vault
+export, comes back on import through `cleanCity`, and the demo table seeds it.
 
 ### Street Cred and what the party is
 
@@ -341,7 +376,7 @@ one side only would leave a line in English. CI runs both on every push.
 | `test/rules.test.js` | Ability scores, feats, per-class ASI levels, AC, proficiency, the import validator. |
 | `test/browser.test.js` | Injection, save failures, the GM vault export, share-link transitions, and that the app still works. |
 | `test/sw.test.js` | A failed update must not replace a working offline cache. |
-| `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale. |
+| `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale; the city's data (tables sized to their dice, districts climbing) and the City screen. |
 | `test/story.test.js` | The story holds together (every scene complete, every reference resolves), the Story tab tracks, rolls and persists, the demo walkthrough adds up, and every synergy says what it does. |
 
 ## Deploying a change

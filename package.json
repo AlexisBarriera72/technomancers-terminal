@@ -8,7 +8,7 @@
     "test:rules": "node test/run.js rules",
     "test:browser": "node test/run.js browser",
     "test:sw": "node test/run.js sw",
-    "check": "node --check app.js && node --check gm.js && node --check srd.js && node --check synergy.js && node --check story.js && node --check es-ui.js && node --check es-book.js && node --check sw.js && node --check campaigns.js && node test/no-abs-paths.js && node test/no-em-dash.js"
+    "check": "node --check app.js && node --check gm.js && node --check srd.js && node --check synergy.js && node --check story.js && node --check city.js && node --check es-ui.js && node --check es-book.js && node --check sw.js && node --check campaigns.js && node test/no-abs-paths.js && node test/no-em-dash.js"
   },
   "devDependencies": {
     "playwright": "^1.48.0"

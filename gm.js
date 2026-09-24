@@ -654,6 +654,32 @@ window.TTBGM = {
         use: "Apply this campaign's starting level to the character open on this device"
       }
     },
+    city: {
+      steps: [
+        "At the start of a session, roll today's weather. If it changes a roll, the Ruling Desk shows it next to the DC.",
+        "When time passes in the story, press Advance a day. Clocks marked “Ticks with each day” fill one segment.",
+        "Move a House's standing with − and + when the party helps or crosses them. Rename a House if your table calls it something else.",
+        "Every Street Cred change is logged with its reason, wherever you made it.",
+        "Post three jobs on the bounty board between sessions. Take it starts a clock for the job.",
+        "When the party walks somewhere, pick the district and the time and roll the street."
+      ],
+      hints: {
+        today: "Holy days change prices, patrols and the Spine. The next one is shown so you can plan around it.",
+        houses: "−3 is an enemy, +3 a patron. Each step says what the House does about the party at that level.",
+        cred: "Moves from the Party screen say “Moved by hand”; story buttons and the walkthrough name the scene.",
+        board: "The jobs on offer depend on Street Cred: a crew with a bad name gets worse work.",
+        street: "Some encounters name who turns up. Add them to the encounter in one tap."
+      },
+      tips: {
+        advance: "Move to the next day and tick daily clocks",
+        back: "Go back one day",
+        weather: "Roll the weather for today",
+        rename: "Give this House your table's name for it",
+        post: "Roll three jobs for the party's Street Cred",
+        take: "Take this job and start a clock for it",
+        street: "Roll what the party runs into here"
+      }
+    },
     dossier: {
       hints: { lock: "Lock before you hand the tablet to a player. The #gm address opens it again." }
     }
@@ -670,6 +696,28 @@ window.TTGM = (function () {
      reading it. Degrade to "no synergies" rather than throwing if it goes
      missing: every other GM tool still works without them. */
   var SY = window.TTSY || { roles: [], classRoles: {}, crewTiers: [], pairs: [] };
+  var CITY = window.TTCITY || null;
+  /* Cathedra's Houses and districts, with the GM's renames applied. */
+  function cathedra() {
+    var list = (window.TTBC && window.TTBC.campaigns) || [];
+    return list.filter(function (c) { return c.id === "cathedra"; })[0] || {};
+  }
+  function cityHouses() {
+    var names = playState().city.names;
+    return (cathedra().houses || []).map(function (h) {
+      var o = {}; Object.keys(h).forEach(function (k) { o[k] = h[k]; });
+      if (names[h.id]) o.name = names[h.id];
+      return o;
+    });
+  }
+  function cityDistricts() {
+    var names = playState().city.names;
+    return (cathedra().districts || []).map(function (d) {
+      var o = {}; Object.keys(d).forEach(function (k) { o[k] = d[k]; });
+      if (names[d.id]) o.name = names[d.id];
+      return o;
+    }).sort(function (a, b) { return a.height - b.height; });
+  }
   var T = null;                       // app.js's namespace, handed over by boot()
   var $, el, esc, toast;
 
@@ -736,6 +784,8 @@ window.TTGM = (function () {
       if (typeof p.scratch !== "string") p.scratch = "";
       if (typeof p.rep !== "number" || !(p.rep >= -10 && p.rep <= 10)) p.rep = 0;
       p.rep = Math.round(p.rep);
+      p.repLog = cleanRepLog(p.repLog);
+      p.city = cleanCity(p.city);
       mem.play = p;
     }
     return mem.play;
@@ -757,6 +807,45 @@ window.TTGM = (function () {
       o.name = c.name == null ? "" : String(c.name);
       return o;
     });
+  }
+
+  /* Why Street Cred moved, newest last. Capped: it is a memory aid for the
+     GM, not an audit trail. */
+  function cleanRepLog(list) {
+    if (!Array.isArray(list)) return [];
+    return list.filter(function (x) {
+      return x && typeof x === "object" && isFinite(+x.from) && isFinite(+x.to);
+    }).map(function (x) {
+      return { at: +x.at || 0, from: Math.max(-10, Math.min(10, Math.round(+x.from))),
+               to: Math.max(-10, Math.min(10, Math.round(+x.to))),
+               why: typeof x.why === "string" ? x.why.slice(0, 200) : "" };
+    }).slice(-80);
+  }
+  /* The City screen: standing per House, the GM's renames, the day, the
+     weather and the jobs taken. Arrives from files a person can edit. */
+  function cleanCity(c) {
+    function obj(v) { return v && typeof v === "object" && !Array.isArray(v) ? v : {}; }
+    var o = obj(c), houses = {}, names = {};
+    Object.keys(obj(o.houses)).forEach(function (k) {
+      var v = Math.round(+o.houses[k]);
+      if (v >= -3 && v <= 3) houses[k] = v;
+    });
+    Object.keys(obj(o.names)).forEach(function (k) {
+      var v = o.names[k];
+      if (typeof v === "string" && v.trim()) names[k] = v.trim().slice(0, 60);
+    });
+    var day = Math.round(+o.day);
+    var w = obj(o.weather);
+    var weather = typeof w.ix === "number" && w.ix >= 0 && w.ix < 12 && typeof w.day === "number"
+      ? { ix: Math.round(w.ix), day: Math.round(w.day) } : null;
+    var board = (Array.isArray(o.board) ? o.board : []).filter(function (b) {
+      return b && typeof b === "object" && typeof b.band === "string" && typeof b.ix === "number";
+    }).slice(0, 3).map(function (b) { return { band: b.band, ix: Math.round(b.ix), taken: !!b.taken }; });
+    var jobs = (Array.isArray(o.jobs) ? o.jobs : []).filter(function (j) {
+      return j && typeof j === "object" && typeof j.job === "string";
+    }).slice(-40);
+    return { houses: houses, names: names, day: day >= 1 && day < 360 * 200 ? day : 1,
+             weather: weather, board: board, jobs: jobs };
   }
 
   /* The Story tab's progress lives in play, so the vault carries it. Same
@@ -1003,10 +1092,27 @@ window.TTGM = (function () {
      move: there is no quest log to infer it from, and inferring it would be
      worse than asking.                                                      */
   function repGet() { return playState().rep || 0; }
-  function repSet(n) {
+  function repSet(n, why) {
     var v = Math.max(-10, Math.min(10, Math.round(+n || 0)));
-    playPatch(function (p) { p.rep = v; });
+    playPatch(function (p) {
+      var from = typeof p.rep === "number" ? p.rep : 0;
+      p.rep = v;
+      if (from !== v) logRep(p, from, v, why || "Moved by hand");
+    });
     return v;
+  }
+  /* A drag on the slider is one change, not twenty: a move with the same
+     reason inside a minute folds into the last line. */
+  function logRep(p, from, to, why) {
+    if (!Array.isArray(p.repLog)) p.repLog = [];
+    var last = p.repLog[p.repLog.length - 1], now = Date.now();
+    if (last && last.why === why && now - last.at < 60000) {
+      last.to = to; last.at = now;
+      if (last.to === last.from) p.repLog.pop();
+    } else {
+      p.repLog.push({ at: now, from: from, to: to, why: String(why).slice(0, 200) });
+    }
+    if (p.repLog.length > 80) p.repLog = p.repLog.slice(-80);
   }
   function repState(rep) {
     var r = Math.max(-10, Math.min(10, Math.round(+rep || 0)));
@@ -1124,8 +1230,17 @@ window.TTGM = (function () {
         if (typeof blob.play.scratch === "string" && blob.play.scratch) cur.scratch = blob.play.scratch;
         if (blob.play.enc && !cur.enc) cur.enc = blob.play.enc;
         // The export always carried Street Cred; restoring used to drop it.
-        if (typeof r === "number" && isFinite(r)) cur.rep = Math.max(-10, Math.min(10, Math.round(r)));
+        if (typeof r === "number" && isFinite(r)) {
+          var nr = Math.max(-10, Math.min(10, Math.round(r)));
+          if (Array.isArray(blob.play.repLog) && blob.play.repLog.length) cur.repLog = cleanRepLog(blob.play.repLog);
+          else if (nr !== cur.rep) logRep(cur, cur.rep || 0, nr, "Vault import");
+          cur.rep = nr;
+        }
         if (blob.play.story && typeof blob.play.story === "object") cur.story = cleanStory(blob.play.story);
+        if (blob.play.city && typeof blob.play.city === "object") cur.city = cleanCity(blob.play.city);
+        if (blob.play.heist && typeof blob.play.heist === "object") cur.heist = blob.play.heist;
+        if (blob.play.netrun && typeof blob.play.netrun === "object") cur.netrun = blob.play.netrun;
+        if (blob.play.chase && typeof blob.play.chase === "object") cur.chase = blob.play.chase;
       });
     }
     toast("Merged " + count(p.n, "character", "characters") + ", " + count(n.n, "NPC", "NPCs") +
@@ -1172,7 +1287,8 @@ window.TTGM = (function () {
         sub: "barbarian-street-savage", bg: "punk-rocker",
         scores: { Str: 15, Dex: 13, Con: 14, Int: 8, Wis: 12, Cha: 10 },
         skills: ["Athletics", "Intimidation"],
-        cyber: [{ name: "Dermal Barrier", tier: "2" }] })],
+        cyber: [{ name: "Dermal Barrier", tier: "2" }, { name: "Muscle Reinforcement", tier: "3" },
+                { name: "Hydraulic Jacks", tier: "2" }, { name: "Cyberclaws", tier: "2" }] })],
       ["Rae", demoChar({ id: "demo-lux", name: "Lux Marrow", level: 5, cls: "Bard",
         sub: "bard-college-of-anarchy", bg: "celebrity",
         scores: { Str: 8, Dex: 14, Con: 13, Int: 10, Wis: 12, Cha: 15 },
@@ -1249,6 +1365,13 @@ window.TTGM = (function () {
         { id: "demo-c2", name: "House Thorn calls the debt", seg: 8, filled: 5, notes: "" },
         { id: "demo-c3", name: "The god turns its head", seg: 4, filled: 1, notes: "" }
       ],
+      repLog: [
+        { at: now - 3 * 864e5, from: -3, to: -1, why: "The Reliquary job: out without a body left behind" },
+        { at: now - 2 * 864e5, from: -1, to: 1, why: "Pulled the Marrowworks crew out alive" },
+        { at: now - 864e5, from: 1, to: 3, why: "All three petitioners alive, and seen fighting the Hush" }
+      ],
+      city: { houses: { reliquary: -1, thorn: -2, lathe: 0, vigil: 1 }, names: {}, day: 64,
+              weather: { ix: 2, day: 64 }, board: [], jobs: [] },
       story: {
         current: "s4", done: { s1: true, s2: true, s3: true },
         branch: { s1: "mixed", s2: "right", s3: "wrong" },
@@ -1418,6 +1541,10 @@ window.TTGM = (function () {
     /* ---- who's best at ---- */
     s.appendChild(bestAtBlock(party));
 
+    /* ---- Humanity across the party, worst first ---- */
+    var hb = humanityBoard(party);
+    if (hb) s.appendChild(hb);
+
     /* ---- one card per character ---- */
     var grid = el("div", "gm-party");
     party.forEach(function (p) { grid.appendChild(partyCard(p, party)); });
@@ -1475,7 +1602,7 @@ window.TTGM = (function () {
     var sl = document.createElement("input");
     sl.type = "range"; sl.min = -10; sl.max = 10; sl.step = 1;
     sl.setAttribute("aria-label", "Street Cred");
-    function move(v) { repSet(v); paint(); refreshDossier(); }
+    function move(v) { repSet(v, "Moved by hand"); paint(); refreshDossier(); }
     sl.oninput = function () { move(sl.value); };
     ctl.appendChild(btn("−1", "tiny", function () { move(repGet() - 1); }));
     ctl.appendChild(sl);
@@ -2273,7 +2400,7 @@ window.TTGM = (function () {
         sc.cred.forEach(function (c) {
           var r = row("gm-row tight st-cred");
           var cb2 = btn("Street Cred " + T.sgn(c.delta), "tiny", function () {
-            var v = repSet(repGet() + c.delta);
+            var v = repSet(repGet() + c.delta, sc.title + ": " + c.event);
             toast("Street Cred is now " + T.sgn(v));
             redraw();
           });
@@ -2423,7 +2550,7 @@ window.TTGM = (function () {
     if (!inDemo()) loadDemo();
     var ws = walkState(n);
     playPatch(function (p) { p.story = ws.story; });
-    repSet(ws.cred);
+    repSet(ws.cred, "Demo walkthrough, step " + (n + 1));
     redraw();
   }
   function walkBlock() {
@@ -2670,7 +2797,7 @@ window.TTGM = (function () {
     return b ? b.parentNode : null;
   }
   function decorate(s, sec) {
-    var key = ["party", "encounter", "rulings", "npcs", "clocks", "story", "campaign"][sec] || "party";
+    var key = ["party", "encounter", "rulings", "npcs", "clocks", "story", "campaign", "city", "toolkit"][sec] || "party";
     guideBox(s, key);
     var q = function (sel) { return s.querySelector(sel); };
     if (key === "party") {
@@ -2728,6 +2855,15 @@ window.TTGM = (function () {
       hintAt(q(".st-vision"), "story", "vision");
       hintAt(btnRow(s, "Expand everything"), "story", "expand");
       tips(s, "story", [["Roll for a vision", "vision"]]);
+    } else if (key === "city") {
+      hintAt(q(".gm-city-today"), "city", "today");
+      hintAt(q(".gm-houses"), "city", "houses");
+      hintAt(q(".gm-cred-top"), "city", "cred");
+      hintAt(btnRow(s, "Post"), "city", "board");
+      hintAt(btnRow(s, "Roll the street"), "city", "street");
+      tips(s, "city", [["Advance a day", "advance"], ["◀ Back a day", "back"], ["Roll today's weather", "weather"],
+        ["Reroll the weather", "weather"], ["Rename", "rename"], ["Post", "post"], ["Take it", "take"],
+        ["Roll the street", "street"]]);
     } else if (key === "campaign") {
       hintAt(btnRow(s, "Use these settings"), "campaign", "use");
       tips(s, "campaign", [["+ New campaign", "newCamp"], ["Import", "importCamp"], ["Export this campaign", "exportCamp"],
@@ -2744,7 +2880,8 @@ window.TTGM = (function () {
     rememberMode("table");
     s.classList.add("gm");
     if (inDemo()) demoBanner(s);
-    var fns = [renderParty, renderEncounter, renderRulings, renderNPCs, renderClocks, renderStory, renderCampaignGM];
+    var fns = [renderParty, renderEncounter, renderRulings, renderNPCs, renderClocks, renderStory, renderCampaignGM,
+               renderCity];
     (fns[sec] || renderParty)(s);
     decorate(s, fns[sec] ? sec : 0);
   }
@@ -2773,6 +2910,19 @@ window.TTGM = (function () {
       body.appendChild(list);
     } else {
       body.appendChild(txt("div", "gm-note", "No encounter running."));
+    }
+
+    if (CITY) {
+      var cst = cityState(), wnow = weatherToday();
+      body.appendChild(txt("div", "gm-label", "The city"));
+      var dd = el("div", "dos-row");
+      dd.appendChild(txt("span", "k", "Date"));
+      dd.appendChild(stxt("span", "v", dateLabel(cst.day)));
+      body.appendChild(dd);
+      var wr = el("div", "dos-row");
+      wr.appendChild(txt("span", "k", "Weather"));
+      wr.appendChild(wnow ? stxt("span", "v", wnow.name) : txt("span", "v", "not rolled"));
+      body.appendChild(wr);
     }
 
     var cur = ST ? sceneNow() : null;
@@ -2893,6 +3043,9 @@ window.TTGM = (function () {
     /* ---- the generic picker: covers anything not in the catalogue ---- */
     var pick = el("div", "gm-picker");
     pick.appendChild(txt("div", "gm-label", "Any situation"));
+    // today's weather sits where the DC gets set, since that's when it matters
+    var wx = CITY ? weatherToday() : null;
+    if (wx) pick.appendChild(weatherLine(wx));
     var state = { kind: "check", skill: "Perception", abil: "Wis", dc: "moderate" };
     var out = el("div", "gm-picker-out");
 
@@ -4043,6 +4196,20 @@ window.TTGM = (function () {
     var count = txt("div", "gm-clock-count", "");
     card.appendChild(segs);
     card.appendChild(count);
+    /* A clock can move on its own as the days pass, from the City screen's
+       Advance a day. */
+    var daily = el("label", "gm-clock-daily");
+    var dbox = document.createElement("input");
+    dbox.type = "checkbox"; dbox.checked = !!c.daily;
+    dbox.onchange = function () {
+      c.daily = dbox.checked;
+      playPatch(function (st) {
+        st.clocks.forEach(function (x) { if (x.id === c.id) x.daily = c.daily; });
+      });
+    };
+    daily.appendChild(dbox);
+    daily.appendChild(txt("span", null, "Ticks with each day"));
+    card.appendChild(daily);
     card.appendChild(btn("×", "tiny", function () {
       confirmDrop(c.name || "this clock", function () {
         playPatch(function (st) {
@@ -4053,6 +4220,401 @@ window.TTGM = (function () {
     }));
     paint();
     return card;
+  }
+
+  /* ==================================================== SECTION, CITY === */
+  function cityPatch(fn) { playPatch(function (p) { p.city = cleanCity(p.city); fn(p.city, p); }); }
+  function cityState() { return playState().city; }
+
+  /* ---- the calendar ---------------------------------------------------- */
+  function dateOf(day) {
+    var cal = CITY.calendar, d = Math.max(1, day) - 1;
+    var perYear = cal.months.length * cal.days;
+    return { year: cal.startYear + Math.floor(d / perYear),
+             month: Math.floor((d % perYear) / cal.days) + 1,
+             day: (d % cal.days) + 1 };
+  }
+  function dateLabel(day) {
+    var dt = dateOf(day);
+    return dt.day + " " + CITY.calendar.months[dt.month - 1] + ", year " + dt.year;
+  }
+  function holyDayOn(day) {
+    var dt = dateOf(day);
+    return CITY.holyDays.filter(function (h) { return h.month === dt.month && h.day === dt.day; })[0] || null;
+  }
+  function nextHolyDay(day) {
+    for (var i = 1; i <= 360; i++) {
+      var h = holyDayOn(day + i);
+      if (h) return { h: h, inDays: i, day: day + i };
+    }
+    return null;
+  }
+  /* Moves the calendar, and fills one segment on every clock marked to tick
+     with the days. Going back a day doesn't unfill them. */
+  function advanceDay(n) {
+    var ticked = [], landed = [];
+    playPatch(function (p) {
+      p.city = cleanCity(p.city);
+      p.city.day = Math.max(1, p.city.day + n);
+      if (n > 0) {
+        p.clocks.forEach(function (c) {
+          if (!c.daily || c.filled >= c.seg) return;
+          c.filled = Math.min(c.seg, c.filled + n);
+          ticked.push(c.name);
+          if (c.filled >= c.seg) landed.push(c.name);
+        });
+      }
+    });
+    return { ticked: ticked, landed: landed };
+  }
+
+  /* ---- weather --------------------------------------------------------- */
+  function weatherToday() {
+    var c = cityState();
+    if (!CITY || !c.weather || c.weather.day !== c.day) return null;
+    return CITY.weather.rows[c.weather.ix] || null;
+  }
+  function rollWeather() {
+    var ix = roll(1, CITY.weather.die, 0).total - 1;
+    cityPatch(function (c) { c.weather = { ix: ix, day: c.day }; });
+    return CITY.weather.rows[ix];
+  }
+  function weatherLine(w) {
+    var box = el("div", "gm-weather-line");
+    box.appendChild(txt("span", "gm-label", "Today's weather"));
+    box.appendChild(stxt("b", null, w.name));
+    if (w.dc.length) {
+      var ul = el("ul", "gm-weather-dc");
+      w.dc.forEach(function (d) {
+        var li = el("li");
+        li.appendChild(stxt("span", null, d.what));
+        li.appendChild(stxt("b", null, d.mod));
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+    } else {
+      box.appendChild(txt("span", "gm-note", "No effect on rolls."));
+    }
+    return box;
+  }
+
+  /* ---- House standing -------------------------------------------------- */
+  function standingOf(n) {
+    return CITY.standing.filter(function (x) { return x.n === n; })[0] || CITY.standing[3];
+  }
+  function houseCard(h) {
+    var c = cityState(), v = c.houses[h.id] || 0, st = standingOf(v);
+    var card = el("div", "gm-house");
+    card.style.setProperty("--house", "var(--" + ({ gold: "gold", red: "alert", amber: "gold", blue: "accent" }[h.colour] || "accent") + ")");
+    var head = el("div", "gm-house-head");
+    head.appendChild(stxt("h4", null, h.name));
+    head.appendChild(btn("Rename", "tiny", function () {
+      var nm = window.prompt("What does your table call this House?", h.name);
+      if (nm == null) return;
+      cityPatch(function (cc) { if (nm.trim()) cc.names[h.id] = nm.trim().slice(0, 60); else delete cc.names[h.id]; });
+      redraw();
+    }));
+    card.appendChild(head);
+    var pips = el("div", "gm-pips");
+    pips.appendChild(btn("−", "tiny", function () {
+      cityPatch(function (cc) { cc.houses[h.id] = Math.max(-3, (cc.houses[h.id] || 0) - 1); }); redraw();
+    }));
+    for (var i = -3; i <= 3; i++) {
+      (function (i) {
+        var p = txt("button", "gm-pip" + (i === 0 ? " zero" : "") + ((i < 0 && v <= i) || (i > 0 && v >= i) || (i === 0 && v === 0) ? " on" : ""), "");
+        p.setAttribute("aria-label", "Standing " + (i > 0 ? "+" : "") + i);
+        p.onclick = function () { cityPatch(function (cc) { cc.houses[h.id] = i; }); redraw(); };
+        pips.appendChild(p);
+      })(i);
+    }
+    pips.appendChild(btn("+", "tiny", function () {
+      cityPatch(function (cc) { cc.houses[h.id] = Math.min(3, (cc.houses[h.id] || 0) + 1); }); redraw();
+    }));
+    card.appendChild(pips);
+    var band = el("div", "gm-house-band");
+    band.appendChild(txt("b", v > 0 ? "tone-signal" : v < 0 ? "tone-alert" : "", st.name));
+    band.appendChild(txt("span", "gm-note", (v > 0 ? "+" : "") + v));
+    card.appendChild(band);
+    card.appendChild(stxt("p", "gm-house-text", st.text));
+    if (v <= -2 && h.enemy) card.appendChild(stxt("p", "gm-house-ends", h.enemy));
+    if (v >= 2 && h.patron) card.appendChild(stxt("p", "gm-house-ends", h.patron));
+    card.appendChild(stxt("p", "gm-note", h.controls));
+    return card;
+  }
+
+  /* ---- Street Cred history --------------------------------------------- */
+  function credChart(log, now) {
+    var pts = [];
+    if (log.length) pts.push(log[0].from);
+    log.forEach(function (x) { pts.push(x.to); });
+    if (!pts.length) pts.push(now);
+    var W = 300, H = 70, n = Math.max(1, pts.length - 1);
+    var ns = "http://www.w3.org/2000/svg";
+    var svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    svg.setAttribute("class", "gm-cred-chart");
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Street Cred over time");
+    function y(v) { return H / 2 - (v / 10) * (H / 2 - 4); }
+    var zero = document.createElementNS(ns, "line");
+    zero.setAttribute("x1", 0); zero.setAttribute("x2", W); zero.setAttribute("y1", y(0)); zero.setAttribute("y2", y(0));
+    zero.setAttribute("class", "zero");
+    svg.appendChild(zero);
+    var d = pts.map(function (v, i) { return (i ? "L" : "M") + ((i / n) * (W - 8) + 4).toFixed(1) + " " + y(v).toFixed(1); }).join(" ");
+    var path = document.createElementNS(ns, "path");
+    path.setAttribute("d", d); path.setAttribute("class", "line");
+    svg.appendChild(path);
+    pts.forEach(function (v, i) {
+      var c = document.createElementNS(ns, "circle");
+      c.setAttribute("cx", ((i / n) * (W - 8) + 4).toFixed(1)); c.setAttribute("cy", y(v).toFixed(1));
+      c.setAttribute("r", 2.6);
+      svg.appendChild(c);
+    });
+    return svg;
+  }
+  function credHistory() {
+    var p = playState(), log = p.repLog || [];
+    var box = el("div", "gm-strip gm-cred-hist");
+    box.appendChild(txt("div", "gm-label", "Street Cred history"));
+    var top = el("div", "gm-cred-top");
+    top.appendChild(repBadge());
+    top.appendChild(credChart(log, p.rep || 0));
+    box.appendChild(top);
+    if (!log.length) {
+      box.appendChild(txt("div", "gm-note", "No changes yet. Every move of Street Cred lands here with its reason."));
+      return box;
+    }
+    var ol = el("ol", "gm-cred-log");
+    log.slice().reverse().slice(0, 12).forEach(function (x) {
+      var li = el("li");
+      li.appendChild(txt("span", "d " + (x.to > x.from ? "up" : "down"), T.sgn(x.from) + " → " + T.sgn(x.to)));
+      li.appendChild(x.why === "Moved by hand" || x.why === "Vault import"
+        ? txt("span", "w", x.why) : stxt("span", "w", x.why));
+      if (x.at) li.appendChild(txt("span", "t", new Date(x.at).toLocaleDateString()));
+      ol.appendChild(li);
+    });
+    box.appendChild(ol);
+    if (log.length > 12) box.appendChild(txt("div", "gm-note", "Showing the latest 12 of " + log.length + "."));
+    return box;
+  }
+
+  /* ---- bounty board ---------------------------------------------------- */
+  function bountyBand(rep) { return rep < 0 ? "low" : rep < 5 ? "mid" : "high"; }
+  function postBoard() {
+    var bandKey = bountyBand(repGet()), tbl = CITY.bounties[bandKey], ixs = [];
+    while (ixs.length < 3 && ixs.length < tbl.rows.length) {
+      var ix = roll(1, tbl.die, 0).total - 1;
+      if (ixs.indexOf(ix) < 0) ixs.push(ix);
+    }
+    cityPatch(function (c) { c.board = ixs.map(function (i) { return { band: bandKey, ix: i, taken: false }; }); });
+    return ixs;
+  }
+  function takeJob(k) {
+    var c = cityState(), b = c.board[k];
+    if (!b || b.taken) return null;
+    var j = CITY.bounties[b.band].rows[b.ix];
+    playPatch(function (p) {
+      p.city = cleanCity(p.city);
+      p.city.board[k].taken = true;
+      p.city.jobs.push({ job: j.job, who: j.who, pay: j.pay, day: p.city.day });
+      p.clocks.push({ id: uid("c"), name: j.job, seg: j.seg || 6, filled: 0, notes: "" });
+    });
+    return j;
+  }
+
+  /* ---- street encounters ----------------------------------------------- */
+  var streetPick = { district: "gullet", time: "night", result: null };
+  function streetTable(districtId, time) {
+    var d = cityDistricts().filter(function (x) { return x.id === districtId; })[0];
+    var bandKey = d ? d.band : "below";
+    return CITY.street[bandKey][time === "day" ? "day" : "night"];
+  }
+  function rollStreet(districtId, time) {
+    var tbl = streetTable(districtId, time);
+    var ix = roll(1, tbl.die, 0).total - 1;
+    streetPick.result = { district: districtId, time: time, ix: ix };
+    return tbl.rows[ix];
+  }
+  function addStreetNpcs(spec) {
+    var t = G.npcTemplates.filter(function (x) { return x.name === spec.t; })[0];
+    if (!t) return 0;
+    var n = npcFromTemplate(t);
+    npcWrite(npcAll().concat([n]));
+    addToEncounter(n, spec.n || 1);
+    return spec.n || 1;
+  }
+
+  function renderCity(s) {
+    sectionHead(s, "The city", "City",
+      "Where the party stands with the Houses and the street, what day it is, and what the sky is doing.");
+    if (!CITY) { empty(s, "The city's tables didn't load.", "Reload the page; city.js sits next to gm.js."); return; }
+    var c = cityState();
+
+    /* today: date, holy day, weather */
+    var today = el("div", "gm-city-today");
+    var cal = el("div", "gm-card gm-cal");
+    cal.appendChild(txt("div", "gm-label", "Today"));
+    cal.appendChild(stxt("div", "gm-cal-date", dateLabel(c.day)));
+    var holy = holyDayOn(c.day);
+    if (holy) {
+      var hd = el("div", "gm-holy now");
+      hd.appendChild(txt("span", "gm-label", "Holy day"));
+      hd.appendChild(stxt("b", null, holy.name));
+      hd.appendChild(stxt("p", null, holy.text));
+      hd.appendChild(stxt("p", "gm-holy-effect", holy.effect));
+      cal.appendChild(hd);
+    }
+    var nx = nextHolyDay(c.day);
+    if (nx) {
+      var nh = el("div", "gm-holy");
+      nh.appendChild(txt("span", "gm-label", nx.inDays === 1 ? "Tomorrow" : "In " + nx.inDays + " days"));
+      nh.appendChild(stxt("b", null, nx.h.name));
+      nh.appendChild(stxt("p", "gm-holy-effect", nx.h.effect));
+      cal.appendChild(nh);
+    }
+    var cb = row("gm-row tight");
+    cb.appendChild(btn("◀ Back a day", "tiny", function () { advanceDay(-1); redraw(); }));
+    cb.appendChild(btn("Advance a day ▶", "tiny primary", function () {
+      var r = advanceDay(1);
+      toast(r.ticked.length ? (r.ticked.length === 1 ? "A new day. 1 clock ticked" : "A new day. " + r.ticked.length + " clocks ticked") : "A new day");
+      if (r.landed.length) setTimeout(function () { toast(r.landed[0] + ", it lands."); }, 900);
+      redraw();
+    }));
+    cal.appendChild(cb);
+    var dailyN = playState().clocks.filter(function (x) { return x.daily; }).length;
+    cal.appendChild(txt("div", "gm-note", dailyN === 1 ? "1 clock ticks with the days."
+      : dailyN ? dailyN + " clocks tick with the days." : "No clocks tick with the days yet. Tick “Ticks with each day” on a clock."));
+    today.appendChild(cal);
+
+    var wc = el("div", "gm-card gm-weather");
+    var w = weatherToday();
+    if (w) {
+      wc.appendChild(weatherLine(w));
+      wc.appendChild(stxt("p", null, w.text));
+    } else {
+      wc.appendChild(txt("div", "gm-label", "Today's weather"));
+      wc.appendChild(txt("p", "gm-note", "Not rolled yet today."));
+    }
+    var wb = row("gm-row tight");
+    wb.appendChild(btn(w ? "Reroll the weather" : "Roll today's weather", w ? "tiny" : "tiny primary", function () {
+      var r = rollWeather(); toast("Weather: " + r.name); redraw();
+    }));
+    wc.appendChild(wb);
+    today.appendChild(wc);
+    s.appendChild(today);
+
+    /* the Houses */
+    var hs = el("div", "gm-strip");
+    hs.appendChild(txt("div", "gm-label", "Standing with the Houses"));
+    var hg = el("div", "gm-houses");
+    cityHouses().forEach(function (h) { hg.appendChild(houseCard(h)); });
+    hs.appendChild(hg);
+    s.appendChild(hs);
+
+    s.appendChild(credHistory());
+
+    /* bounty board */
+    var bb = el("div", "gm-strip gm-board");
+    var bandKey = bountyBand(repGet());
+    bb.appendChild(txt("div", "gm-label", "Bounty board"));
+    bb.appendChild(stxt("div", "gm-note", CITY.bounties[bandKey].name));
+    var bbr = row("gm-row");
+    bbr.appendChild(btn(c.board.length ? "Post new jobs" : "Post three jobs", c.board.length ? "" : "primary", function () {
+      postBoard(); redraw();
+    }));
+    bb.appendChild(bbr);
+    if (c.board.length) {
+      var jobs = el("div", "gm-jobs");
+      c.board.forEach(function (b, k) {
+        var j = CITY.bounties[b.band].rows[b.ix];
+        if (!j) return;
+        var card = el("div", "gm-job" + (b.taken ? " taken" : ""));
+        card.appendChild(stxt("h5", null, j.job));
+        var meta = el("div", "gm-job-meta");
+        meta.appendChild(stxt("span", null, j.who));
+        meta.appendChild(stxt("b", null, j.pay));
+        card.appendChild(meta);
+        var catchP = el("p", "gm-job-catch");
+        catchP.appendChild(txt("span", "gm-label", "The catch"));
+        catchP.appendChild(stxt("span", null, j.catch));
+        card.appendChild(catchP);
+        if (b.taken) card.appendChild(txt("div", "gm-note", "Taken. Its clock is on the Clocks screen."));
+        else card.appendChild(btn("Take it", "tiny primary", function () {
+          var got = takeJob(k); if (got) toast("Job taken, clock started"); redraw();
+        }));
+        jobs.appendChild(card);
+      });
+      bb.appendChild(jobs);
+    }
+    s.appendChild(bb);
+
+    /* street encounters */
+    var se = el("div", "gm-strip gm-street");
+    se.appendChild(txt("div", "gm-label", "Street encounter"));
+    var sr = row("gm-row");
+    var dsel = document.createElement("select");
+    cityDistricts().slice().reverse().forEach(function (d) {
+      var o = stxt("option", null, d.name); o.value = d.id;
+      if (d.id === streetPick.district) o.selected = true;
+      dsel.appendChild(o);
+    });
+    dsel.onchange = function () { streetPick.district = dsel.value; };
+    sr.appendChild(dsel);
+    var seg = el("div", "seg");
+    ["day", "night"].forEach(function (t) {
+      var b = btn(t === "day" ? "Day" : "Night", streetPick.time === t ? "on" : "", function () {
+        streetPick.time = t; redraw();
+      });
+      b.setAttribute("aria-pressed", streetPick.time === t ? "true" : "false");
+      seg.appendChild(b);
+    });
+    sr.appendChild(seg);
+    sr.appendChild(btn("Roll the street", "primary", function () {
+      rollStreet(dsel.value, streetPick.time); redraw();
+    }));
+    se.appendChild(sr);
+    var res = streetPick.result;
+    if (res) {
+      var tbl = streetTable(res.district, res.time), row2 = tbl.rows[res.ix];
+      var rc = el("div", "gm-street-result");
+      rc.appendChild(stxt("div", "gm-note", tbl.name + " · " + (res.ix + 1)));
+      rc.appendChild(stxt("p", null, row2.text));
+      if (row2.npc) {
+        rc.appendChild(btn("Add " + row2.npc.n + " × " + row2.npc.t + " to the encounter", "tiny", function () {
+          var n = addStreetNpcs(row2.npc);
+          toast(n ? "Added to the encounter" : "No such template"); redraw();
+        }));
+      }
+      se.appendChild(rc);
+    }
+    s.appendChild(se);
+  }
+
+  /* ---- the Humanity dashboard, on the Party screen --------------------- */
+  function humanityBoard(party) {
+    var rows = party.filter(function (p) { return p.d.hum; }).map(function (p) {
+      return { p: p, h: p.d.hum };
+    }).sort(function (a, b) { return a.h.pct - b.h.pct; });
+    if (!rows.length) return null;
+    var box = el("div", "gm-strip gm-humboard");
+    box.appendChild(txt("div", "gm-label", "Humanity, worst first"));
+    rows.forEach(function (r) {
+      var line = el("div", "gm-hum-line");
+      line.appendChild(txt("b", "n", r.p.c.name || "Unnamed"));
+      var st = T.HSTATE && T.HSTATE[r.h.state];
+      var tone = st ? st[0] : "dim";
+      line.appendChild(txt("span", "chip tone-" + tone, r.h.state));
+      var bar = el("div", "gm-hum-bar");
+      var fill = el("div", "gm-hum-fill tone-" + tone);
+      fill.style.width = Math.max(0, Math.min(100, Math.round(r.h.pct))) + "%";
+      bar.appendChild(fill);
+      line.appendChild(bar);
+      line.appendChild(txt("span", "pct", Math.round(r.h.pct) + "%"));
+      line.appendChild(txt("span", "gm-note", r.h.implants === 1 ? "1 implant" : r.h.implants + " implants"));
+      if (st && st[1]) line.appendChild(txt("div", "gm-hum-effect", st[1]));
+      box.appendChild(line);
+    });
+    return box;
   }
 
   return {

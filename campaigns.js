@@ -25,7 +25,9 @@
      places:    [{ name: "", notes: "" }],
      items:     [{ name: "", cost: "", notes: "" }], // custom gear
      sessions:  [{ date: "", title: "", notes: "" }],
-     hooks:     ["A one-line adventure hook", "…"]
+     hooks:     ["A one-line adventure hook", "…"],
+     houses:    [{ id, name, colour, controls, enemy, patron }],   // optional
+     districts: [{ id, name, height, house, band, notes }]       // optional
    }
 --------------------------------------------------------------------------- */
 
@@ -146,6 +148,53 @@ window.TTBC = {
           notes: "Bonus action, regain 4d4+4 hit points. Costs 1 Humanity. Every Streetdoc in " +
                  "the city will tell you not to carry more than two, and every Streetdoc in the " +
                  "city is right." }
+      ],
+      /* The four Houses. Standing with each is tracked on the GM's City
+         screen; `enemy` and `patron` say what the two ends look like. */
+      houses: [
+        { id: "reliquary", name: "House Reliquary", colour: "gold",
+          controls: "The vaults and chapels, the Eye, and rented Humanity: indulgences, blessed and repossessable.",
+          enemy: "Their wards stop reading you as a person. Chapel doors stay shut and any shunt you rent is taken back.",
+          patron: "A chapel shelters you, and an Archdeacon sells you a minute at the Eye at cost." },
+        { id: "thorn", name: "House Thorn", colour: "red",
+          controls: "Debt: the ledgers, the collections, the foreclosures and the Counting Rib.",
+          enemy: "Ser Ambrel Dace comes to collect in person, with a writ for something you care about.",
+          patron: "Your debts on their book go quiet, and one collector looks the other way, once." },
+        { id: "lathe", name: "House Lathe", colour: "amber",
+          controls: "The Marrowworks drills, ichor refining, and every bone-carver's licence in the city.",
+          enemy: "Licensed Streetdocs turn you away and every service contract on your chrome lapses.",
+          patron: "Installs at cost, and first look at fresh marrow before it reaches the Gullet." },
+        { id: "vigil", name: "House Vigil", colour: "blue",
+          controls: "The wards, the Watch, and the licences of every lift operator on the Spine.",
+          enemy: "The Watch stops you at every stop on the Spine, and lifts come late or not at all.",
+          patron: "Ward-keys for a night, and a lift that arrives when you call it." }
+      ],
+      /* The eleven ribs, from the base up. `height` is feet above the
+         Marrowworks floor, which is what the Long Fall reads to work out
+         where someone lands. `band` picks the street encounter table. */
+      districts: [
+        { id: "marrowworks", name: "The Marrowworks", height: 0, house: "lathe", band: "below",
+          notes: "Drill floors and refineries at the base of the corpse. Three shifts, no windows." },
+        { id: "gullet", name: "The Gullet", height: 220, house: "thorn", band: "below",
+          notes: "The undercity market in the god's throat. Thorn collects the stall rents." },
+        { id: "weepwater", name: "Weepwater", height: 400, house: "vigil", band: "below",
+          notes: "Cisterns and run-off. The Hush keep a chapel in one of the old cisterns." },
+        { id: "tallowgate", name: "Tallowgate", height: 560, house: "lathe", band: "below",
+          notes: "Rendering yards, carvers' warrens and every black clinic worth the name." },
+        { id: "nave", name: "The Nave", height: 740, house: "vigil", band: "middle",
+          notes: "The Spine's middle stop: the Cantor's nave, and Sanctum Null in its shadow." },
+        { id: "counting-rib", name: "The Counting Rib", height: 900, house: "thorn", band: "middle",
+          notes: "House Thorn's ledger halls. The lights never go off." },
+        { id: "seventh-rib", name: "The Seventh Rib", height: 1080, house: "thorn", band: "middle",
+          notes: "Tenements, eleven thousand people, and a foreclosure clause nobody has read to the end." },
+        { id: "lanternside", name: "Lanternside", height: 1260, house: "reliquary", band: "above",
+          notes: "The pilgrims' quarter: hostels, shrines and lantern-sellers." },
+        { id: "vaults", name: "The Vaults", height: 1440, house: "reliquary", band: "above",
+          notes: "Reliquary's vault-chapels, where the indulgences are kept." },
+        { id: "brow", name: "The Brow", height: 1620, house: "reliquary", band: "above",
+          notes: "The god's brow, and the chapel of the Eye beneath it." },
+        { id: "crown", name: "The Crown", height: 1820, house: "", band: "above",
+          notes: "The Houses' manors, above the weather. They sell it back down." }
       ],
       sessions: [
         { date: "Session zero", title: "Bring a debt",

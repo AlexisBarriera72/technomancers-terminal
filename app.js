@@ -21,7 +21,7 @@
   /* Bumped by hand on every deploy, there is no build step, and a commit
      cannot contain its own hash. Shown in the masthead so "did my change go
      live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-  var BUILD = "2026-09-24 18:00";
+  var BUILD = "2026-09-24 20:00";
   var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
   var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                     Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -159,7 +159,7 @@
                "Level-Ups", "Chrome & Gear", "Play Sheet"];
   var CAMPSEC = ["Overview", "House Rules", "People", "Places", "Custom Gear", "Session Log", "Hooks"];
   var campSecIx = 0;
-  var GMSEC = ["Party", "Encounter", "Rulings", "NPCs", "Clocks", "Story", "Campaign"];
+  var GMSEC = ["Party", "Encounter", "Rulings", "NPCs", "Clocks", "Story", "Campaign", "City"];
   var gmSecIx = 0;
   var gmOn = false;
   try { gmOn = localStorage.getItem("ttb.gm") === "1"; } catch (e) {}
@@ -3909,7 +3909,9 @@
     if (!c) return;
 
     var seg = el("div", "toolbar");
-    CAMPSEC.forEach(function (name, i) {
+    var secs = CAMPSEC.concat((c.houses || []).length || (c.districts || []).length ? ["City"] : []);
+    if (campSecIx >= secs.length) campSecIx = 0;
+    secs.forEach(function (name, i) {
       var b = el("button", "chip" + (i === campSecIx ? " on" : ""), esc(name));
       b.onclick = function () { campSecIx = i; render(); };
       seg.appendChild(b);
@@ -3923,9 +3925,49 @@
     seg.appendChild(ex);
     s.appendChild(seg);
 
-    var sec = CAMPSEC[campSecIx];
+    var sec = secs[campSecIx];
 
-    if (sec === "Overview") {
+    if (sec === "City") {
+      /* Read-only reference: the GM's City screen tracks standing with these
+         Houses and the Long Fall reads the districts' heights. The words are
+         the campaign's own and stay in English, like the story. */
+      var ch = el("div");
+      if ((c.houses || []).length) {
+        ch.appendChild(el("h3", "eyebrow", "Houses"));
+        c.houses.forEach(function (h) {
+          var e = el("div", "entry");
+          var hh = el("div", "entry-head");
+          var nm = el("h4"); nm.textContent = h.name; nm.setAttribute("data-nolang", "");
+          hh.appendChild(nm);
+          e.appendChild(hh);
+          [["", h.controls], ["At their worst", h.enemy], ["At their best", h.patron]].forEach(function (x) {
+            if (!x[1]) return;
+            var p = el("p");
+            if (x[0]) { var k = el("b", null, esc(x[0])); p.appendChild(k); p.appendChild(document.createTextNode(" ")); }
+            var t = el("span"); t.textContent = x[1]; t.setAttribute("data-nolang", "");
+            p.appendChild(t);
+            e.appendChild(p);
+          });
+          ch.appendChild(e);
+        });
+      }
+      if ((c.districts || []).length) {
+        ch.appendChild(el("h3", "eyebrow", "Districts, from the top"));
+        c.districts.slice().sort(function (a, b) { return (b.height || 0) - (a.height || 0); }).forEach(function (d) {
+          var e = el("div", "entry");
+          var hh = el("div", "entry-head");
+          var nm = el("h4"); nm.textContent = d.name; nm.setAttribute("data-nolang", "");
+          hh.appendChild(nm);
+          hh.appendChild(el("span", "chip", esc(String(d.height || 0)) + " ft"));
+          e.appendChild(hh);
+          var p = el("p"); p.textContent = d.notes || ""; p.setAttribute("data-nolang", "");
+          e.appendChild(p);
+          ch.appendChild(e);
+        });
+      }
+      s.appendChild(ch);
+
+    } else if (sec === "Overview") {
       var g = el("div");
       if (!c.builtIn) {
         [["name", "Name"], ["dm", "Run by"], ["blurb", "Pitch"], ["startingCredits", "Starting credits"]]
