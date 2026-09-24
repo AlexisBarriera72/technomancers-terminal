@@ -152,6 +152,34 @@ The current campaign is **Cathedra**, a city grown inside the ribcage of a god
 that is still dying, where the Humanity track measures how much of the god is
 replacing you.
 
+## Levelling up, inventory and the play sheet
+
+- **Level-up panel.** Raising the level from the dossier slider opens a panel
+  at the top of the page instead of a toast. It lists what arrived at each new
+  level (from `ladder()`), max HP and proficiency before and after, and what's
+  still to choose (ability/feat slots, programs and the like, the archetype),
+  each with **Take me there**. Further raises widen it, lowering below where
+  it started closes it, and **What changed at level N** in the dossier brings
+  it back. Focus stays on the slider, so the arrow keys keep working.
+- **Inventory and credits.** Gear carries a count (`qty`) and a weight (`wt`,
+  read from the book's own Weight column when an item is added and filled in
+  for older saves by `migrate`). Items the book doesn't have can be added by
+  hand (`custom: true`). `credits` is what the character has; **Starting
+  credits** reads the campaign's starting money or the background's credit
+  stick. The Chrome & gear step and the play sheet show credits left and the
+  weight carried against Str × 15, with a warning past Str × 5 and Str × 10.
+- **On your turn.** The play sheet opens with a deck of cards to tap: Move,
+  Action (Attack, Dash, Disengage, Dodge, Help, Hide, Ready an action, Search,
+  Use an Object, cast or run a program), Bonus action, Reaction, Free, and the
+  conditions. The character's own actions, bonus actions and reactions are
+  dealt into the matching cards from the same buckets as *What you can do*.
+- **Frames.** A Puppeteer's play sheet shows their frames at the tier the
+  class table gives for their level, with AC, HP, speed and attack from the
+  frame table, an HP track per frame (and what a destroyed frame costs), and
+  the Uplink pool with a button per Remote Body option that spends its cost.
+  Frame HP and Uplink spent are saved on the character (`frames`,
+  `uplinkUsed`).
+
 ## Where characters are stored
 
 In the visitor's browser (`localStorage`), never on a server. Sharing works by
@@ -409,6 +437,7 @@ one side only would leave a line in English. CI runs both on every push.
 | `test/browser.test.js` | Injection, save failures, the GM vault export, share-link transitions, and that the app still works. |
 | `test/sw.test.js` | A failed update must not replace a working offline cache. |
 | `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale; the city's data (tables sized to their dice, districts climbing) and the City and Toolkit screens. |
+| `test/player.test.js` | The level-up panel, inventory and credits (weights, counts, custom items, old saves), the turn cards and the Puppeteer's frames. |
 | `test/story.test.js` | The story holds together (every scene complete, every reference resolves), the Story tab tracks, rolls and persists, the demo walkthrough adds up, and every synergy says what it does. |
 
 ## Deploying a change

@@ -10,7 +10,8 @@ const SUITES = {
   browser: require("./browser.test"),
   sw: require("./sw.test"),
   story: require("./story.test"),
-  city: require("./city.test")
+  city: require("./city.test"),
+  player: require("./player.test")
 };
 
 (async () => {

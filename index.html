@@ -718,6 +718,58 @@ details.item .body p,details.item .body ul{max-width:70ch}
 .gm-morale-line .num{font-family:var(--f-mono);min-width:26px;text-align:right}
 .gm-morale-line.fails span:last-of-type{color:var(--alert)}
 .gm-morale-line.holds span:last-of-type{color:var(--signal)}
+/* player: inventory, level-up, turn cards, frames */
+.inv .k,.lvlup .k,.uplink .k{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+.inv-row,.inv-carry{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.inv-row input{width:130px}
+.inv-carry .inv-bar{flex:1;min-width:120px}
+.inv-bar{height:8px;background:var(--sunk);border:1px solid var(--line-soft);border-radius:4px;overflow:hidden}
+.inv-fill{height:100%;background:var(--signal)}
+.inv-fill.hurt{background:var(--gold)} .inv-fill.bad{background:var(--alert)}
+.inv-list{margin:10px 0;border-top:1px solid var(--line-soft)}
+.inv-item{display:grid;grid-template-columns:1fr auto 64px auto auto;gap:10px;align-items:center;
+  padding:6px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+.inv-item .qty{display:flex;gap:4px;align-items:center}
+.inv-item .qty b{font-family:var(--f-mono);font-size:12px;min-width:30px;text-align:center}
+.inv-item .wt,.inv-item .cost{font-family:var(--f-mono);font-size:12px;color:var(--ink-dim);text-align:right}
+.inv-add{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.inv-add .k{flex-basis:100%}
+.inv-add input{flex:1;min-width:90px}
+.inv-add input[type=number]{max-width:80px}
+@media (max-width:560px){ .inv-item{grid-template-columns:1fr auto auto} .inv-item .cost{display:none} }
+.lvlup{background:linear-gradient(135deg,rgba(163,230,53,.10),transparent 45%),var(--surface);
+  border:1px solid var(--signal);border-radius:var(--r);padding:14px 16px;margin:0 0 18px}
+.lvlup-head{display:flex;align-items:center;gap:12px}
+.lvlup-head h3{margin:0;flex:1;font-family:var(--f-display);text-transform:uppercase;letter-spacing:.04em;color:var(--signal)}
+.lvlup-sum{margin:8px 0}
+.lvlup-nums{display:flex;gap:18px;flex-wrap:wrap;margin:6px 0 10px}
+.lvlup-num{display:flex;flex-direction:column;gap:2px}
+.lvlup-num b{font-family:var(--f-mono);font-size:15px}
+.lvlup-list{list-style:none;margin:0 0 10px;padding:0}
+.lvlup-list li{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid var(--line-soft);font-size:14px}
+.lvlup-list li b{min-width:66px}
+.lvlup-todo{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0}
+.lvl-what{margin:4px 0 8px}
+.tcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:8px}
+.tcard{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;cursor:pointer;
+  background:var(--sunk);border:1px solid var(--line);border-top:3px solid var(--line);border-radius:var(--r);
+  padding:10px 12px;color:var(--ink);font:inherit}
+.tcard.act{border-top-color:var(--accent)} .tcard.bon{border-top-color:var(--gold)} .tcard.rea{border-top-color:var(--hot)}
+.tcard.open{grid-column:1/-1;background:var(--surface)}
+.tcard-k{font-family:var(--f-display);font-size:15px;text-transform:uppercase;letter-spacing:.05em}
+.tcard-body{display:flex;flex-direction:column;gap:5px;font-size:14px}
+.tcard-line b{margin-right:6px}
+.frames{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:8px 0}
+.frame{background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.frame.gone{border-color:var(--alert)}
+.frame-hp{display:flex;flex-direction:column;gap:4px;margin:6px 0}
+.frame-hp .v{font-family:var(--f-mono);font-size:13px}
+.frame-pad{display:flex;gap:4px;flex-wrap:wrap}
+.uplink{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.uplink-pips{display:flex;gap:3px}
+.uplink-pips .pip{width:12px;height:12px;border:1px solid var(--accent);border-radius:2px}
+.uplink-pips .pip.on{background:var(--accent)}
+.uplink-opts{display:flex;gap:6px;flex-wrap:wrap}
 /* city */
 .gm-city-today{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:14px 0}
 .gm-cal-date{font-family:var(--f-display);font-size:22px;font-weight:600;margin:4px 0 8px}
