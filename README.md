@@ -518,6 +518,27 @@ on load and on import (`cleanMaps` drops maps and areas that don't exist), go ou
 in the vault, and the demo table opens scene 4's map with the first three areas
 revealed.
 
+#### Painted pictures
+
+Some maps also have a painted picture (made with a map generator from the
+prompts for each map). `mapart.js` lists them, with the grid each was drawn
+on, and the files are `maps/art/<map id>.webp` (no grid) and
+`maps/art/<map id>-grid.webp` (grid painted in). A map with a picture opens
+on it: **Picture** switches back to the drawn plan, **Grid** picks the
+gridded or gridless version, and fog is by the square, like your own maps
+below, because the picture's layout is its own. The plan keeps its own fog,
+room by room, and its key stays below the map for reference. The table's
+iPad loads the same picture from the site, so nothing is uploaded to the
+room; it is cached for offline use the first time it is shown.
+
+To add or replace pictures, put them in a folder named the way the
+generator exports them (`nave-night-40x30-gridded.png`,
+`nave-night-40x30-gridless.png`) and run `npm run art -- <folder>`.
+`tools/map-art.js` matches each name to a map (its `ALIAS` table, or the
+map's own id), shrinks the pictures to 2400 px as WebP and updates
+`mapart.js`. The maps test checks every picture belongs to a map, exists,
+and fits its grid.
+
 #### Your own maps
 
 **Add your own map** on the Maps screen takes any picture (a map generator's

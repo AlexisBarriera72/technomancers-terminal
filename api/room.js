@@ -93,6 +93,8 @@ function cleanMap(m) {
     revealed: (Array.isArray(m.revealed) ? m.revealed : [])
       .filter(x => typeof x === "string" && ID.test(x)).slice(0, 300),
     grid: m.grid !== false, fog: m.fog !== false,
+    // a built-in map shown as its painted picture (mapart.js), fogged by the square
+    pic: m.pic === true,
     // a GM's own map: its fog is a packed bitset, one bit a square
     cells: typeof m.cells === "string" && /^[A-Za-z0-9_-]{0,4000}$/.test(m.cells) ? m.cells : null,
     img: cleanImgMeta(m.img)
@@ -101,7 +103,8 @@ function cleanMap(m) {
 function cleanImgMeta(x) {
   if (!x || typeof x !== "object" || typeof x.id !== "string" || !ID.test(x.id)) return null;
   return { id: x.id, cols: int(x.cols, 1, 200), rows: int(x.rows, 1, 200), parts: int(x.parts, 1, MAX_PIECES),
-           ver: typeof x.ver === "string" && ID.test(x.ver) ? x.ver : "1" };
+           ver: typeof x.ver === "string" && ID.test(x.ver) ? x.ver : "1",
+           pxW: int(x.pxW, 0, 20000) || 0, pxH: int(x.pxH, 0, 20000) || 0 };
 }
 
 async function roomMeta(s, code) {

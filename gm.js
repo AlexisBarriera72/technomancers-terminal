@@ -5242,7 +5242,11 @@ window.TTGM = (function () {
     if (m && m.custom) {
       out.cells = (ms.cells && ms.cells[m.id]) || "";
       out.grid = ms.grid && m.overlay;
-      out.img = { id: m.id, cols: m.w, rows: m.h, parts: umParts(m), ver: m.ver };
+      out.img = { id: m.id, cols: m.w, rows: m.h, parts: umParts(m), ver: m.ver, pxW: m.px[0], pxH: m.px[1] };
+    } else if (m && artOf(m) && ms.pic) {
+      // the table's screen has the same pictures: it only needs to know to use it
+      out.pic = true;
+      out.cells = (ms.cells && ms.cells[m.id]) || "";
     }
     return out;
   }
@@ -5387,6 +5391,35 @@ window.TTGM = (function () {
      second device can't follow along; "Show on this screen" covers a tablet
      passed round the table instead.                                        */
   var MAPS = window.TTMAPS || null, MD = window.TTMAPDRAW || null;
+  /* Painted pictures for some of the maps (mapart.js, tools/map-art.js).
+     A map with one shows the picture by default, on the picture's own
+     grid, fogged square by square like the GM's own maps; the Picture
+     switch goes back to the drawn plan, whose fog is by area. The two keep
+     their fog separately: the picture's layout is its own. */
+  var MAPART = window.TTMAPART || {};
+  function artOf(m) {
+    var a = m && !m.custom ? MAPART[m.id] : null;
+    return a && a.cols > 0 && a.rows > 0 && a.cols <= 200 && a.rows <= 200 && (a.grid || a.plain) ? a : null;
+  }
+  function viewOf(m, ms) {
+    if (!m || m.cellFog) return m;
+    var a = artOf(m);
+    if (!a || !ms.pic) return m;
+    return { id: m.id, title: m.title, place: m.place, blurb: m.blurb, scale: m.scale || 5, notes: m.notes || [],
+             scenes: m.scenes || [], areas: m.areas || [], w: a.cols, h: a.rows, art: a, cellFog: true,
+             overlay: !a.grid, base: m, sy: squareHeight(a.w, a.h, a.cols, a.rows) };
+  }
+  /* How tall a square is, in the drawing's units (a square is MD.S wide),
+     so a picture is never stretched to make its squares square. */
+  function squareHeight(pw, ph, cols, rows) {
+    var S = MD ? MD.S : 50, r = pw > 0 && ph > 0 ? (ph * cols) / (pw * rows) : 1;
+    return S * (r > 0.5 && r < 2 ? r : 1);
+  }
+  // the gridded picture when the grid is on (or when it's the only one)
+  function artHref(v, ms) {
+    var a = v.art;
+    return "maps/art/" + v.id + ((ms.grid && a.grid) || !a.plain ? "-grid" : "") + ".webp";
+  }
   var SEC_STORY = 5, SEC_MAPS = 9;          // places in GMSEC, app/core.js
   function mapList() { return MAPS && MD ? MAPS.maps : []; }
   function mapById(id) {
@@ -5400,13 +5433,13 @@ window.TTGM = (function () {
   function cleanMaps(v) {
     function obj(x) { return x && typeof x === "object" && !Array.isArray(x) ? x : {}; }
     var o = obj(v), R = obj(o.revealed), rev = {}, CL = obj(o.cells), cells = {};
-    var flags = { grid: o.grid !== false, keys: o.keys !== false, fog: o.fog !== false };
+    var flags = { grid: o.grid !== false, keys: o.keys !== false, fog: o.fog !== false, pic: o.pic !== false };
     // With no maps loaded there is nothing to check against; keep it as it was.
-    if (!mapList().length) return { current: null, live: null, revealed: R, cells: CL, grid: flags.grid, keys: flags.keys, fog: flags.fog };
+    if (!mapList().length) return { current: null, live: null, revealed: R, cells: CL, grid: flags.grid, keys: flags.keys, fog: flags.fog, pic: flags.pic };
     // the GM's own maps keep their fog as a packed string, one bit a square
     Object.keys(CL).forEach(function (id) {
       var m = mapById(id);
-      if (m && m.custom && typeof CL[id] === "string" && CELLS_RE.test(CL[id])) cells[id] = CL[id];
+      if (m && (m.custom || artOf(m)) && typeof CL[id] === "string" && CELLS_RE.test(CL[id])) cells[id] = CL[id];
     });
     Object.keys(R).forEach(function (id) {
       var m = mapById(id);
@@ -5418,7 +5451,7 @@ window.TTGM = (function () {
       if (list.length) rev[id] = list;
     });
     return { current: mapById(o.current) ? o.current : null, live: mapById(o.live) ? o.live : null,
-             revealed: rev, cells: cells, grid: flags.grid, keys: flags.keys, fog: flags.fog };
+             revealed: rev, cells: cells, grid: flags.grid, keys: flags.keys, fog: flags.fog, pic: flags.pic };
   }
   function mapsState() { return cleanMaps(playState().maps); }
   function mapsPatch(fn) {
@@ -5475,9 +5508,9 @@ window.TTGM = (function () {
     return shown;
   }
   function revealAll(mapId, on) {
-    var m = mapById(mapId);
+    var m = viewOf(mapById(mapId), mapsState());
     if (!m) return;
-    if (m.custom) {
+    if (m.cellFog) {
       var bits = new Array(m.w * m.h);
       for (var i = 0; i < bits.length; i++) bits[i] = on ? 1 : 0;
       setUserCells(m, bits);
@@ -5490,11 +5523,13 @@ window.TTGM = (function () {
   }
   function fogOf(m, ms) { return ms.fog ? { revealed: mapRevealed(ms, m.id) } : null; }
   function gmMapSvg(m, ms) {
-    if (m.custom) return userMapSvg(m, ms, false);
+    var v = viewOf(m, ms);
+    if (v.cellFog) return userMapSvg(v, ms, false);
     return MD.render(m, { theme: "noir", grid: ms.grid, keys: ms.keys, fog: fogOf(m, ms) });
   }
   function playerMapSvg(m, ms) {
-    if (m.custom) return userMapSvg(m, ms, true);
+    var v = viewOf(m, ms);
+    if (v.cellFog) return userMapSvg(v, ms, true);
     return MD.render(m, { theme: "noir", player: true, grid: ms.grid, fog: fogOf(m, ms) });
   }
 
@@ -5521,8 +5556,9 @@ window.TTGM = (function () {
     var cols = Math.max(1, Math.min(UM_MAX, Math.round(+x.cols) || 20));
     var rows = Math.max(1, Math.min(UM_MAX, Math.round(+x.rows) || 20));
     return { id: x.id, title: String(x.title || "My map").slice(0, 80), w: cols, h: rows, scale: 5,
-             custom: true, ver: /^[a-z0-9]{1,12}$/.test(x.ver || "") ? x.ver : "1",
+             custom: true, cellFog: true, ver: /^[a-z0-9]{1,12}$/.test(x.ver || "") ? x.ver : "1",
              px: [Math.round(+x.pxW) || 0, Math.round(+x.pxH) || 0], len: Math.round(+x.len) || 0,
+             sy: squareHeight(+x.pxW, +x.pxH, cols, rows),
              overlay: x.overlay !== false, place: "Your own map", areas: [], notes: [], scenes: [] };
   }
   function userMapsWrite(list) {
@@ -5608,8 +5644,8 @@ window.TTGM = (function () {
   /* The picture stretched over the grid, then the fog: black for the
      players, a tint for the GM, drawn as runs so a big map stays small. */
   function userMapSvg(m, ms, player, fromRoom) {
-    var S = MD.S, W = m.w * S, H = m.h * S;
-    var img = userImage(m, fromRoom);
+    var S = MD.S, SY = m.sy || S, W = m.w * S, H = m.h * SY;
+    var img = m.art ? artHref(m, ms) : userImage(m, fromRoom);
     var p = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + " " + H + '" width="' + W + '" height="' + H +
              '" class="tt-map" data-map="' + esc(m.id) + '">'];
     p.push('<rect width="' + W + '" height="' + H + '" fill="#02040a"/>');
@@ -5619,7 +5655,7 @@ window.TTGM = (function () {
     if (ms.grid && m.overlay) {
       var g = [];
       for (var x = 1; x < m.w; x++) g.push("M" + x * S + " 0V" + H);
-      for (var y = 1; y < m.h; y++) g.push("M0 " + y * S + "H" + W);
+      for (var y = 1; y < m.h; y++) g.push("M0 " + y * SY + "H" + W);
       p.push('<path d="' + g.join("") + '" stroke="rgba(255,255,255,0.28)" stroke-width="1.5" fill="none"/>');
     }
     if (ms.fog) {
@@ -5630,7 +5666,7 @@ window.TTGM = (function () {
           var hidden = c < m.w && !bits[r * m.w + c];
           if (hidden && start < 0) start = c;
           if (!hidden && start >= 0) {
-            runs.push('<rect x="' + start * S + '" y="' + r * S + '" width="' + (c - start) * S + '" height="' + S + '"/>');
+            runs.push('<rect x="' + start * S + '" y="' + r * SY + '" width="' + (c - start) * S + '" height="' + SY + '"/>');
             start = -1;
           }
         }
@@ -5729,13 +5765,13 @@ window.TTGM = (function () {
   var mapView = { id: null, vb: null };      // zoom and pan, kept for this visit
   var mapBrush = "move", mapBrushBig = false;   // the GM's own maps: what a drag does
   function mapViewer(m, ms) {
-    var host = el("div", "map-view" + (m.custom && mapBrush !== "move" ? " painting" : ""));
+    var host = el("div", "map-view" + (m.cellFog && mapBrush !== "move" ? " painting" : ""));
     host.tabIndex = 0;
     host.setAttribute("aria-label", "The map. Tap an area to show it to the players or hide it again.");
     var svg = svgNode(gmMapSvg(m, ms));
     var ctl = { zoom: function () {}, fit: function () {} };
     if (!svg) { host.appendChild(txt("p", "gm-note", "This map didn't draw.")); return { host: host, ctl: ctl }; }
-    var W = m.w * MD.S, H = m.h * MD.S;
+    var W = m.w * MD.S, H = m.h * (m.sy || MD.S);
     svg.setAttribute("width", "100%");
     svg.setAttribute("height", "100%");
     if (mapView.id !== m.id) { mapView.id = m.id; mapView.vb = null; }
@@ -5781,14 +5817,14 @@ window.TTGM = (function () {
     function cellsUnder(cx, cy) {
       var u = toUser(cx, cy);
       if (!u) return [];
-      var c = Math.floor(u.x / MD.S), r = Math.floor(u.y / MD.S), d = mapBrushBig ? 1 : 0, out = [];
+      var c = Math.floor(u.x / MD.S), r = Math.floor(u.y / (m.sy || MD.S)), d = mapBrushBig ? 1 : 0, out = [];
       for (var y = r - d; y <= r + d; y++)
         for (var x = c - d; x <= c + d; x++)
           if (x >= 0 && y >= 0 && x < m.w && y < m.h) out.push([x, y]);
       return out;
     }
     function paintAt(cx, cy) {
-      var g = svg.querySelector(".paint"), S = MD.S;
+      var g = svg.querySelector(".paint"), S = MD.S, SY = m.sy || S;
       cellsUnder(cx, cy).forEach(function (xy) {
         var i = xy[1] * m.w + xy[0];
         if (paint.bits[i] === paint.to) return;
@@ -5796,8 +5832,8 @@ window.TTGM = (function () {
         paint.n++;
         if (!g) return;
         var r = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        r.setAttribute("x", xy[0] * S); r.setAttribute("y", xy[1] * S);
-        r.setAttribute("width", S); r.setAttribute("height", S);
+        r.setAttribute("x", xy[0] * S); r.setAttribute("y", xy[1] * SY);
+        r.setAttribute("width", S); r.setAttribute("height", SY);
         r.setAttribute("fill", paint.to ? "rgba(34,211,238,0.35)" : "rgba(2,4,10,0.85)");
         g.appendChild(r);
       });
@@ -5811,7 +5847,7 @@ window.TTGM = (function () {
     function tap(cx, cy) {
       var u = toUser(cx, cy);
       if (!u) return;
-      if (m.custom) {
+      if (m.cellFog) {
         if (!mapsState().fog) { toast("Fog is off: the players see the whole map"); return; }
         var bits = userCells(m, mapsState()), under = cellsUnder(cx, cy);
         if (!under.length) return;
@@ -5843,7 +5879,7 @@ window.TTGM = (function () {
       var n = Object.keys(pts).length;
       if (n === 1) {
         start = { x: e.clientX, y: e.clientY }; moved = false;
-        if (m.custom && mapBrush !== "move" && mapsState().fog) {
+        if (m.cellFog && mapBrush !== "move" && mapsState().fog) {
           paint = { bits: userCells(m, mapsState()), to: mapBrush === "reveal" ? 1 : 0, n: 0 };
           paintAt(e.clientX, e.clientY);
         }
@@ -5897,7 +5933,7 @@ window.TTGM = (function () {
     return { host: host, ctl: ctl };
   }
 
-  function mapKeyList(m, ms) {
+  function mapKeyList(m, ms, readOnly) {
     var box = el("div", "map-key-list");
     var rev = mapRevealed(ms, m.id);
     (m.areas || []).forEach(function (a) {
@@ -5908,7 +5944,7 @@ window.TTGM = (function () {
       head.appendChild(txt("span", "map-letter", a.key || "·"));
       head.appendChild(stxt("b", "map-area-name", a.name || a.id));
       if (a.fog === false) head.appendChild(txt("span", "chip", "Always seen"));
-      else if (ms.fog) {
+      else if (ms.fog && !readOnly) {
         var b = btn(on ? "Conceal" : "Reveal", "tiny" + (on ? "" : " primary"), function () {
           toggleArea(m.id, a.id); redraw();
         });
@@ -5957,6 +5993,7 @@ window.TTGM = (function () {
       return;
     }
     var ms = mapsState(), m = mapCurrent(), scale = m.scale || 5;
+    var v = viewOf(m, ms), art = artOf(m);
 
     var pick = row("gm-row map-pick");
     var sel = document.createElement("select");
@@ -6006,7 +6043,8 @@ window.TTGM = (function () {
     info.appendChild(stxt("h3", null, m.title));
     var meta = el("div", "gm-note map-meta");
     meta.appendChild(stxt("span", null, m.place));
-    meta.appendChild(txt("span", null, m.w * scale + " × " + m.h * scale + " ft, one square is " + scale + " ft"));
+    meta.appendChild(txt("span", null, v.w * scale + " × " + v.h * scale + " ft, one square is " + scale + " ft"));
+    if (art) meta.appendChild(txt("span", "chip", v.art ? "Painted picture" : "Drawn plan"));
     info.appendChild(meta);
     if (m.blurb) info.appendChild(stxt("p", null, m.blurb));
     if (m.custom) info.appendChild(userMapSetup(m, ms));
@@ -6039,11 +6077,11 @@ window.TTGM = (function () {
     s.appendChild(other);
 
     // the view: grid, letters, fog, zoom
-    var viewer = mapViewer(m, ms);
+    var viewer = mapViewer(v, ms);
     var vr = row("gm-row map-tools");
     var seg = el("div", "seg");
-    [["grid", "Grid"], ["keys", "Letters"], ["fog", "Fog"]].filter(function (o) {
-      return !(m.custom && o[0] === "keys");
+    [["pic", "Picture"], ["grid", "Grid"], ["keys", "Letters"], ["fog", "Fog"]].filter(function (o) {
+      return !(v.cellFog && o[0] === "keys") && (o[0] !== "pic" || art);
     }).forEach(function (o) {
       var on = ms[o[0]];
       var b = btn(o[1], on ? "on" : "", function () { mapsPatch(function (x) { x[o[0]] = !on; }); redraw(); });
@@ -6063,7 +6101,7 @@ window.TTGM = (function () {
       vr.appendChild(btn("Hide all", "tiny", function () { revealAll(m.id, false); redraw(); }));
     }
     s.appendChild(vr);
-    if (m.custom && ms.fog) {
+    if (v.cellFog && ms.fog) {
       var br = row("gm-row map-tools map-brush");
       br.appendChild(txt("span", "gm-label", "A drag"));
       var bseg = el("div", "seg");
@@ -6085,15 +6123,16 @@ window.TTGM = (function () {
     s.appendChild(viewer.host);
     s.appendChild(txt("div", "gm-note map-howto", !ms.fog
       ? "Drag to move, pinch or scroll to zoom. Fog is off: the players see the whole map."
-      : m.custom ? (mapBrush === "move"
+      : v.cellFog ? (mapBrush === "move"
           ? "Drag to move, pinch or scroll to zoom, tap a square to show it to the players or hide it again."
           : "Drag across the map to " + (mapBrush === "reveal" ? "show squares to the players" : "hide squares again") +
             ". Two fingers still move and zoom.")
       : "Drag to move, pinch or scroll to zoom, tap an area to show it to the players or hide it again."));
 
     if (m.custom) return;
-    s.appendChild(txt("div", "gm-label", "The key"));
-    s.appendChild(mapKeyList(m, ms));
+    s.appendChild(txt("div", "gm-label", v.art ? "The key, for the drawn plan" : "The key"));
+    if (v.art) s.appendChild(txt("p", "gm-note", "The picture has its own layout, so its fog is by the square. Turn Picture off to reveal the plan room by room."));
+    s.appendChild(mapKeyList(m, ms, !!v.art));
     if ((m.notes || []).length) {
       s.appendChild(txt("div", "gm-label", "Running it"));
       m.notes.forEach(function (n) { s.appendChild(stxt("p", "gm-note map-note", n)); });
@@ -6119,6 +6158,13 @@ window.TTGM = (function () {
       T.saveAs(m.id + "-players.svg", playerMapSvg(m, ms), "image/svg+xml");
     }));
     dl.appendChild(btn("PNG for a VTT", "tiny", function () { mapPng(m); }));
+    if (art) [["grid", "-grid", "Picture with grid"], ["plain", "", "Picture without grid"]].forEach(function (o) {
+      if (!art[o[0]]) return;
+      var a = txt("a", "btn tiny", o[2]);
+      a.href = "maps/art/" + m.id + o[1] + ".webp";
+      a.setAttribute("download", m.id + o[1] + ".webp");
+      dl.appendChild(a);
+    });
     s.appendChild(dl);
   }
 
@@ -6191,13 +6237,15 @@ window.TTGM = (function () {
         if (!m) return cleanMaps(null);
         if (m.img && m.live === m.img.id) {
           // the GM's own map: nothing about it is on this device but what the room says
-          var um = userMapOf({ id: m.img.id, cols: m.img.cols, rows: m.img.rows, ver: m.img.ver, overlay: true, title: "" });
+          var um = userMapOf({ id: m.img.id, cols: m.img.cols, rows: m.img.rows, ver: m.img.ver, overlay: true, title: "",
+                               pxW: m.img.pxW, pxH: m.img.pxH });
           var cl = {}; cl[um.id] = typeof m.cells === "string" && CELLS_RE.test(m.cells) ? m.cells : "";
           return { live: um.id, liveMap: um, room: m.img, revealed: {}, cells: cl, grid: m.grid, fog: m.fog };
         }
-        var rev = {};
+        var rev = {}, cells = {};
         if (m.live) rev[m.live] = m.revealed || [];
-        return cleanMaps({ live: m.live, revealed: rev, grid: m.grid, fog: m.fog });
+        if (m.live && typeof m.cells === "string") cells[m.live] = m.cells;
+        return cleanMaps({ live: m.live, revealed: rev, cells: cells, grid: m.grid, fog: m.fog, pic: m.pic === true });
       }
       var p = lsGet(K_PLAY, null);
       return cleanMaps(p && typeof p === "object" ? p.maps : null);

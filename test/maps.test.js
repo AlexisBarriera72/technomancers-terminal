@@ -118,6 +118,23 @@ function dataChecks(R) {
   }));
   R.eq("a tap in the middle of an area finds an area", miss, []);
 
+  // Painted pictures (mapart.js): each belongs to a map, its files exist,
+  // and its shape is near its grid's (squares within a fifth of square).
+  const artWin = {};
+  new Function("window", fs.readFileSync(path.join(ROOT, "mapart.js"), "utf8"))(artWin);
+  const art = artWin.TTMAPART || {}, artBad = [];
+  Object.keys(art).forEach(id => {
+    const a = art[id];
+    if (ids.indexOf(id) < 0) artBad.push(id + " is no map");
+    if (!a.grid && !a.plain) artBad.push(id + " has no picture");
+    if (a.grid && !fs.existsSync(path.join(ROOT, "maps", "art", id + "-grid.webp"))) artBad.push(id + "-grid.webp missing");
+    if (a.plain && !fs.existsSync(path.join(ROOT, "maps", "art", id + ".webp"))) artBad.push(id + ".webp missing");
+    const squash = (a.h * a.cols) / (a.w * a.rows);
+    if (!(squash > 0.8 && squash < 1.25)) artBad.push(id + ": " + a.w + "x" + a.h + " px doesn't fit " + a.cols + "x" + a.rows + " squares");
+  });
+  R.check("there are painted pictures", Object.keys(art).length >= 2, String(Object.keys(art).length));
+  R.eq("every painted picture belongs to a map, exists, and fits its grid", artBad, []);
+
   // The files in maps/ are what the tool writes today.
   const stale = [];
   maps.forEach(m => tool.VERSIONS.forEach(v => {
@@ -144,6 +161,13 @@ async function screenChecks(R, browser) {
     await sel.waitForTimeout(80);
   };
   await goMaps();
+
+  // A map with a painted picture opens on it. The plan's checks come first.
+  R.eq("a map with a painted picture opens on the picture, gridded",
+    await page.evaluate(() => { const i = document.querySelector(".map-view image"); return i && i.getAttribute("href"); }),
+    "maps/art/s1-chapel-grid.webp");
+  await page.getByRole("button", { name: "Picture", exact: true }).click();
+  R.eq("Picture off draws the plan", await page.locator(".map-view image").count(), 0);
 
   // With nothing chosen it opens on the first scene's map.
   R.eq("the Maps screen draws the current scene's map",
@@ -216,6 +240,35 @@ async function screenChecks(R, browser) {
   await page.waitForTimeout(1150);
   await page.mouse.up();
   R.eq("holding it for a second brings the GM screen back", await page.locator(".mapview").count(), 0);
+
+  // The painted picture: square-by-square fog, the grid switch picks the version.
+  await page.getByRole("button", { name: "Picture", exact: true }).click();
+  await page.getByRole("button", { name: /^(Show players this map|Players see this map)$/ }).click();
+  const pv2 = await ctx.newPage();
+  pv2.on("pageerror", e => errors.push("player screen: " + e.message));
+  await pv2.goto(FILE_URL + "#mapview");
+  await pv2.waitForSelector(".mapview svg image", { timeout: 3000 }).catch(() => {});
+  const fogRects = () => pv2.evaluate(() => document.querySelectorAll(".mapview .fog rect").length);
+  R.eq("the player screen shows the picture, all fogged", [await pv2.evaluate(() => {
+    const i = document.querySelector(".mapview svg image"); return i && i.getAttribute("href"); }), await fogRects()],
+    ["maps/art/s1-chapel-grid.webp", 32]);
+  await page.locator(".map-view").scrollIntoViewIfNeeded();
+  const vb2 = await page.locator(".map-view").boundingBox();
+  await page.mouse.click(vb2.x + vb2.width / 2, vb2.y + vb2.height / 2);
+  await page.waitForTimeout(100);
+  const cells = await page.evaluate(() => window.TTGM.mapsState().cells["s1-chapel"] || "");
+  R.check("a tap on the picture reveals one square", cells.replace(/A/g, "").length === 1, cells);
+  await pv2.waitForFunction(() => document.querySelectorAll(".mapview .fog rect").length > 32, null, { timeout: 3000 }).catch(() => {});
+  R.check("and the player screen opens it", await fogRects() > 32, String(await fogRects()));
+  R.eq("the plan's fog is separate", await shown(), "{}");
+  await page.getByRole("button", { name: "Grid", exact: true }).click();
+  await pv2.waitForTimeout(200);
+  R.eq("grid off shows the picture without its grid", await pv2.evaluate(() =>
+    document.querySelector(".mapview svg image").getAttribute("href")), "maps/art/s1-chapel.webp");
+  await page.getByRole("button", { name: "Grid", exact: true }).click();
+  R.eq("the picture can be downloaded", await page.locator('.map-dl a[href="maps/art/s1-chapel.webp"]').count(), 1);
+  await pv2.close();
+  await page.getByRole("button", { name: "Picture", exact: true }).click();
 
   // From the Story screen: a scene's map button opens that map here.
   await page.evaluate(() => { const T = window.TT; T.gmSec(5); T.render(); });

@@ -1734,7 +1734,14 @@ window.TTES.ui = {
   "Added. Now set the squares so the grid lines up with the picture": "Añadido. Ahora ajusta las casillas para que la cuadrícula coincida con la imagen",
   "This browser won't store pictures (private window?)": "Este navegador no guarda imágenes (¿ventana privada?)",
   "Sending the map to the table: {0} of {1}": "Enviando el mapa a la mesa: {0} de {1}",
-  "No live table": "No hay mesa en directo"
+  "No live table": "No hay mesa en directo",
+  "Picture": "Imagen",
+  "Painted picture": "Imagen pintada",
+  "Drawn plan": "Plano dibujado",
+  "The key, for the drawn plan": "La leyenda, del plano dibujado",
+  "The picture has its own layout, so its fog is by the square. Turn Picture off to reveal the plan room by room.": "La imagen tiene su propia distribución, así que su niebla va por casillas. Desactiva Imagen para revelar el plano sala por sala.",
+  "Picture with grid": "Imagen con cuadrícula",
+  "Picture without grid": "Imagen sin cuadrícula"
 };
 
 /* Patterns, for text the application builds from the data. Enumerating every

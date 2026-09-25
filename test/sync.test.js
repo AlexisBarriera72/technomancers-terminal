@@ -62,7 +62,7 @@ async function apiChecks(R) {
   const withImg = (await call("GET", "/api/room?code=" + code)).body;
   R.eq("the map says which picture and its fog, and the poll carries no picture",
     [withImg.map.img, withImg.map.cells, JSON.stringify(withImg).indexOf("AAAAAAAAAA")],
-    [{ id: "u-abcd1", cols: 20, rows: 15, parts: 1, ver: "1" }, "AB-_", -1]);
+    [{ id: "u-abcd1", cols: 20, rows: 15, parts: 1, ver: "1", pxW: 0, pxH: 0 }, "AB-_", -1]);
   R.eq("ending needs the GM's key", (await call("POST", "/api/room", { op: "end", code, gmKey: "guess" })).status, 403);
   await call("POST", "/api/room", { op: "end", code, gmKey });
   R.eq("an ended table is gone", (await call("GET", "/api/room?code=" + code)).status, 404);
@@ -152,7 +152,11 @@ async function tableChecks(R, browser) {
     const ipad = await device("ipad", URL0 + "#mapview=" + code, { width: 1180, height: 820 });
     R.check("the table's screen joins and waits for the GM", await until(ipad, () => !!document.querySelector(".mapview-room")), "");
     await gm.evaluate(() => { const T = window.TT; T.gmSec(9); T.render(); });
+    // the chapel has a painted picture; it reaches the iPad from the site itself
     await gm.getByRole("button", { name: "Show players this map" }).click();
+    R.check("a painted picture reaches the iPad",
+      await until(ipad, () => { const i = document.querySelector(".mapview svg image"); return i && /maps\/art\/s1-chapel/.test(i.getAttribute("href")); }), "");
+    await gm.getByRole("button", { name: "Picture", exact: true }).click();
     R.check("the map the GM sends appears on the iPad",
       await until(ipad, () => { const s = document.querySelector(".mapview svg"); return s && s.getAttribute("data-map") === "s1-chapel"; }), "");
     R.eq("with no key letters on it", await ipad.locator(".mapview g.key").count(), 0);

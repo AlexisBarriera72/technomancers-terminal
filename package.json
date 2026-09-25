@@ -9,8 +9,9 @@
     "test:browser": "node test/run.js browser",
     "test:sw": "node test/run.js sw",
     "maps": "node tools/render-maps.js",
+    "art": "node tools/map-art.js",
     "serve": "node tools/serve.js",
-    "check": "node --check app/core.js && node --check app/i18n.js && node --check app/rules.js && node --check app/magic.js && node --check spells.js && node --check app/guide.js && node --check app/forge.js && node --check app/sheet.js && node --check app/print.js && node --check app/codex.js && node --check app/boot.js && node --check gm.js && node --check srd.js && node --check synergy.js && node --check story.js && node --check city.js && node --check sync.js && node --check api/room.js && node --check api/_store.js && node --check mapdraw.js && node --check maps.js && node --check tools/render-maps.js && node --check tools/serve.js && node --check es-ui.js && node --check es-book.js && node --check sw.js && node --check campaigns.js && node test/no-abs-paths.js && node test/no-em-dash.js"
+    "check": "node --check app/core.js && node --check app/i18n.js && node --check app/rules.js && node --check app/magic.js && node --check spells.js && node --check app/guide.js && node --check app/forge.js && node --check app/sheet.js && node --check app/print.js && node --check app/codex.js && node --check app/boot.js && node --check gm.js && node --check srd.js && node --check synergy.js && node --check story.js && node --check city.js && node --check sync.js && node --check api/room.js && node --check api/_store.js && node --check mapdraw.js && node --check maps.js && node --check mapart.js && node --check tools/map-art.js && node --check tools/render-maps.js && node --check tools/serve.js && node --check es-ui.js && node --check es-book.js && node --check sw.js && node --check campaigns.js && node test/no-abs-paths.js && node test/no-em-dash.js"
   },
   "devDependencies": {
     "playwright": "^1.48.0"
