@@ -30,7 +30,7 @@ var esc = function (s) {
 /* Bumped by hand on every deploy, there is no build step, and a commit
    cannot contain its own hash. Shown in the masthead so "did my change go
    live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-var BUILD = "2026-09-26 15:00";
+var BUILD = "2026-09-27 12:00";
 var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
 var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                   Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -202,7 +202,7 @@ try { gmOn = localStorage.getItem("ttb.gm") === "1"; } catch (e) {}
 var CODEX = ["Subclasses", "Backgrounds", "Feats", "Fighting Styles",
              "Warlock Invocations", "Artificer Infusions", "Cyberware",
              "Augments", "Reference Tables",
-             "Expansion Classes", "Humanity & Cred", "Origins", "Glossary"];
+             "Expansion Classes", "Humanity & Cred", "Origins", "Glossary", "Spells"];
 
 /* ------------------------------------------------------------ persistence */
 var LS = "ttb.character.v1";

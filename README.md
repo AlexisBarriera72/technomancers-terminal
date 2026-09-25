@@ -253,6 +253,38 @@ street knows, 12,000–24,000 for one with a name. So a mid job buys each player
 about a Tier 1 implant, a top job about a Tier 2, and Tier 3 is something to
 save up for.
 
+### Spells
+
+The book reuses the Player's Handbook classes and never reprints Spellcasting,
+so the nine casters (Artificer, Bard, Cleric, Druid, Paladin, Ranger, Sorcerer,
+Warlock, Wizard) get it from the SRD 5.1 instead: `spells.js` holds its 319
+spells, rules unchanged, and the slot table for each class. `app/magic.js`
+does the rest:
+
+- **The numbers.** Spell save DC, spell attack, slots per level, cantrips,
+  spells known or prepared (Wizards keep a spellbook and prepare from it,
+  Warlocks get pact slots and Mystic Arcanum). Artificer isn't in the SRD: it
+  gets the half-caster table rounded up and a list drawn from SRD spells.
+- **Choosing.** A Spells section on the Level-ups step, filtered to the
+  class's list and the levels the character can cast. Archetype spell tables
+  are read from the book: domain and oath spells are always prepared, a
+  patron's expanded list widens the picker. A spell the SRD lacks can be added
+  by name.
+- **Playing.** The play sheet shows the DC, tappable slot boxes with Short
+  rest and Long rest, and a card per spell with a Cast button that spends the
+  right slot (or a higher one). Spells also go on the turn cards by what they
+  cost, and into the Markdown and the printed sheet. The Codex has a Spells
+  section by class and level.
+
+A campaign can dress them with a `magic` block, and Cathedra does: house rules
+for how magic works in the city, how each class's casting looks, a street name
+and a look for about 90 SRD spells (Fireball is *Ichor Bloom*), and 19 spells
+of its own tied to the story (The Lullaby, Ledger Mark, Sanctuary Static, The
+Eye Opens…). Those are words and new spells only; no SRD rule changes. A spell
+marked `gm: 1` (The Sending) stays off every list until the GM tells a player
+to type its name onto the sheet. Spell names and rules text stay English in
+Spanish, like the book's names.
+
 ## Where characters are stored
 
 In the visitor's browser (`localStorage`). Sharing works by encoding the

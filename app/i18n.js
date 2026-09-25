@@ -309,6 +309,28 @@ function migrate(c) {
   if (ht) out.hpTemp = ht;
   if (typeof c.hpAt === "number" && isFinite(c.hpAt) && c.hpAt > 0) out.hpAt = c.hpAt;
 
+  // spells: names as written (a book spell the data lacks is still a spell),
+  // what's prepared from them, and the slots spent since the last rest
+  var spellName = function (n) { return typeof n === "string" && n.trim() && n.length <= 60; };
+  if (Array.isArray(c.spells)) {
+    var sl = c.spells.filter(spellName).map(function (n) { return n.trim(); })
+      .filter(function (n, i, a) { return a.indexOf(n) === i; }).slice(0, 120);
+    if (sl.length) out.spells = sl;
+    if (Array.isArray(c.prepared)) {
+      var pr = c.prepared.filter(function (n) { return spellName(n) && sl.indexOf(n.trim()) >= 0; })
+        .map(function (n) { return n.trim(); });
+      if (pr.length) out.prepared = pr;
+    }
+  }
+  if (isPlainObj(c.slotsUsed)) {
+    var su = {};
+    Object.keys(c.slotsUsed).forEach(function (k) {
+      var v = intIn(c.slotsUsed[k], 0, 9);
+      if (/^(?:[1-9]|p|a[6-9])$/.test(k) && v) su[k] = v;
+    });
+    if (Object.keys(su).length) out.slotsUsed = su;
+  }
+
   // --- level-up slots ---------------------------------------------------
   var rawAsi = Array.isArray(c.asi) ? c.asi : [];
   var badSlots = 0;

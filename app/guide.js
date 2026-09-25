@@ -179,6 +179,8 @@ function missingFor(i) {
       var slots = asiSlotCount(), used = asiSlots().filter(function (x) { return x.type; }).length;
       if (used < slots) return (slots - used) + " level-up choice" + (slots - used === 1 ? "" : "s") +
         " waiting, take an ability increase or a feat.";
+      var spt = spellTodo(C);
+      if (spt.length) return "Choose " + spt.map(T).join(", ") + ".";
       var sp = scalingSpec();
       if (sp) {
         var have = ((C.picks && C.picks[sp.spec.key]) || []).length;

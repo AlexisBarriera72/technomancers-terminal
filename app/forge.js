@@ -851,6 +851,9 @@ function stepOptions(s) {
   });
   s.appendChild(sec);
 
+  /* ---- spells (app/magic.js) ---- */
+  spellPicker(s);
+
   /* ---- class picks that scale with level ---- */
   var sp = scalingSpec();
   if (sp) {

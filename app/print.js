@@ -107,6 +107,26 @@ function buildClassic(root) {
   for (var i = weapons.length; i < 4; i++) atk.innerHTML += '<div class="cs-write"></div>';
   c2.appendChild(atk);
 
+  // spells: DC, slots with boxes to tick, and what's ready (app/magic.js)
+  var mst = spellStats(C);
+  if (mst) {
+    var spb = el("div", "cs-box");
+    spb.innerHTML = "<h4>Spells</h4>" +
+      '<div class="cs-line"><span>Save DC · attack</span><span class="b">' + mst.dc + " · " + sgn(mst.atk) + "</span></div>";
+    var boxes = function (n) { return new Array(n + 1).join("☐ "); };
+    if (mst.pact) spb.innerHTML += '<div class="cs-line"><span>Pact slots (' + SPELL_ORD[mst.pact.level] + ')</span><span class="b">' + boxes(mst.pact.n) + "</span></div>";
+    mst.slots.forEach(function (n, ix) {
+      if (n) spb.innerHTML += '<div class="cs-line"><span>' + SPELL_ORD[ix + 1] + '</span><span class="b">' + boxes(n) + "</span></div>";
+    });
+    var ready = castable(C);
+    for (var sl = 0; sl <= 9; sl++) {
+      var here = ready.filter(function (x) { return (x.s ? x.s.l : 1) === sl; });
+      if (here.length) spb.innerHTML += '<div class="cs-line" style="display:block"><span class="b">' +
+        (sl ? SPELL_ORD[sl] : "Cantrips") + ":</span> " + esc(here.map(function (x) { return x.s ? x.s.n : x.name; }).join(", ")) + "</div>";
+    }
+    c2.appendChild(spb);
+  }
+
   if (cl.progression) {
     var row2 = classRow(), res = el("div", "cs-box");
     res.innerHTML = "<h4>" + esc(cl.resource) + " &amp; pools</h4>";

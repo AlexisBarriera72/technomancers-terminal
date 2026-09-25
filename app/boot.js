@@ -593,6 +593,10 @@ window.TT = {
   blockText: blockText, actionType: actionType, actionEntries: actionEntries,
   usageOf: usageOf, toMarkdown: toMarkdown,
   priceOf: priceOf, priceMode: priceMode, spend: function () { return spend(); },
+  // spells (app/magic.js); gm.js reads these for the party cards
+  SPD: SPD, spellStats: spellStats, spellFind: spellFind, spellOptions: spellOptions,
+  spellTally: spellTally, spellTodo: spellTodo, grantedSpells: grantedSpells, castable: castable,
+  spellBuckets: spellBuckets, spellGist: spellGist, spellDress: spellDress,
   // character plumbing
   migrate: migrate, blank: blank, b64u: b64u, unb64u: unb64u, slimChar: slimChar,
   rosterAll: rosterAll, campAll: campAll, campById: campById, campSel: function () { return campSel; },

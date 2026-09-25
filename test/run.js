@@ -12,6 +12,7 @@ const SUITES = {
   story: require("./story.test"),
   city: require("./city.test"),
   player: require("./player.test"),
+  spells: require("./spells.test"),
   maps: require("./maps.test"),
   sync: require("./sync.test"),
   untranslated: require("./untranslated.test")

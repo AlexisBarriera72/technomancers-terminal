@@ -187,6 +187,8 @@ function renderCodex(s) {
       }
       s.appendChild(e);
     });
+  } else if (sec === "Spells") {
+    codexSpells(s);
   } else if (sec === "Reference Tables") {
     codexEntries(D.tables).forEach(function (t) { s.appendChild(renderTable(t)); });
   } else {
@@ -207,6 +209,46 @@ function renderCodex(s) {
     });
   }
   codexEmptyCheck(s, before);
+}
+
+/* Every spell the app knows, by class and level. The SRD's, plus the
+   character's campaign's own when it has any. */
+var codexSpellCls = null, codexSpellLv = null;
+function codexSpells(s) {
+  var casters = Object.keys(SPD.casters).sort();
+  var bar = el("div", "toolbar spell-filter");
+  [null].concat(casters).forEach(function (n) {
+    var b = el("button", "chip" + (codexSpellCls === n ? " on" : ""), n === null ? "Every class" : esc(n));
+    if (n) b.setAttribute("data-nolang", "");
+    b.onclick = function () { codexSpellCls = n; render(); };
+    bar.appendChild(b);
+  });
+  s.appendChild(bar);
+  var lv = el("div", "toolbar spell-filter");
+  [null, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9].forEach(function (l) {
+    var b = el("button", "chip" + (codexSpellLv === l ? " on" : ""), l === null ? "All levels" : l === 0 ? "Cantrips" : SPELL_ORD[l]);
+    b.onclick = function () { codexSpellLv = l; render(); };
+    lv.appendChild(b);
+  });
+  s.appendChild(lv);
+  var own = campSpells(C).filter(function (x) { return !x.gm; });
+  var all = codexEntries(SPD.spells.concat(own)).filter(function (x) {
+    return (codexSpellCls === null || (x.cls || []).indexOf(codexSpellCls) >= 0) &&
+           (codexSpellLv === null || x.l === codexSpellLv);
+  });
+  var cn = el("p", "slot-note");
+  cn.appendChild(el("span", null, all.length + " spells."));
+  if (SPD.meta) { cn.appendChild(document.createTextNode(" ")); cn.appendChild(el("span", null, esc(SPD.meta.note))); }
+  s.appendChild(cn);
+  all.slice().sort(function (a, b) { return a.l - b.l || a.n.localeCompare(b.n); }).forEach(function (x) {
+    s.appendChild(spellCard({ name: x.n, s: x }, null));
+  });
+  if (SPD.meta) {
+    // the licence's own words, kept as written in either language
+    var lic = el("p", "page-ref srd-note", esc(SPD.meta.notice));
+    lic.setAttribute("data-nolang", "");
+    s.appendChild(lic);
+  }
 }
 
 function codexEmptyCheck(s, before) {
@@ -316,7 +358,8 @@ function renderCampaign(s) {
   if (!c) return;
 
   var seg = el("div", "toolbar");
-  var secs = CAMPSEC.concat((c.houses || []).length || (c.districts || []).length ? ["City"] : []);
+  var secs = CAMPSEC.concat((c.houses || []).length || (c.districts || []).length ? ["City"] : [])
+    .concat(c.magic && typeof c.magic === "object" ? ["Magic"] : []);
   if (campSecIx >= secs.length) campSecIx = 0;
   secs.forEach(function (name, i) {
     var b = el("button", "chip" + (i === campSecIx ? " on" : ""), esc(name));
@@ -373,6 +416,9 @@ function renderCampaign(s) {
       });
     }
     s.appendChild(ch);
+
+  } else if (sec === "Magic") {
+    campMagicPage(s, c);
 
   } else if (sec === "Overview") {
     var g = el("div");
@@ -492,4 +538,58 @@ function renderCampaign(s) {
       s.appendChild(ab);
     }
   }
+}
+
+/* The campaign's magic: how it works here, how each class's looks, and the
+   spells only this campaign has. Words only; the sheet uses the same data. */
+function campMagicPage(s, c) {
+  var m = c.magic, box = el("div");
+  (Array.isArray(m.rules) ? m.rules : []).forEach(function (r) {
+    var e = el("div", "entry");
+    e.appendChild(el("div", "entry-head", "<h4>" + esc(r.title || "") + "</h4>"));
+    e.appendChild(el("p", null, esc(r.text || "")));
+    box.appendChild(e);
+  });
+  var looks = m.looks && typeof m.looks === "object" ? Object.keys(m.looks) : [];
+  if (looks.length) {
+    box.appendChild(el("h3", "eyebrow", "How each class's magic looks"));
+    looks.sort().forEach(function (k) {
+      var r = el("div", "trait-line");
+      var kk = el("span", "k"); kk.textContent = k; kk.setAttribute("data-nolang", "");
+      r.appendChild(kk);
+      r.appendChild(document.createTextNode(T(String(m.looks[k]))));
+      box.appendChild(r);
+    });
+  }
+  var own = (Array.isArray(m.spells) ? m.spells : []).filter(function (x) { return x && x.n && !x.gm; });
+  if (own.length) {
+    box.appendChild(el("h3", "eyebrow", "Spells only " + esc(c.name) + " has"));
+    box.appendChild(el("p", "slot-note", "On the class lists shown on each, for any character in this campaign."));
+    own.forEach(function (x) {
+      var sp = Object.assign({ src: "camp" }, x);
+      var card = spellCard({ name: sp.n, s: sp }, null);
+      var who = el("p", "page-ref");
+      who.textContent = (x.cls || []).join(", ");
+      who.setAttribute("data-nolang", "");
+      card.querySelector(".body").appendChild(who);
+      box.appendChild(card);
+    });
+  }
+  var names = m.names && typeof m.names === "object" ? Object.keys(m.names) : [];
+  if (names.length) {
+    box.appendChild(el("h3", "eyebrow", "What the street calls them"));
+    var tb = el("div", "spell-street-list");
+    tb.setAttribute("data-nolang", "");
+    names.sort().forEach(function (k) {
+      var r = el("div", "trait-line");
+      var kk = el("span", "k"); kk.textContent = k;
+      r.appendChild(kk);
+      var v = el("b"); v.textContent = (m.names[k] || [])[0] || "";
+      r.appendChild(v);
+      r.appendChild(document.createTextNode(" " + ((m.names[k] || [])[1] || "")));
+      tb.appendChild(r);
+    });
+    box.appendChild(tb);
+  }
+  s.appendChild(box);
 }

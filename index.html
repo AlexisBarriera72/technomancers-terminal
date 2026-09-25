@@ -784,6 +784,29 @@ td.cost{white-space:nowrap}
 .uplink-pips .pip{width:12px;height:12px;border:1px solid var(--accent);border-radius:2px}
 .uplink-pips .pip.on{background:var(--accent)}
 .uplink-opts{display:flex;gap:6px;flex-wrap:wrap}
+/* spells (app/magic.js) */
+.spells-sec .spell-vitals{margin:4px 0 10px}
+.spells-sec .spell-vitals b{font-family:var(--f-mono);color:var(--ink);margin-left:4px}
+.spell-look{font-style:italic;color:var(--ink-dim);margin:0 0 10px;max-width:70ch}
+.slot-board{margin:6px 0 12px}
+.slot-board .uplink .k{min-width:150px}
+button.pip{padding:0;background:transparent;cursor:pointer;touch-action:manipulation}
+.slot-board .uplink-pips .pip{width:22px;height:22px;border-radius:4px}
+details.spell-card>summary h4{margin-right:0}
+.spell-tags{display:flex;gap:6px;flex-wrap:wrap;align-items:baseline;margin-right:auto}
+.spell-street{font-family:var(--f-mono);font-size:11.5px;color:var(--gold)}
+.spell-gist{flex:1 1 100%;margin:0 0 0 17px;font-size:12.5px;color:var(--ink-dim)}
+.spell-cast{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.spell-cast .btn{padding:5px 10px;font-size:12px}
+.spell-meta{display:flex;gap:4px 14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink-dim);margin:0 0 8px}
+.spell-meta b{color:var(--ink);font-weight:600}
+.spell-school{text-transform:capitalize;color:var(--accent)}
+.spell-filter{align-items:center}
+.spell-filter .search{flex:1 1 200px;margin:0}
+.spell-chosen{margin:6px 0 12px}
+.spell-chosen .chip.on{display:inline-flex;gap:6px;align-items:center}
+.spell-options{max-height:70vh;overflow:auto;border-top:1px solid var(--line-soft);margin-top:8px}
+.srd-note{margin-top:12px;font-size:11px}
 /* city */
 .gm-city-today{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin:14px 0}
 .gm-cal-date{font-family:var(--f-display);font-size:22px;font-weight:600;margin:4px 0 8px}
@@ -1388,6 +1411,7 @@ body.previewing .print-root .sheet-block{background:#fff;margin:0 auto 22px;box-
 <script src="data.js"></script>
 <script src="expansion.js"></script>
 <script src="srd.js"></script>
+<script src="spells.js"></script>
 <script src="es-ui.js"></script>
 <script src="synergy.js"></script>
 <script src="story.js"></script>
@@ -1399,6 +1423,7 @@ body.previewing .print-root .sheet-block{background:#fff;margin:0 auto 22px;box-
 <script src="app/core.js"></script>
 <script src="app/i18n.js"></script>
 <script src="app/rules.js"></script>
+<script src="app/magic.js"></script>
 <script src="app/guide.js"></script>
 <script src="app/forge.js"></script>
 <script src="app/sheet.js"></script>

@@ -160,6 +160,7 @@ function pendingChoices() {
   var sub = mySub(), subs = subsFor(C.cls);
   if (!sub && subs.length && subs[0].levelAvailable <= C.level)
     out.push({ text: "your archetype", step: 1 });
+  spellTodo(C).forEach(function (t) { out.push({ text: t, step: 5 }); });
   return out;
 }
 function levelUpPanel() {
@@ -631,8 +632,8 @@ function hpTracker() {
   var tmp = el("button", "btn", "Set temp HP");
   tmp.onclick = function () { setHp(h.now, val()); };
   var rest = el("button", "btn", "Long rest");
-  rest.title = "Back to full HP, temp HP gone";
-  rest.onclick = function () { setHp(h.max, 0); };
+  rest.title = "Back to full HP, temp HP gone" + (spellStats(C) ? ", spell slots back" : "");
+  rest.onclick = function () { if (spellStats(C)) restSlots(false); setHp(h.max, 0); };
   [dmg, heal, tmp, rest].forEach(function (b) { row.appendChild(b); });
   box.appendChild(row);
   return box;
@@ -700,13 +701,14 @@ function stepSheet(s) {
 
   /* ---- vitals ---- */
   var vs = el("div", "vitals-strip");
-  var dcSpec = CLASS_DC[cl.name];
+  var dcSpec = CLASS_DC[cl.name], mst = spellStats(C);
   [["AC", ac.ac, ac.from],
    ["Hit points", maxHP(), cl.hit + " hit die"],
    ["Initiative", sgn(initiative()), "d20 +"],
    ["Proficiency", sgn(pb), ""],
    ["Speed", "30 ft.", ""],
-   dcSpec ? [dcSpec[1], saveDC().dc, dcSpec[0] + " based"] : null
+   dcSpec ? [dcSpec[1], saveDC().dc, dcSpec[0] + " based"] : null,
+   mst ? ["Spell save DC", mst.dc, "attack " + sgn(mst.atk)] : null
   ].filter(Boolean).forEach(function (v) {
     var x = el("div", "vs");
     x.innerHTML = '<div class="k">' + esc(v[0]) + '</div><div class="v">' + esc(v[1]) +
@@ -784,12 +786,19 @@ function stepSheet(s) {
   if (!any) gdo.appendChild(el("p", "empty-state",
     "Nothing active yet, pick a class and archetype, then raise your level."));
   if (!isExp(cl))
-    gdo.appendChild(el("p", "slot-note",
+    gdo.appendChild(el("p", "slot-note", mst ?
+      "This lists what the Technomancer's Textbook and your choices add, and your spells are in their own section. " +
+      cl.name + "'s other core features come from the Player's Handbook and aren't reproduced here." :
       "This lists what the Technomancer's Textbook and your choices add. " + cl.name +
-      "'s core features, Sneak Attack, Rage, Spellcasting and the rest, come from the " +
+      "'s core features, Sneak Attack, Rage and the rest, come from the " +
       "Player's Handbook and aren't reproduced here, so keep that to hand as well."));
   grid.appendChild(gdo);
-  grid.insertBefore(turnDeck(buckets), gdo);
+  // the turn cards deal in the spells too, sorted by what they cost
+  var deckB = {}, sb = spellBuckets(C);
+  Object.keys(buckets).forEach(function (k) { deckB[k] = buckets[k].concat(sb[k] || []); });
+  grid.insertBefore(turnDeck(deckB), gdo);
+  var spS = spellSection();
+  if (spS) grid.insertBefore(spS, gdo);
   var dp = dronePanel();
   if (dp) grid.insertBefore(dp, gdo.nextSibling);
 
@@ -1038,6 +1047,7 @@ function toMarkdown() {
     });
   });
   L.push("");
+  spellMarkdown().forEach(function (x) { L.push(x); });
   var nx = ladder().filter(function (r) { return r.level > C.level && r.gains.length; })[0];
   if (nx) { L.push("**Next level up:** at " + nx.level + " you gain " + nx.gains.join(", ") + "."); L.push(""); }
 
@@ -1068,5 +1078,6 @@ function toMarkdown() {
   L.push("Built from *" + D.meta.title + "* by " + D.meta.author + ", version " +
     D.meta.version + (srcs.length ? ", with " + srcs.join(" and ") : "") + ".");
   if (sub && sub.origin === "srd" && SRD.meta) L.push("", SRD.meta.notice);
+  else if (spellStats(C) && (C.spells || []).length && SPD.meta) L.push("", SPD.meta.notice);
   return L.join("\n");
 }
