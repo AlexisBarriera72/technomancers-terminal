@@ -518,6 +518,23 @@ on load and on import (`cleanMaps` drops maps and areas that don't exist), go ou
 in the vault, and the demo table opens scene 4's map with the first three areas
 revealed.
 
+#### Your own maps
+
+**Add your own map** on the Maps screen takes any picture (a map generator's
+output, a scan, a phone photo). It is shrunk to 2048 px on the long side as a
+JPEG and kept in this browser's IndexedDB (`ttb-maps`); its name and grid sit
+in `ttb.gm.usermaps`. The GM sets how many squares across and down it has
+(**Match the picture** keeps them square) and whether to draw a grid over it.
+Fog on these is by the square, not by room: tap a square, or pick **Reveals**
+or **Hides** and drag across the map, one square or 3 × 3 at a time. The fog is
+a packed string, six squares a character, in `play.maps.cells`.
+
+At a live table the picture goes up to the room once, cut into 88 KB pieces
+(`op: "img"`, GM key required, kept in their own `tt:img:CODE` hash so the
+two-second polls never carry it), and the iPad fetches the pieces once and
+then follows the fog like any other map. The pictures are not in the vault
+file: keep your originals.
+
 ### Street Cred and what the party is
 
 Two things on the GM's side read the whole table at once, which nothing else in

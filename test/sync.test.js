@@ -48,6 +48,21 @@ async function apiChecks(R) {
     [["Jax"], 20, "s1-chapel", ["nave"], "cathedra", -1]);
   R.eq("asking again with nothing new gets just the version",
     Object.keys((await call("GET", "/api/room?code=" + code + "&since=" + st.v)).body), ["v"]);
+  // the GM's own map pictures: pieces up with the key, back with just the code, never in the poll
+  const piece = "data:image/jpeg;base64," + "A".repeat(1000);
+  R.eq("a picture piece needs the GM's key",
+    (await call("POST", "/api/room", { op: "img", code, gmKey: "guess", id: "u-abcd1", ver: "1", part: 0, data: piece })).status, 403);
+  R.eq("a piece that isn't a data URL is refused",
+    (await call("POST", "/api/room", { op: "img", code, gmKey, id: "u-abcd1", ver: "1", part: 0, data: "<script>" })).status, 413);
+  R.eq("the GM sends a piece", (await call("POST", "/api/room", { op: "img", code, gmKey, id: "u-abcd1", ver: "1", part: 0, data: piece })).status, 200);
+  R.eq("the table's screen fetches it back with just the code",
+    (await call("GET", "/api/room?code=" + code + "&img=u-abcd1&ver=1&part=0")).body.data, piece);
+  R.eq("a piece nobody sent is not found", (await call("GET", "/api/room?code=" + code + "&img=u-abcd1&ver=1&part=1")).status, 404);
+  await call("POST", "/api/room", { op: "map", code, gmKey, map: { live: "u-abcd1", cells: "AB-_", img: { id: "u-abcd1", cols: 20, rows: 15, parts: 1, ver: "1" } } });
+  const withImg = (await call("GET", "/api/room?code=" + code)).body;
+  R.eq("the map says which picture and its fog, and the poll carries no picture",
+    [withImg.map.img, withImg.map.cells, JSON.stringify(withImg).indexOf("AAAAAAAAAA")],
+    [{ id: "u-abcd1", cols: 20, rows: 15, parts: 1, ver: "1" }, "AB-_", -1]);
   R.eq("ending needs the GM's key", (await call("POST", "/api/room", { op: "end", code, gmKey: "guess" })).status, 403);
   await call("POST", "/api/room", { op: "end", code, gmKey });
   R.eq("an ended table is gone", (await call("GET", "/api/room?code=" + code)).status, 404);
@@ -147,6 +162,32 @@ async function tableChecks(R, browser) {
     R.check("a room the GM reveals opens up on the iPad",
       await until(ipad, () => !!document.querySelector('.mapview [data-seen="nave"]')), "");
     R.check("the Maps screen tells the GM how to reach the iPad", /iPad/.test(await gm.locator(".map-other").innerText()), "");
+
+    // The GM brings their own map picture; the iPad gets it, with square-by-square fog.
+    const png = await gm.evaluate(() => {
+      const c = document.createElement("canvas"); c.width = 400; c.height = 300;
+      const x = c.getContext("2d"); x.fillStyle = "#c33"; x.fillRect(0, 0, 400, 300);
+      x.fillStyle = "#3c3"; x.fillRect(100, 60, 200, 150);
+      return c.toDataURL("image/png").split(",")[1];
+    });
+    await gm.locator(".map-pick input[type=file]").setInputFiles({ name: "safehouse.png", mimeType: "image/png", buffer: Buffer.from(png, "base64") });
+    R.check("an own map picture joins the Maps screen",
+      await until(gm, () => /safehouse/.test((document.querySelector(".map-info h3") || {}).textContent || "")), "");
+    const um = await gm.evaluate(() => JSON.parse(localStorage.getItem("ttb.gm.usermaps"))[0]);
+    R.eq("sized from the picture: 20 squares across, rows to match", [um.cols, um.rows, um.pxW, um.pxH], [20, 15, 400, 300]);
+    await gm.getByRole("button", { name: "Show players this map" }).click();
+    R.check("the picture reaches the iPad through the room",
+      await until(ipad, () => !!document.querySelector(".mapview svg image")), "");
+    R.eq("fully fogged until the GM reveals something",
+      await ipad.evaluate(() => document.querySelectorAll(".mapview .fog rect").length), 15);
+    await gm.getByRole("button", { name: "Reveals" }).click();
+    const vb = await gm.locator(".map-view").boundingBox();
+    await gm.mouse.move(vb.x + vb.width / 2, vb.y + vb.height / 2);
+    await gm.mouse.down();
+    await gm.mouse.move(vb.x + vb.width / 2 + 60, vb.y + vb.height / 2, { steps: 6 });
+    await gm.mouse.up();
+    R.check("squares the GM drags across open up on the iPad",
+      await until(ipad, () => document.querySelectorAll(".mapview .fog rect").length > 15), "");
 
     // A wrong code on the iPad says so.
     const other = await device("other", URL0 + "#mapview", { width: 1180, height: 820 });

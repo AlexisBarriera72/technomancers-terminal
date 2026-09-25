@@ -7,12 +7,19 @@
  *   POST /api/room {op:"char", code, id, char}      a player's sheet
  *   POST /api/room {op:"hp", code, id, now, temp}   current HP, the last write wins
  *   POST /api/room {op:"map", code, gmKey, map}     what the table's screen shows
+ *   POST /api/room {op:"img", code, gmKey, id, part, parts, data}
+ *                                                   one piece of the GM's own map image
+ *   GET  /api/room?code=K7Q2MX&img=u-abc&part=0     a piece back, for the table's screen
  *   POST /api/room {op:"end", code, gmKey}          delete the room
  *
  * The code is all a player needs, so anyone at the table (or anyone they tell)
  * can write a sheet into the room; the map and ending the room need the GM's
  * key, which only the GM's browser holds. Rooms hold character sheets and the
  * map's state, nothing else, and are gone 14 days after the last write.
+ *
+ * A map the GM made themselves travels as a JPEG data URL cut into pieces
+ * small enough for one request each. The pieces live in their own hash, not
+ * the room's, so the players' two-second polls never carry an image.
  */
 "use strict";
 const crypto = require("crypto");
@@ -26,6 +33,11 @@ const ALPHA = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // no 0/O, 1/I
 const CODE = /^[A-HJ-NP-Z2-9]{6}$/;
 const ID = /^[\w.-]{1,64}$/;
 const roomKey = code => "tt:room:" + code;
+const imgKey = code => "tt:img:" + code;
+const MAX_PIECE = 90 * 1024;          // under MAX_BODY with room for the envelope
+const MAX_PIECES = 30;                // about 2.6 MB of image
+const MAX_ROOM_PIECES = 240;          // every image the room holds, together
+const DATA_PIECE = /^[A-Za-z0-9+/=:;,.\-]*$/;
 
 class Bad extends Error { constructor(status, msg) { super(msg); this.status = status; } }
 
@@ -80,8 +92,16 @@ function cleanMap(m) {
     live: typeof m.live === "string" && ID.test(m.live) ? m.live : null,
     revealed: (Array.isArray(m.revealed) ? m.revealed : [])
       .filter(x => typeof x === "string" && ID.test(x)).slice(0, 300),
-    grid: m.grid !== false, fog: m.fog !== false
+    grid: m.grid !== false, fog: m.fog !== false,
+    // a GM's own map: its fog is a packed bitset, one bit a square
+    cells: typeof m.cells === "string" && /^[A-Za-z0-9_-]{0,4000}$/.test(m.cells) ? m.cells : null,
+    img: cleanImgMeta(m.img)
   };
+}
+function cleanImgMeta(x) {
+  if (!x || typeof x !== "object" || typeof x.id !== "string" || !ID.test(x.id)) return null;
+  return { id: x.id, cols: int(x.cols, 1, 200), rows: int(x.rows, 1, 200), parts: int(x.parts, 1, MAX_PIECES),
+           ver: typeof x.ver === "string" && ID.test(x.ver) ? x.ver : "1" };
 }
 
 async function roomMeta(s, code) {
@@ -126,6 +146,16 @@ async function handle(req, res) {
     const code = url.searchParams.get("code");
     if (!code) return send(res, 200, { ok: !!s, store: s ? s.kind : null });
     if (!s) throw new Bad(503, "not-set-up");
+    const img = url.searchParams.get("img");
+    if (img) {
+      await roomMeta(s, code.toUpperCase());
+      const part = int(url.searchParams.get("part"), 0, MAX_PIECES - 1);
+      const ver = url.searchParams.get("ver") || "1";
+      if (!ID.test(img) || part === null || !ID.test(ver)) throw new Bad(400, "bad piece");
+      const data = await s.hget(imgKey(code.toUpperCase()), img + ":" + ver + ":" + part);
+      if (data === null || data === undefined) throw new Bad(404, "no such piece");
+      return send(res, 200, { data });
+    }
     return send(res, 200, await state(s, code.toUpperCase(), url.searchParams.get("since")));
   }
   if (req.method !== "POST") throw new Bad(405, "GET or POST");
@@ -163,9 +193,19 @@ async function handle(req, res) {
     const hp = { now: b.now == null ? null : int(b.now, 0, 9999), temp: int(b.temp, 0, 9999) || 0, at };
     return send(res, 200, { v: await write(s, code, { ["hp:" + b.id]: JSON.stringify(hp) }) });
   }
-  if (b.op === "map" || b.op === "end") {
+  if (b.op === "map" || b.op === "end" || b.op === "img") {
     if (!sameKey(b.gmKey, meta.gmKey)) throw new Bad(403, "only the GM can do that");
-    if (b.op === "end") { await s.del(roomKey(code)); return send(res, 200, { ended: true }); }
+    if (b.op === "end") { await s.del(roomKey(code)); await s.del(imgKey(code)); return send(res, 200, { ended: true }); }
+    if (b.op === "img") {
+      const part = int(b.part, 0, MAX_PIECES - 1), ver = typeof b.ver === "string" && ID.test(b.ver) ? b.ver : "1";
+      if (typeof b.id !== "string" || !ID.test(b.id) || part === null) throw new Bad(400, "bad piece");
+      if (typeof b.data !== "string" || b.data.length > MAX_PIECE || !DATA_PIECE.test(b.data)) throw new Bad(413, "piece too big");
+      const k = imgKey(code), field = b.id + ":" + ver + ":" + part;
+      if (!(await s.hget(k, field)) && (await s.hlen(k)) >= MAX_ROOM_PIECES) throw new Bad(409, "too many images");
+      await s.hset(k, { [field]: b.data });
+      await s.expire(k, TTL);
+      return send(res, 200, { ok: true });
+    }
     return send(res, 200, { v: await write(s, code, { map: JSON.stringify(cleanMap(b.map)) }) });
   }
   throw new Bad(400, "unknown op");

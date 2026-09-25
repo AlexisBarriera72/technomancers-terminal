@@ -173,6 +173,46 @@
     later("map", 300, function () { request("POST", body); });
   }
 
+  /* ---- the GM's own map images, in pieces -----------------------------
+     One request per piece, one after another: a phone hotspot copes with
+     that, and a failed piece is retried rather than the whole image. */
+  var PIECE = 88 * 1024;
+  function piecesOf(data) {
+    var out = [];
+    for (var i = 0; i < data.length; i += PIECE) out.push(data.slice(i, i + PIECE));
+    return out;
+  }
+  function pushImage(id, ver, data, progress) {
+    var r = slot("gm");
+    if (!r.code || !r.gmKey) return Promise.resolve({ error: "No live table" });
+    var parts = piecesOf(data), code = r.code, key = r.gmKey;
+    function send(i, tries) {
+      if (i >= parts.length) return Promise.resolve({ parts: parts.length });
+      return request("POST", { op: "img", code: code, gmKey: key, id: id, ver: ver, part: i, data: parts[i] })
+        .then(function (res) {
+          if (res.status === 200) { if (progress) progress(i + 1, parts.length); return send(i + 1, 0); }
+          if (tries < 2 && (res.status === 0 || res.status >= 500)) return send(i, tries + 1);
+          return { error: why(res) };
+        });
+    }
+    return send(0, 0);
+  }
+  function fetchImage(role, id, ver, parts) {
+    var r = slot(role), got = [];
+    if (!r.code) return Promise.resolve(null);
+    var code = r.code;
+    function get(i, tries) {
+      if (i >= parts) return Promise.resolve(got.join(""));
+      return request("GET", null, "code=" + code + "&img=" + encodeURIComponent(id) + "&ver=" +
+        encodeURIComponent(ver) + "&part=" + i).then(function (res) {
+        if (res.status === 200 && typeof res.data.data === "string") { got.push(res.data.data); return get(i + 1, 0); }
+        if (tries < 2 && res.status !== 404) return get(i, tries + 1);
+        return null;
+      });
+    }
+    return get(0, 0);
+  }
+
   function on(role, fn) {
     var r = slot(role);
     r.subs.push(fn);
@@ -190,6 +230,6 @@
   root.TTSYNC = {
     available: available, ping: ping, create: create, end: end, join: join, leave: leave,
     status: status, on: on, resume: resume, pushChar: pushChar, pushHp: pushHp, pushMap: pushMap,
-    cleanCode: cleanCode
+    pushImage: pushImage, fetchImage: fetchImage, piecesOf: piecesOf, cleanCode: cleanCode
   };
 })(window);

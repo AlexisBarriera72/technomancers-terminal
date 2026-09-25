@@ -30,7 +30,7 @@ var esc = function (s) {
 /* Bumped by hand on every deploy, there is no build step, and a commit
    cannot contain its own hash. Shown in the masthead so "did my change go
    live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-var BUILD = "2026-09-27 12:00";
+var BUILD = "2026-09-27 16:00";
 var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
 var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                   Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
