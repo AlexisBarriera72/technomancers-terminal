@@ -5229,6 +5229,7 @@ window.TTGM = (function () {
   var SYNC = window.TTSYNC || null;
   var liveHooked = false, livePending = false, liveErr = "";
   var hpSeen = {};                              // id -> the room's stamp on the last HP we took in
+  var liveSeen = {};                            // room code -> ids its sheets have had
   function liveCode() { return SYNC ? SYNC.status("gm").code : null; }
   function liveLink(kind) {
     return location.origin + location.pathname + "#" + kind + "=" + liveCode();
@@ -5273,6 +5274,16 @@ window.TTGM = (function () {
     liveErr = "";
     var changed = false, byId = {};
     partyAll().forEach(function (r) { byId[r.id] = r; });
+    // A sheet that was in this room and has gone moved to a new id (two
+    // players had the same one): its old card goes too. Cards from earlier
+    // tables are never touched, only ids seen in this room.
+    var seen = liveSeen[liveCode()] || (liveSeen[liveCode()] = {}), now = {};
+    (data.chars || []).forEach(function (x) { if (x && x.id) now[x.id] = seen[x.id] = 1; });
+    Object.keys(seen).forEach(function (id) {
+      if (now[id]) return;
+      delete seen[id];
+      if (byId[id] && byId[id].source === "live") { partyDrop(id); delete byId[id]; changed = true; }
+    });
     (data.chars || []).forEach(function (x) {
       var c = T.migrate(x.char);
       if (!c || !c.id || !c.cls) return;

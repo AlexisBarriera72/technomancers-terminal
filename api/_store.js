@@ -42,6 +42,7 @@ function upstash(url, token) {
     },
     hincrby: (k, f, n) => run(["HINCRBY", k, f, String(n)]),
     hlen: k => run(["HLEN", k]),
+    hdel: (k, ...f) => run(["HDEL", k, ...f]),
     expire: (k, s) => run(["EXPIRE", k, String(s)]),
     del: k => run(["DEL", k])
   };
@@ -66,6 +67,7 @@ function memory() {
       return parseInt(h[f], 10);
     },
     hlen: async k => { const h = live(k); return h ? Object.keys(h).length : 0; },
+    hdel: async (k, ...f) => { const h = live(k); if (!h) return 0; let n = 0; f.forEach(x => { if (x in h) { delete h[x]; n++; } }); return n; },
     expire: async (k, s) => { if (data.has(k)) until.set(k, Date.now() + s * 1000); return 1; },
     del: async k => { data.delete(k); until.delete(k); return 1; }
   };

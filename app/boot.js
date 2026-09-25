@@ -268,7 +268,7 @@ function saveToRoster() {
   if (!C.name) { toast("Name your operator first"); var n = $("#charName"); if (n) n.focus(); return; }
   if (C.isShared) {
     delete C.isShared;
-    C.id = "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    C.id = newCharId();
     clearShareHash();
     save();
   }
@@ -646,6 +646,12 @@ function liveStart() {
   var S = window.TTSYNC;
   if (!S) return;
   S.on("player", onPlayerSync);
+  // another player at the table has a character with this id: take a new one
+  S.onIdTaken(function (id) {
+    if (!C || C.id !== id || C.isExample || C.isShared) return;
+    C.id = newCharId();
+    save();
+  });
   S.resume();
   // a player who already joined pushes this sheet once on load, in case it changed offline
   if (S.status("player").code && !C.isExample && !C.isShared) S.pushChar(slimChar(C));
@@ -682,6 +688,7 @@ function init() {
     setTimeout(function () { toast("Shared character, Save to roster to keep it"); }, 400);
   } else {
     C = load() || migrate(example());
+    if (C.id === "example" && !C.isExample) save();   // an old save built over the example: give it its own id
   }
   // Reloading the tablet mid-session should land back where you were.
   if (gmOn && !shared && !unlocked && window.TTGM && window.TTGM.lastMode &&

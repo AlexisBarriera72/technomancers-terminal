@@ -30,7 +30,7 @@ var esc = function (s) {
 /* Bumped by hand on every deploy, there is no build step, and a commit
    cannot contain its own hash. Shown in the masthead so "did my change go
    live?" is answerable at a glance. Bump CACHE in sw.js alongside it. */
-var BUILD = "2026-09-28 10:00";
+var BUILD = "2026-09-28 14:00";
 var ABIL = ["Str", "Dex", "Con", "Int", "Wis", "Cha"];
 var ABIL_FULL = { Str: "Strength", Dex: "Dexterity", Con: "Constitution",
                   Int: "Intelligence", Wis: "Wisdom", Cha: "Charisma" };
@@ -154,9 +154,12 @@ function tiersOf(entry) {
 }
 
 /* ------------------------------------------------------------- character */
+function newCharId() {
+  return "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+}
 function blank() {
   return {
-    id: "c" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    id: newCharId(),
     name: "", level: 3, cls: null, method: "pointbuy",
     scores: { Str: 8, Dex: 8, Con: 8, Int: 8, Wis: 8, Cha: 8 },
     rolled: null, arrayMap: {}, skills: [], bgPicks: [], techSwap: false, techReplaces: null,

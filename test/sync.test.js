@@ -29,6 +29,25 @@ async function apiChecks(R) {
   R.eq("a code nobody made is not found", (await call("GET", "/api/room?code=ZZZZZZ")).status, 404);
   R.eq("a player writes their sheet with just the code",
     (await call("POST", "/api/room", { op: "char", code, id: "p1", char: { name: "Jax" } })).status, 200);
+  // Two players whose characters share an id: the first device keeps it.
+  {
+    const room2 = (await call("POST", "/api/room", { op: "create" })).body.code;
+    const put = (id, dev, name, drop) => call("POST", "/api/room", { op: "char", code: room2, id, dev, drop, char: { name } });
+    R.eq("a device writes its sheet", (await put("same", "devaaaaaaaa1", "Ash")).status, 200);
+    const taken = await put("same", "devbbbbbbbb2", "Bex");
+    R.eq("another device with the same character id is told to take a new one", [taken.status, taken.body.error], [409, "id taken"]);
+    R.eq("the first device can still update it", (await put("same", "devaaaaaaaa1", "Ash 2")).status, 200);
+    await put("fresh", "devbbbbbbbb2", "Bex");
+    await put("moved", "devaaaaaaaa1", "Ash", "same");
+    await put("sneaky", "devbbbbbbbb2", "Bex", "moved");
+    const ids = (await call("GET", "/api/room?code=" + room2)).body.chars.map(x => x.id).sort();
+    R.eq("a device's old id goes when it moves, and nobody can drop another device's sheet", ids, ["fresh", "moved", "sneaky"]);
+    // an old room where two players both wrote "example", before devices were told apart
+    await call("POST", "/api/room", { op: "char", code: room2, id: "example", char: { name: "Old" } });
+    await put("rook1", "devcccccccc3", "Rook", "example");
+    R.eq("the shared example sheet is cleared once a player moves off it",
+      (await call("GET", "/api/room?code=" + room2)).body.chars.map(x => x.id).indexOf("example"), -1);
+  }
   R.eq("a sheet too big for the room is refused",
     (await call("POST", "/api/room", { op: "char", code, id: "p2", char: { notes: "x".repeat(70000) } })).status, 413);
   R.eq("a body too big for anything is refused",
@@ -120,6 +139,26 @@ async function tableChecks(R, browser) {
       .some(r => r.id === "p-jax" && r.level === lv && r.source === "live"), lv);
     R.check("their sheet shows up on the GM's screen", await gmHas(4), "");
 
+    // Two more players who built over the example character (one fixed id on
+    // every device): all three must show up, none replacing another.
+    for (const nm of ["Rook", "Vesper"]) {
+      const p = await device("phone-" + nm, URL0, { width: 390, height: 844 });
+      await p.evaluate(nm => {
+        const c = window.TT.migrate({ id: "example", name: nm, level: 3, cls: "Rogue", bg: "hacker" });
+        delete c.isExample;
+        localStorage.setItem("ttb.character.v1", JSON.stringify(c));
+      }, nm);
+      await p.goto(URL0 + "?fresh#join=" + code);
+      await until(p, () => /On the GM's screen/.test((document.querySelector(".live-box") || {}).textContent || ""));
+    }
+    const three = await until(gm, () => {
+      const live = JSON.parse(localStorage.getItem("ttb.gm.party") || "[]").filter(r => r.source === "live");
+      return ["Jax", "Rook", "Vesper"].every(n => live.some(r => r.name === n)) &&
+        new Set(live.map(r => r.id)).size === live.length && !live.some(r => r.id === "example");
+    });
+    R.check("players who built over the example all show up, each with their own id", three,
+      await gm.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem("ttb.gm.party") || "[]").map(r => [r.id, r.name]))));
+
     // They level up and buy something; the GM sees it without asking.
     await phone.evaluate(() => { const r = document.querySelector("#levelRange"); r.value = "5"; r.dispatchEvent(new Event("input")); r.dispatchEvent(new Event("change")); });
     await phone.evaluate(() => {
@@ -137,8 +176,9 @@ async function tableChecks(R, browser) {
     await gm.evaluate(() => { const T = window.TT; T.gmSec(1); T.render(); });
     await gm.getByRole("button", { name: "+ Party" }).click();
     await gm.waitForTimeout(150);
-    const max = await gm.evaluate(() => JSON.parse(localStorage.getItem("ttb.gm.play")).enc.combatants[0].hpMax);
-    await gm.locator(".gm-cb .hpbtn.dmg", { hasText: "-5" }).first().click();
+    const jaxCb = () => JSON.parse(localStorage.getItem("ttb.gm.play")).enc.combatants.filter(c => c.ref === "p-jax")[0];
+    const max = await gm.evaluate(jaxCb => new Function("return (" + jaxCb + ")()")().hpMax, jaxCb.toString());
+    await gm.locator(".gm-cb", { hasText: "Jax" }).locator(".hpbtn.dmg", { hasText: "-5" }).first().click();
     R.check("damage the GM deals shows on the player's sheet",
       await until(phone, m => JSON.parse(localStorage.getItem("ttb.character.v1")).hpNow === m - 5, max), String(max));
     // The player heals on their phone; the GM's encounter follows.
@@ -146,7 +186,7 @@ async function tableChecks(R, browser) {
     await phone.evaluate(() => [...document.querySelectorAll(".rail .step")].find(b => /Play/i.test(b.textContent)).click());
     await phone.getByRole("button", { name: "Heal 1" }).click();
     R.check("healing on the phone shows in the GM's encounter",
-      await until(gm, m => JSON.parse(localStorage.getItem("ttb.gm.play")).enc.combatants[0].hp === m - 4, max), "");
+      await until(gm, m => JSON.parse(localStorage.getItem("ttb.gm.play")).enc.combatants.filter(c => c.ref === "p-jax")[0].hp === m - 4, max), "");
 
     // The iPad in the middle of the table joins with the map link.
     const ipad = await device("ipad", URL0 + "#mapview=" + code, { width: 1180, height: 820 });

@@ -4,7 +4,9 @@
  *   GET  /api/room                     is sync set up here?   {ok, store}
  *   GET  /api/room?code=K7Q2MX&since=5 the room, or just {v} if nothing changed
  *   POST /api/room {op:"create", campaign}          -> {code, gmKey}
- *   POST /api/room {op:"char", code, id, char}      a player's sheet
+ *   POST /api/room {op:"char", code, id, char, dev, drop?}
+ *                                                   a player's sheet; dev says which device
+ *                                                   wrote it, drop an id this device used before
  *   POST /api/room {op:"hp", code, id, now, temp}   current HP, the last write wins
  *   POST /api/room {op:"map", code, gmKey, map}     what the table's screen shows
  *   POST /api/room {op:"img", code, gmKey, id, part, parts, data}
@@ -179,10 +181,21 @@ async function handle(req, res) {
   if (b.op === "char") {
     if (typeof b.id !== "string" || !ID.test(b.id)) throw new Bad(400, "bad id");
     if (!b.char || typeof b.char !== "object" || Array.isArray(b.char)) throw new Bad(400, "no sheet");
-    const sheet = JSON.stringify({ char: b.char, at: Date.now() });
-    if (sheet.length > MAX_SHEET) throw new Bad(413, "sheet too big");
+    // Two players with the same character id (both built over the example,
+    // or both loaded one file) would overwrite each other. The first device
+    // to write an id keeps it; another device is told to take a new one.
+    const dev = typeof b.dev === "string" && /^[a-z0-9]{8,40}$/.test(b.dev) ? b.dev : null;
     const k = roomKey(code);
-    if (!(await s.hget(k, "char:" + b.id))) {
+    const prev = parse(await s.hget(k, "char:" + b.id));
+    if (prev && prev.dev && dev && prev.dev !== dev) throw new Bad(409, "id taken");
+    const sheet = JSON.stringify({ char: b.char, at: Date.now(), dev });
+    if (sheet.length > MAX_SHEET) throw new Bad(413, "sheet too big");
+    // the id this device wrote before, if it changed: gone, unless another device owns it
+    if (typeof b.drop === "string" && ID.test(b.drop) && b.drop !== b.id) {
+      const old = parse(await s.hget(k, "char:" + b.drop));
+      if (old && (!old.dev || old.dev === dev)) await s.hdel(k, "char:" + b.drop, "hp:" + b.drop);
+    }
+    if (!prev) {
       const n = Object.keys(await s.hgetall(k) || {}).filter(f => f.indexOf("char:") === 0).length;
       if (n >= MAX_CHARS) throw new Bad(409, "table full");
     }

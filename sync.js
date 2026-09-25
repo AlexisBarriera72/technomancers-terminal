@@ -148,13 +148,46 @@
     clearTimeout(pending[key]);
     pending[key] = setTimeout(function () { delete pending[key]; fn(); }, ms);
   }
+  /* This device, so the room can tell two players apart even when their
+     characters share an id, and the id this device last wrote there. */
+  function deviceId() {
+    var k = "ttb.sync.device", v = null;
+    try { v = localStorage.getItem(k); } catch (e) {}
+    if (!/^[a-z0-9]{8,40}$/.test(v || "")) {
+      v = (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2)).slice(0, 24);
+      try { localStorage.setItem(k, v); } catch (e) {}
+    }
+    return v;
+  }
+  function lastCharId(code, id) {
+    var k = "ttb.sync.lastchar";
+    try {
+      var o = JSON.parse(localStorage.getItem(k) || "null") || {};
+      if (id === undefined) return o.code === code ? o.id : null;
+      localStorage.setItem(k, JSON.stringify({ code: code, id: id }));
+    } catch (e) {}
+    return null;
+  }
+  var idTakenSubs = [];
+  function onIdTaken(fn) { idTakenSubs.push(fn); }
   function pushChar(c) {
     var r = slot("player");
     if (!r.code || !c || !c.id) return;
     var code = r.code, id = c.id, sheet = JSON.parse(JSON.stringify(c));
     later("char", 1000, function () {
-      request("POST", { op: "char", code: code, id: id, char: sheet }).then(function (res) {
-        if (res.status === 200) { r.ok = Date.now(); r.err = null; } else r.err = why(res);
+      var before = lastCharId(code);
+      var body = { op: "char", code: code, id: id, char: sheet, dev: deviceId() };
+      if (before && before !== id) body.drop = before;
+      // Before this fix, everyone who built over the example wrote to the one
+      // id "example"; the first device to push afterwards clears it out.
+      else if (!before && id !== "example") body.drop = "example";
+      request("POST", body).then(function (res) {
+        if (res.status === 200) { r.ok = Date.now(); r.err = null; lastCharId(code, id); }
+        else if (res.status === 409 && res.data && res.data.error === "id taken") {
+          // someone else's character has this id: the app gives ours a new one and saves again
+          idTakenSubs.forEach(function (fn) { try { fn(id); } catch (e) {} });
+          return;
+        } else r.err = why(res);
         tell("player");
       });
     });
@@ -230,6 +263,7 @@
   root.TTSYNC = {
     available: available, ping: ping, create: create, end: end, join: join, leave: leave,
     status: status, on: on, resume: resume, pushChar: pushChar, pushHp: pushHp, pushMap: pushMap,
+    onIdTaken: onIdTaken, deviceId: deviceId,
     pushImage: pushImage, fetchImage: fetchImage, piecesOf: piecesOf, cleanCode: cleanCode
   };
 })(window);

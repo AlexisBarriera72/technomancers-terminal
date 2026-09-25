@@ -187,6 +187,11 @@ function setLang(next) {
 function save() {
   if (swapDepth) return true;       // borrowed sheet; never write it to our slot
   if (C && C.isShared) return true; // someone else's link; leave their slot alone
+  // The example is one fixed id on every device. Once someone edits it, it
+  // is their character and needs its own: at a live table the room keys
+  // sheets by id, so every player who built over the example overwrote the
+  // others and the GM only ever saw one of them.
+  if (C && C.id === "example" && !C.isExample) C.id = newCharId();
   var ok = lsWrite(LS, JSON.stringify(C));
   // at a live table, the GM's screen gets every change a second later
   if (window.TTSYNC && !C.isExample) window.TTSYNC.pushChar(slimChar(C));
