@@ -76,6 +76,31 @@ function renderDossier() {
   range.setAttribute("aria-label", "Character level");
   range.setAttribute("aria-valuetext", T("Level " + C.level));
   var badge = el("span", "lvl-badge", C.level);
+  /* On a phone the dossier sits under the page, and the page changes height
+     with the level: redrawn under a finger mid-drag, the slider slid away,
+     landed on another level, and the page jumped again. So on a phone the
+     page redraws once, on release, and every redraw the slider causes keeps
+     it where it was on the screen. */
+  function stacked() {
+    var d = $("#dossier");
+    return !!d && getComputedStyle(d).position !== "sticky";
+  }
+  function pinned(fn) {
+    var r0 = $("#levelRange"), y0 = r0 ? r0.getBoundingClientRect().top : null;
+    fn();
+    var r1 = $("#levelRange");
+    if (y0 === null || !r1) return;
+    var dy = r1.getBoundingClientRect().top - y0;
+    if (Math.abs(dy) > 1) window.scrollBy(0, dy);
+  }
+  function vitalsNow() {
+    var cl2 = classByName[C.cls], vals = { HP: cl2 ? maxHP() : "-", Prof: sgn(profBonus(C.level)),
+      Init: sgn(cl2 ? initiative() : mod(scores().Dex)) };
+    [].forEach.call(document.querySelectorAll("#dossier .vital[data-vital]"), function (x) {
+      var v = x.querySelector(".v");
+      if (v) v.textContent = vals[x.getAttribute("data-vital")];
+    });
+  }
   /* While it moves, update in place: rebuilding the slider under the pointer
      ended a drag after one level, and the arrow keys lost focus after one
      press. The full redraw waits for "change", which fires on release and on
@@ -85,31 +110,48 @@ function renderDossier() {
     C.level = +range.value; delete C.isExample; save();
     badge.textContent = C.level;
     range.setAttribute("aria-valuetext", T("Level " + C.level));
-    renderRail(); applyLang($("#rail"));
-    renderStage(); applyLang($("#stage"));
+    if (stacked()) { vitalsNow(); return; }
+    pinned(function () {
+      renderRail(); applyLang($("#rail"));
+      renderStage(); applyLang($("#stage"));
+    });
   };
-  range.onchange = function () {
-    var was = levelFrom == null ? C.level : levelFrom, now = +range.value;
+  function commitLevel(now) {
+    now = Math.max(1, Math.min(20, now));
+    var was = levelFrom == null ? C.level : levelFrom;
     levelFrom = null;
-    C.level = now; delete C.isExample; save(); render();
+    pinned(function () {
+      C.level = now; delete C.isExample; save(); render();
+      /* A raise opens (or widens) the level-up panel at the top of the
+         page; lowering below where it started closes it. Focus stays on the
+         slider, so the arrow keys keep working. */
+      if (now > was && C.cls) {
+        levelUp = { from: levelUp && levelUp.from < was ? levelUp.from : was, to: now };
+        renderStage(); applyLang($("#stage"));
+      } else if (levelUp && now <= levelUp.from) {
+        levelUp = null;
+        renderStage(); applyLang($("#stage"));
+      } else if (levelUp) {
+        levelUp.to = now;
+        renderStage(); applyLang($("#stage"));
+      }
+    });
     var again = $("#levelRange");
-    if (again) again.focus();
-    /* A raise opens (or widens) the level-up panel at the top of the
-       page; lowering below where it started closes it. Focus stays on the
-       slider, so the arrow keys keep working. */
-    if (now > was && C.cls) {
-      levelUp = { from: levelUp && levelUp.from < was ? levelUp.from : was, to: now };
-      renderStage(); applyLang($("#stage"));
-    } else if (levelUp && now <= levelUp.from) {
-      levelUp = null;
-      renderStage(); applyLang($("#stage"));
-    } else if (levelUp) {
-      levelUp.to = now;
-      renderStage(); applyLang($("#stage"));
-    }
-  };
+    if (again) { try { again.focus({ preventScroll: true }); } catch (e) {} }
+    if (now > was && C.cls && stacked()) toast("Level " + now + ": what changed is at the top of the page");
+  }
+  range.onchange = function () { commitLevel(+range.value); };
+  // one level at a time, for thumbs: easier than a slider on a phone
+  var down = el("button", "chip lvl-step", "−");
+  down.setAttribute("aria-label", "One level down");
+  down.onclick = function () { if (C.level > 1) { levelFrom = C.level; commitLevel(C.level - 1); } };
+  var up = el("button", "chip lvl-step", "+");
+  up.setAttribute("aria-label", "One level up");
+  up.onclick = function () { if (C.level < 20) { levelFrom = C.level; commitLevel(C.level + 1); } };
   lv.appendChild(range);
+  lv.appendChild(down);
   lv.appendChild(badge);
+  lv.appendChild(up);
   body.appendChild(lv);
   if (cl && C.level > 1 && !levelUp && mode === "forge") {
     var wc = el("button", "chip lvl-what", "What changed at level " + C.level);
@@ -121,6 +163,7 @@ function renderDossier() {
   [["HP", cl ? maxHP() : "-"], ["Prof", sgn(profBonus(C.level))],
    ["Init", sgn(cl ? initiative() : mod(sc.Dex))]].forEach(function (v) {
     var x = el("div", "vital");
+    x.setAttribute("data-vital", v[0]);
     x.innerHTML = '<div class="k">' + v[0] + '</div><div class="v">' + v[1] + "</div>";
     vit.appendChild(x);
   });

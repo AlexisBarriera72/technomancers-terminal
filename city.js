@@ -186,34 +186,34 @@ window.TTCITY = {
      "Take it" starts. */
   bounties: {
     low: { name: "Jobs for a crew with a bad name (Street Cred below 0)", die: 8, rows: [
-      { job: "Carry a sealed box down the Spine without opening it", who: "A Gullet fence who won't give a name", pay: "1,200 grams", catch: "The box is ticking, and the fence has already sold the route to someone else.", seg: 4 },
-      { job: "Strip a crashed drone before the Watch arrives", who: "A scav crew boss", pay: "800 grams and a cut", catch: "The drone belongs to House Vigil, and it is still recording.", seg: 4 },
-      { job: "Stand at a door and look frightening while a debt is collected", who: "A House Thorn clerk", pay: "1,000 grams", catch: "The debtor is somebody the crew owes a favour to.", seg: 4 },
-      { job: "Find a runaway driller and bring him back to his shift", who: "A House Lathe foreman", pay: "1,600 grams", catch: "He ran because of what he saw in the new bore.", seg: 6 },
-      { job: "Clear squatters out of a Seventh Rib tenement", who: "A foreclosure agent", pay: "1,400 grams", catch: "The squatters are the family who still own it on paper.", seg: 6 },
-      { job: "Test an unlicensed implant by wearing it for a week", who: "An unlicensed carver", pay: "2,000 grams and the implant", catch: "It installs at +2 Humanity and carries a Remnant.", seg: 6 },
-      { job: "Steal back a pawned choir coin", who: "A desperate pilgrim", pay: "600 grams and a prayer", catch: "The pawnbroker is paying the Watch.", seg: 4 },
-      { job: "Guard a black clinic overnight", who: "Dr. Maret Vhoss", pay: "1,800 grams", catch: "House Lathe raids it tonight.", seg: 6 }
+      { job: "Carry a sealed box down the Spine without opening it", who: "A Gullet fence who won't give a name", pay: "1,200 grams each", catch: "The box is ticking, and the fence has already sold the route to someone else.", seg: 4 },
+      { job: "Strip a crashed drone before the Watch arrives", who: "A scav crew boss", pay: "800 grams each and a cut", catch: "The drone belongs to House Vigil, and it is still recording.", seg: 4 },
+      { job: "Stand at a door and look frightening while a debt is collected", who: "A House Thorn clerk", pay: "1,000 grams each", catch: "The debtor is somebody the crew owes a favour to.", seg: 4 },
+      { job: "Find a runaway driller and bring him back to his shift", who: "A House Lathe foreman", pay: "1,600 grams each", catch: "He ran because of what he saw in the new bore.", seg: 6 },
+      { job: "Clear squatters out of a Seventh Rib tenement", who: "A foreclosure agent", pay: "1,400 grams each", catch: "The squatters are the family who still own it on paper.", seg: 6 },
+      { job: "Test an unlicensed implant by wearing it for a week", who: "An unlicensed carver", pay: "2,000 grams each and the implant", catch: "It installs at +2 Humanity and carries a Remnant.", seg: 6 },
+      { job: "Steal back a pawned choir coin", who: "A desperate pilgrim", pay: "600 grams each and a prayer", catch: "The pawnbroker is paying the Watch.", seg: 4 },
+      { job: "Guard a black clinic overnight", who: "Dr. Maret Vhoss", pay: "1,800 grams each", catch: "House Lathe raids it tonight.", seg: 6 }
     ] },
     mid: { name: "Jobs for a crew the street knows (Street Cred 0 to 4)", die: 8, rows: [
-      { job: "Escort a ward-keeper to a ward that has started humming", who: "House Vigil", pay: "4,000 grams", catch: "The ward is humming because someone is trying to switch it off from the inside.", seg: 6 },
-      { job: "Recover a ledger page before the Weighing", who: "A family on Thorn's book", pay: "3,000 grams and a debt forgiven", catch: "The page is in the Counting Rib, in a room with no doors.", seg: 6 },
-      { job: "Map a new tunnel in the god's nervous system", who: "Ketch", pay: "5,000 grams", catch: "The second voice has already mapped it, and wants the crew to find something specific.", seg: 8 },
-      { job: "Deliver a bribe to a lift operator, and make sure it lands", who: "Mother Slate", pay: "3,600 grams", catch: "The operator has been bought already, twice.", seg: 4 },
-      { job: "Protect a witness until the Cantor hears her question", who: "A Sanctum Null priest", pay: "4,400 grams", catch: "Three Houses want her silent, and the queue is two days long.", seg: 8 },
-      { job: "Retrieve a shunt from a repossession warehouse", who: "A woman who missed one payment", pay: "2,400 grams", catch: "Something has grown into it since.", seg: 6 },
-      { job: "Win a duel on a debtor's behalf", who: "A Seventh Rib tenant", pay: "4,000 grams", catch: "The other champion is Ser Ambrel Dace's student.", seg: 4 },
-      { job: "Find out who is selling chrome that answers to its old owner", who: "House Lathe, quietly", pay: "6,000 grams", catch: "The old owner is alive and wants it back.", seg: 8 }
+      { job: "Escort a ward-keeper to a ward that has started humming", who: "House Vigil", pay: "4,000 grams each", catch: "The ward is humming because someone is trying to switch it off from the inside.", seg: 6 },
+      { job: "Recover a ledger page before the Weighing", who: "A family on Thorn's book", pay: "3,000 grams each and a debt forgiven", catch: "The page is in the Counting Rib, in a room with no doors.", seg: 6 },
+      { job: "Map a new tunnel in the god's nervous system", who: "Ketch", pay: "5,000 grams each", catch: "The second voice has already mapped it, and wants the crew to find something specific.", seg: 8 },
+      { job: "Deliver a bribe to a lift operator, and make sure it lands", who: "Mother Slate", pay: "3,600 grams each", catch: "The operator has been bought already, twice.", seg: 4 },
+      { job: "Protect a witness until the Cantor hears her question", who: "A Sanctum Null priest", pay: "4,400 grams each", catch: "Three Houses want her silent, and the queue is two days long.", seg: 8 },
+      { job: "Retrieve a shunt from a repossession warehouse", who: "A woman who missed one payment", pay: "2,400 grams each", catch: "Something has grown into it since.", seg: 6 },
+      { job: "Win a duel on a debtor's behalf", who: "A Seventh Rib tenant", pay: "4,000 grams each", catch: "The other champion is Ser Ambrel Dace's student.", seg: 4 },
+      { job: "Find out who is selling chrome that answers to its old owner", who: "House Lathe, quietly", pay: "6,000 grams each", catch: "The old owner is alive and wants it back.", seg: 8 }
     ] },
     high: { name: "Jobs for a crew with a name (Street Cred 5 and up)", die: 8, rows: [
-      { job: "Steal a minute at the Eye that someone else already paid for", who: "A House heir", pay: "16,000 grams", catch: "The minute was bought by the crew's own future.", seg: 8 },
-      { job: "Broker a truce between Thorn and Lathe for one night", who: "House Vigil", pay: "20,000 grams and a patron's favour", catch: "Somebody wants the truce broken, and they have hired a crew too.", seg: 8 },
-      { job: "Carry a Crown message down to the Marrowworks by hand", who: "An Archdeacon", pay: "12,000 grams", catch: "The message is a death warrant for the foreman who reads it.", seg: 6 },
-      { job: "Rescue a netrunner lost in the god's nervous system", who: "Her crew", pay: "15,000 grams", catch: "She doesn't want to come back.", seg: 8 },
+      { job: "Steal a minute at the Eye that someone else already paid for", who: "A House heir", pay: "16,000 grams each", catch: "The minute was bought by the crew's own future.", seg: 8 },
+      { job: "Broker a truce between Thorn and Lathe for one night", who: "House Vigil", pay: "20,000 grams each and a patron's favour", catch: "Somebody wants the truce broken, and they have hired a crew too.", seg: 8 },
+      { job: "Carry a Crown message down to the Marrowworks by hand", who: "An Archdeacon", pay: "12,000 grams each", catch: "The message is a death warrant for the foreman who reads it.", seg: 6 },
+      { job: "Rescue a netrunner lost in the god's nervous system", who: "Her crew", pay: "15,000 grams each", catch: "She doesn't want to come back.", seg: 8 },
       { job: "Stop a foreclosure in thirty days", who: "Eleven thousand tenants of the Seventh Rib", pay: "Whatever they can raise, and the street's love", catch: "The clause at the end of the contract is real.", seg: 12 },
       { job: "Guard the Cantor's nave on Choir Day", who: "The Cantor itself", pay: "A choir coin", catch: "Nine hundred voices, and one of them is silent, waiting.", seg: 6 },
-      { job: "Retrieve a drill head from the new bore", who: "House Lathe", pay: "24,000 grams", catch: "It isn't a drill head any more.", seg: 8 },
-      { job: "Find the people who keep singing the city to sleep", who: "House Reliquary", pay: "18,000 grams", catch: "They are the Hush, and they are right.", seg: 8 }
+      { job: "Retrieve a drill head from the new bore", who: "House Lathe", pay: "24,000 grams each", catch: "It isn't a drill head any more.", seg: 8 },
+      { job: "Find the people who keep singing the city to sleep", who: "House Reliquary", pay: "18,000 grams each", catch: "They are the Hush, and they are right.", seg: 8 }
     ] }
   },
 

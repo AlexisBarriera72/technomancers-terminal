@@ -162,6 +162,47 @@ module.exports = async function (browser) {
     await ctx.close();
   }
 
+  /* ======================= the level slider on a phone ======================= */
+  {
+    const { page, ctx, errors } = await (async () => {
+      const out = await appPage(browser, { context: { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true } });
+      await out.page.evaluate(c => localStorage.setItem("ttb.character.v1", JSON.stringify(window.TT.migrate(c))),
+        baseChar({ level: 3, bg: "hacker" }));
+      await out.page.reload();
+      await out.page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+      await out.page.waitForTimeout(200);
+      return out;
+    })();
+    const y = () => page.evaluate(() => Math.round(document.querySelector("#levelRange").getBoundingClientRect().top));
+    const slide = (lv, ev) => page.evaluate(a => {
+      const r = document.querySelector("#levelRange"); r.value = a[0]; r.dispatchEvent(new Event(a[1]));
+    }, [lv, ev]);
+    await goStep(page, "Level");
+    await page.locator("#levelRange").scrollIntoViewIfNeeded();
+    const y0 = await y(), moved = [];
+    for (let lv = 4; lv <= 12; lv++) { await slide(lv, "input"); moved.push(await y() - y0); }
+    R.check("dragging the level on a phone keeps the slider under the finger",
+      moved.every(d => Math.abs(d) <= 2), JSON.stringify(moved));
+    await slide(12, "change");
+    R.check("and letting go leaves it where it was", Math.abs(await y() - y0) <= 2, String(await y() - y0));
+    await goStep(page, "Play Sheet");
+    await page.locator("#levelRange").scrollIntoViewIfNeeded();
+    const y1 = await y();
+    await slide(13, "input"); await slide(13, "change");
+    R.check("on the play sheet too, where the level-up panel opens above", Math.abs(await y() - y1) <= 2, String(await y() - y1));
+    await page.getByRole("button", { name: "One level up" }).click();
+    R.eq("the + button raises the level by one", (await saved(page)).level, 14);
+    await page.getByRole("button", { name: "One level down" }).click();
+    await page.getByRole("button", { name: "One level down" }).click();
+    R.eq("the − button lowers it", (await saved(page)).level, 12);
+    R.check("the + button stays put on screen too", Math.abs(await y() - y1) <= 2, String(await y() - y1));
+    const small = await page.evaluate(() => [...document.querySelectorAll("input:not([type=range]):not([type=checkbox]):not([type=radio]), select, textarea")]
+      .filter(e => e.offsetParent && parseFloat(getComputedStyle(e).fontSize) < 16).map(e => e.id || e.className || e.tagName));
+    R.eq("no field on a phone is small enough for iOS to zoom into", small, []);
+    R.eq("no page errors with the slider on a phone", errors, []);
+    await ctx.close();
+  }
+
   /* ============================ street prices ============================ */
   {
     const loadout = { bg: "hacker", credits: 25000,

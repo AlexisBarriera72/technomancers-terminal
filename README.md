@@ -196,6 +196,10 @@ replacing you.
   each with **Take me there**. Further raises widen it, lowering below where
   it started closes it, and **What changed at level N** in the dossier brings
   it back. Focus stays on the slider, so the arrow keys keep working.
+  On a phone, where the dossier sits under the page, the page redraws once
+  when the slider is let go (not at every level it passes), the slider stays
+  put on screen through the redraw, and − and + buttons step one level at a
+  time. Fields are 16px there, so iOS doesn't zoom in when one is tapped.
 - **Inventory and credits.** Gear carries a count (`qty`) and a weight (`wt`,
   read from the book's own Weight column when an item is added and filled in
   for older saves by `migrate`). Items the book doesn't have can be added by
@@ -243,8 +247,11 @@ as printed. A character with no campaign gets a **Playing in Cathedra? Use its
 prices** button on the Chrome & gear step, and joining a live table puts them on
 the table's campaign. New campaigns start on street prices; the campaign
 editor switches between the two. Cathedra's bounty board and loot tables pay
-double what they used to, so a good job buys a Tier 1 implant and Tier 3 is
-something to save up for.
+double what they used to, and a job's pay is per player (the board says so):
+600–2,000 grams each for a crew with a bad name, 2,400–6,000 for one the
+street knows, 12,000–24,000 for one with a name. So a mid job buys each player
+about a Tier 1 implant, a top job about a Tier 2, and Tier 3 is something to
+save up for.
 
 ## Where characters are stored
 

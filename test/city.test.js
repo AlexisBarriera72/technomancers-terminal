@@ -206,6 +206,11 @@ module.exports = async function (browser) {
       CITY.fallChrome.filter(f => !book.cyberware.some(c => c.name === f.name)).map(f => f.name), []);
     R.check("every bounty has a job, a payer, pay, a catch and a clock size",
       Object.keys(CITY.bounties).every(b => CITY.bounties[b].rows.every(j => j.job && j.who && j.pay && j.catch && j.seg >= 2 && j.seg <= 12)), "");
+    const unsaid = [];
+    Object.keys(CITY.bounties).forEach(b => CITY.bounties[b].rows.forEach(j => {
+      if (/\d/.test(j.pay) && !/^\d[\d,]* grams each\b/.test(j.pay)) unsaid.push(j.pay);
+    }));
+    R.eq("every job that pays grams says it pays each player", unsaid, []);
   }
 
   /* ============================ the City screen ============================ */

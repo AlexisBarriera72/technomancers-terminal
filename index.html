@@ -294,6 +294,16 @@ tr.group td{background:var(--sunk);font-family:var(--f-display);font-size:12px;
 .vital .v{font-family:var(--f-display);font-size:20px;font-variant-numeric:tabular-nums}
 .lvl-row{display:flex;align-items:center;gap:8px}
 .lvl-row input{flex:1;accent-color:var(--accent)}
+.lvl-row .lvl-step{min-width:34px;justify-content:center;font-size:15px;padding:4px 8px}
+/* Phones: iOS zooms in on any field under 16px when it is tapped, and a quick
+   double tap on a button zooms the page; neither should happen here. */
+button,.chip,.btn,input[type=range],select{touch-action:manipulation}
+@media (max-width:760px){
+  input:not([type=range]):not([type=checkbox]):not([type=radio]),select,textarea{font-size:16px}
+  #charName{font-size:21px}
+  div.mapview-join > input:not([type=range]):not([type=checkbox]):not([type=radio]){font-size:22px}
+  .lvl-row .lvl-step{min-width:42px;min-height:38px}
+}
 .lvl-badge{font-family:var(--f-mono);font-size:12px;color:var(--accent);
   border:1px solid var(--accent-deep);padding:2px 7px;border-radius:2px}
 

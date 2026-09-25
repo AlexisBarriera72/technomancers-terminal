@@ -1349,6 +1349,10 @@ window.TTES.ui = {
   "This campaign plays the book's prices.": "Esta campaña usa los precios del libro.",
   "The prices printed in the book.": "Los precios que trae el libro.",
 
+  "Pay is per player: everyone who takes the job gets the amount shown.": "La paga es por jugador: cada uno de los que aceptan el encargo recibe la cantidad indicada.",
+  "One level down": "Un nivel menos",
+  "One level up": "Un nivel más",
+
   // Live table, player side
   "Live table": "Mesa en directo",
   "On the GM's screen": "En la pantalla del DM",
@@ -1615,6 +1619,7 @@ window.TTES.patterns = [
   ["Added {*} to your NPCs", "{*} añadido a tus PNJ"],
   ["Weather: {*}", "Tiempo: {*}"],
   ["Players see {*}", "Los jugadores ven {*}"],
+  ["Level {*}: what changed is at the top of the page", "Nivel {*}: lo que ha cambiado está arriba de la página"],
   ["Playing in {*}? Use its prices", "¿Jugáis en {*}? Usa sus precios"],
   ["Street prices, from {*}", "Precios de la calle, de {*}"],
   ["Joined table {*}", "Te has unido a la mesa {*}"],

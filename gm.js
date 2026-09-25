@@ -4627,6 +4627,7 @@ window.TTGM = (function () {
     var bandKey = bountyBand(repGet());
     bb.appendChild(txt("div", "gm-label", "Bounty board"));
     bb.appendChild(stxt("div", "gm-note", CITY.bounties[bandKey].name));
+    bb.appendChild(txt("div", "gm-note", "Pay is per player: everyone who takes the job gets the amount shown."));
     var bbr = row("gm-row");
     bbr.appendChild(btn(c.board.length ? "Post new jobs" : "Post three jobs", c.board.length ? "" : "primary", function () {
       postBoard(); redraw();
