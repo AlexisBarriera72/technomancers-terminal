@@ -14,6 +14,8 @@
  *   opts.player  the players' view: fog is opaque, GM-only things are hidden
  *   opts.fog     { revealed: [areaId…] } or null for no fog at all
  *   opts.title   a title band under the map, for exported files
+ *   opts.paint   noir only: textured floors, soft shadows, lit and dark areas.
+ *                Heavy on filters, meant for exporting images, not live screens
  */
 (function (root) {
   "use strict";
@@ -376,6 +378,80 @@
     return s.join("");
   }
 
+  /* ---- painted: the same map, lit and textured -------------------------------
+     opts.paint (noir only) adds what a hand-painted battle map has: grain and
+     stains on every floor, shadow pooling where floor meets wall, furniture
+     casting shadows, walls with body, rippling water, and the room dark
+     except where something gives light. Heavy on filters, so it is for
+     exported images, not the live viewer. */
+  var LIGHTS = {
+    light: [4.5, "#ffc861"], altar: [3, "#ffc861"], choir: [3.5, "#ffc861"], hand: [7, "#ffc861"],
+    eye: [0, "#ffc861"], skylight: [0, "#bfe9ff"], vat: [2.6, "#ffb020"], drill: [3.6, "#ffb020"],
+    engine: [3, "#ff8a3d"], stall: [2, "#ff9d3d"], console: [2.2, "#22d3ee"], machine: [1.5, "#22d3ee"],
+    lift: [1.8, "#22d3ee"], cage: [1.4, "#22d3ee"], tank: [1.4, "#22d3ee"], fountain: [2, "#22d3ee"],
+    av: [2, "#22d3ee"], sign: [2.4, "#ff3d81"], shard: [2.6, "#ff3d81"], ward: [2.6, "#ff3d81"],
+    turret: [1.2, "#ff3d81"], camera: [1, "#ff3d81"]
+  };
+  function paintDefs(fid) {
+    return '<filter id="' + fid + '-grain" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">' +
+        '<feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="3" result="fine"/>' +
+        '<feColorMatrix in="fine" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.3 0.8" result="fineA"/>' +
+        '<feTurbulence type="fractalNoise" baseFrequency="0.011" numOctaves="3" seed="9" result="big"/>' +
+        '<feColorMatrix in="big" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -1.8 1.0" result="bigA"/>' +
+        '<feComposite in="fineA" in2="SourceAlpha" operator="in" result="f2"/>' +
+        '<feComposite in="bigA" in2="SourceAlpha" operator="in" result="b2"/>' +
+        '<feMerge><feMergeNode in="SourceGraphic"/><feMergeNode in="b2"/><feMergeNode in="f2"/></feMerge></filter>' +
+      '<filter id="' + fid + '-ripple" x="-5%" y="-5%" width="110%" height="110%">' +
+        '<feTurbulence type="turbulence" baseFrequency="0.012 0.035" numOctaves="2" seed="5" result="t"/>' +
+        '<feDisplacementMap in="SourceGraphic" in2="t" scale="16" xChannelSelector="R" yChannelSelector="G"/></filter>' +
+      '<filter id="' + fid + '-caustic" x="0" y="0" width="100%" height="100%">' +
+        '<feTurbulence type="turbulence" baseFrequency="0.018 0.055" numOctaves="2" seed="11"/>' +
+        '<feColorMatrix type="matrix" values="0 0 0 0 0.55 0 0 0 0 0.95 0 0 0 0 1 0 0 0 4 -1.6"/>' +
+        '<feComposite in2="SourceAlpha" operator="in"/></filter>' +
+      '<filter id="' + fid + '-soft" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="13"/></filter>' +
+      '<filter id="' + fid + '-halo" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3"/></filter>' +
+      '<filter id="' + fid + '-shadow" x="-5%" y="-5%" width="110%" height="110%">' +
+        '<feDropShadow dx="4" dy="6" stdDeviation="4" flood-color="#000" flood-opacity="0.8"/></filter>' +
+      '<radialGradient id="' + fid + '-lmg"><stop offset="0" stop-color="#000"/><stop offset="0.5" stop-color="#000" stop-opacity="0.65"/>' +
+        '<stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>' +
+      '<radialGradient id="' + fid + '-vig" cx="50%" cy="50%" r="75%"><stop offset="0.55" stop-color="#000" stop-opacity="0"/>' +
+        '<stop offset="1" stop-color="#000" stop-opacity="0.55"/></radialGradient>';
+  }
+  function lightsOf(map, player) {
+    var out = [];
+    (map.f || []).forEach(function (f) {
+      var L = LIGHTS[f[0]], o = f[5] || {};
+      if (!L || (player && typeof o === "object" && o.gm)) return;
+      var w = f[3] || 1, h = f[4] || 1;
+      var r = L[0] || Math.max(w, h) * 0.75;
+      out.push({ x: (f[1] + w / 2) * S, y: (f[2] + h / 2) * S, r: r * S, c: L[1] });
+    });
+    return out;
+  }
+  function paintLight(map, fid, W, H, player) {
+    var ls = lightsOf(map, player), cols = {}, s = [];
+    ls.forEach(function (l) { cols[l.c] = 1; });
+    s.push("<defs>");
+    Object.keys(cols).forEach(function (c, i) {
+      cols[c] = fid + "-lg" + i;
+      s.push('<radialGradient id="' + cols[c] + '"><stop offset="0" stop-color="' + c + '" stop-opacity="0.85"/>' +
+        '<stop offset="0.35" stop-color="' + c + '" stop-opacity="0.3"/><stop offset="1" stop-color="' + c + '" stop-opacity="0"/></radialGradient>');
+    });
+    s.push('<mask id="' + fid + '-lm" maskUnits="userSpaceOnUse" x="0" y="0" width="' + W + '" height="' + H + '">' +
+      '<rect width="' + W + '" height="' + H + '" fill="#fff"/>');
+    ls.forEach(function (l) {
+      s.push('<circle cx="' + n(l.x) + '" cy="' + n(l.y) + '" r="' + n(l.r * 1.35) + '" fill="url(#' + fid + '-lmg)"/>');
+    });
+    s.push("</mask></defs>");
+    // the dark, lifted wherever something gives light
+    s.push('<rect width="' + W + '" height="' + H + '" fill="#02030a" opacity="0.4" mask="url(#' + fid + '-lm)"/>');
+    ls.forEach(function (l) {
+      s.push('<circle cx="' + n(l.x) + '" cy="' + n(l.y) + '" r="' + n(l.r) + '" fill="url(#' + cols[l.c] + ')" opacity="0.6" style="mix-blend-mode:screen"/>');
+    });
+    s.push('<rect width="' + W + '" height="' + H + '" fill="url(#' + fid + '-vig)"/>');
+    return s.join("");
+  }
+
   /* ---- the whole map ------------------------------------------------------- */
   function render(map, opts) {
     opts = opts || {};
@@ -386,47 +462,84 @@
     var rand = rng(map.id);
     var player = !!opts.player;
     var revealed = opts.fog && opts.fog.revealed ? opts.fog.revealed : null;
+    var paint = !!opts.paint && P === THEMES.noir;
     var out = [];
     out.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + W + " " + (H + band) + '" width="' + W + '" height="' + (H + band) + '" class="tt-map" data-map="' + esc(map.id) + '">');
     out.push(defs(P, fid).replace("</defs>",
-      '<marker id="' + fid + '-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="' + P.accent + '"/></marker></defs>'));
+      '<marker id="' + fid + '-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="' + P.accent + '"/></marker>' +
+      (paint ? paintDefs(fid) : "") + "</defs>"));
     var bg = map.bg || "void";
     out.push('<rect width="' + W + '" height="' + H + '" fill="url(#' + fid + "-f-" + bg + ')"/>');
 
     // floors
+    var wet = function (fl) { return fl === "water" || fl === "ichor"; };
+    if (paint) out.push('<g filter="url(#' + fid + '-grain)"><rect width="' + W + '" height="' + H + '" fill="url(#' + fid + "-f-" + bg + ')"/>');
     (map.areas || []).forEach(function (a) {
-      out.push('<polygon points="' + pts(areaPoints(a)) + '" fill="url(#' + fid + "-f-" + (a.floor || "metal") + ')" data-area="' + esc(a.id) + '"/>');
+      out.push('<polygon points="' + pts(areaPoints(a)) + '" fill="url(#' + fid + "-f-" + (a.floor || "metal") + ')" data-area="' + esc(a.id) + '"' +
+        (paint && wet(a.floor) ? ' filter="url(#' + fid + '-ripple)"' : "") + "/>");
     });
     (map.patches || []).forEach(function (p) {
-      out.push('<polygon points="' + pts(p.poly || areaPoints({ r: p.r })) + '" fill="url(#' + fid + "-f-" + p.floor + ')"/>');
+      out.push('<polygon points="' + pts(p.poly || areaPoints({ r: p.r })) + '" fill="url(#' + fid + "-f-" + p.floor + ')"' +
+        (paint && wet(p.floor) ? ' filter="url(#' + fid + '-ripple)"' : "") + "/>");
     });
+    if (paint) {
+      out.push("</g>");
+      // light on the water, and shadow pooled where each floor meets its walls
+      (map.areas || []).concat(map.patches || []).forEach(function (a) {
+        if (!wet(a.floor)) return;
+        out.push('<polygon points="' + pts(a.poly || areaPoints({ r: a.r })) + '" fill="#fff" opacity="' + (a.floor === "ichor" ? 0.25 : 0.4) +
+          '" filter="url(#' + fid + '-caustic)" style="mix-blend-mode:screen"/>');
+      });
+      var clips = [], ao = [];
+      (map.areas || []).forEach(function (a, i) {
+        if (!walled(a)) return;
+        var id = fid + "-c" + i, ptxt = pts(areaPoints(a));
+        clips.push('<clipPath id="' + id + '"><polygon points="' + ptxt + '"/></clipPath>');
+        ao.push('<g clip-path="url(#' + id + ')"><polygon points="' + ptxt + '" fill="none" stroke="#000" stroke-width="46" opacity="0.7" filter="url(#' + fid + '-soft)"/></g>');
+      });
+      out.push("<defs>" + clips.join("") + "</defs>" + ao.join(""));
+    }
 
     // grid
     if (opts.grid !== false) {
       var g = "";
       for (var gx = 1; gx < map.w; gx++) g += "M" + gx * S + " 0V" + H;
       for (var gy = 1; gy < map.h; gy++) g += "M0 " + gy * S + "H" + W;
-      out.push('<path d="' + g + '" stroke="' + P.grid + '" stroke-width="1" fill="none"/>');
+      out.push('<path d="' + g + '" stroke="' + P.grid + '" stroke-width="1" fill="none"' + (paint ? ' opacity="0.65"' : "") + "/>");
     }
 
     // features
     var fs = [];
     (map.f || []).forEach(function (f) { fs.push(feature(f, P, rand, player)); });
-    out.push(fs.join("").replace(/FID/g, fid));
+    out.push((paint ? '<g filter="url(#' + fid + '-shadow)">' : "") + fs.join("").replace(/FID/g, fid) + (paint ? "</g>" : ""));
 
     // walls
     var wattr = ' fill="none" stroke="' + P.wall + '" stroke-width="' + P.wallW + '" stroke-linejoin="round" stroke-linecap="round"' + (P.glow ? ' filter="url(#' + fid + '-glow)"' : "");
+    var wallShapes = [];
+    (map.areas || []).forEach(function (a) { if (walled(a)) wallShapes.push(["polygon", pts(areaPoints(a))]); });
+    (map.walls || []).forEach(function (w) { wallShapes.push(["polyline", pts(w)]); });
+    if (paint) {
+      // walls with body: a soft dark halo, dressed stone, a thin neon seam
+      var j = ' fill="none" stroke-linejoin="round" stroke-linecap="round"';
+      [[' stroke="#000" stroke-width="' + (P.wallW + 14) + '" opacity="0.8" filter="url(#' + fid + '-halo)"'],
+       [' stroke="#1b2331" stroke-width="' + (P.wallW + 5) + '"'],
+       [' stroke="#3a4861" stroke-width="' + (P.wallW - 1) + '"'],
+       [' stroke="' + P.wall + '" stroke-width="2" opacity="0.9" filter="url(#' + fid + '-glow)"']].forEach(function (layer) {
+        wallShapes.forEach(function (w) { out.push("<" + w[0] + ' points="' + w[1] + '"' + j + layer[0] + "/>"); });
+      });
+    } else {
+      wallShapes.forEach(function (w) { out.push("<" + w[0] + ' points="' + w[1] + '"' + wattr + "/>"); });
+    }
     (map.areas || []).forEach(function (a) {
-      if (walled(a)) out.push('<polygon points="' + pts(areaPoints(a)) + '"' + wattr + "/>");
-      else if (a.floor === "drop") out.push('<polygon points="' + pts(areaPoints(a)) + '" fill="none" stroke="' + P.hot + '" stroke-width="3" stroke-dasharray="10 6"/>');
+      if (!walled(a) && a.floor === "drop") out.push('<polygon points="' + pts(areaPoints(a)) + '" fill="none" stroke="' + P.hot + '" stroke-width="3" stroke-dasharray="10 6"/>');
     });
-    (map.walls || []).forEach(function (w) { out.push('<polyline points="' + pts(w) + '"' + wattr + "/>"); });
 
     // doors: a door gap is painted with the floor of the first area it touches
     (map.doors || []).forEach(function (d) {
       var fl = "url(#" + fid + "-f-" + (d[5] || floorAt(map, d)) + ")";
       out.push(door(d, P, fl, player));
     });
+    if (paint) out.push(paintLight(map, fid, W, H, player));
 
     // labels
     (map.areas || []).forEach(function (a) {
