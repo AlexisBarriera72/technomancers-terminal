@@ -265,6 +265,11 @@ function weaponProficient(cl, gun, name) {
   if (!text) return false;
   if (/\bper your weapon proficiencies\b/i.test(text)) return true;
   if (/^\s*(all|any)\b/i.test(text)) return true;
+  // "Simple weapons, martial weapons" is every weapon there is. The book's
+  // melee table doesn't say which weapons are simple or martial, so this has
+  // to be read as all of them, or a Barbarian was never proficient with a
+  // baton and a Bioforged never with a chainsaw.
+  if (!gun && /\bsimple weapons\b/i.test(text) && /\bmartial weapons\b/i.test(text)) return true;
   var lname = String(name || "").toLowerCase().trim();
   return text.toLowerCase().split(/,|\band\b/).map(function (x) {
     return x.trim().replace(/[.]$/, "");
@@ -512,10 +517,17 @@ function findTable(title) {
   });
   return found;
 }
+/* Picks an archetype adds on top of the class table: the Chimeric strain's
+   Beast Grafts are "two additional grafts" from 3rd level. */
+function bonusPicks(key) {
+  var sub = mySub();
+  if (key === "grafts" && sub && sub.id === "bioforged-chimeric" && C.level >= 3) return 2;
+  return 0;
+}
 function scalingSpec() {
   var sp = SCALING[C.cls];
   if (!sp) return null;
-  var allowed = parseInt(colValue(sp.col), 10) || 0;
+  var allowed = (parseInt(colValue(sp.col), 10) || 0) + bonusPicks(sp.key);
   var opts;
   if (sp.skills) {
     opts = Object.keys(D.skills).map(function (k) { return { name: k, desc: D.skills[k] + " skill" }; });

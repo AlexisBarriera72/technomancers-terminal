@@ -143,6 +143,21 @@ module.exports = async function (browser) {
     R.check("item 12b, Wizard IS proficient with a pistol", gated.pistolProf === true,
       JSON.stringify(gated));
     R.eq("item 12b, proficient attack includes the bonus", gated.pistol, 5);
+    // "Simple weapons, martial weapons" is every melee weapon
+    const allMelee = await page.evaluate(() => {
+      const T = window.TT, g = { key: "Melee Weapons|Shock Baton", name: "Shock Baton", cost: "0₵" };
+      const barb = T.migrate({ id: "b", level: 3, cls: "Barbarian", method: "array",
+        arrayMap: { Str: 15, Dex: 10, Con: 14, Int: 8, Wis: 13, Cha: 12 }, gear: [g] });
+      const wiz = T.migrate({ id: "w", level: 3, cls: "Wizard", gear: [g] });
+      return [T.attackBonus(g, T.statsOf(barb)).bonus, T.attackBonus(g, T.statsOf(wiz)).proficient];
+    });
+    R.eq("a Barbarian is proficient with a shock baton, a Wizard is not", allMelee, [4, false]);
+    // the Chimeric strain's two extra grafts
+    const grafts = await page.evaluate(() => {
+      const T = window.TT, c = lv => T.migrate({ id: "g", level: lv, cls: "Bioforged", sub: "bioforged-chimeric" });
+      return [T.withChar(c(3), () => T.scalingSpec().allowed), T.withChar(c(2), () => T.scalingSpec().allowed)];
+    });
+    R.eq("a Chimeric Bioforged knows 3 + 2 grafts at level 3, and 2 at level 2", grafts, [5, 2]);
   }
 
   /* ---- item 4: the validator ---- */
