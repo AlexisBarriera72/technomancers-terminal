@@ -287,6 +287,7 @@ function spellCard(x, st, opts) {
       esc(act === "Longer" ? s.t : act));
     if (act === "Longer") at.setAttribute("data-nolang", "");
     tags.appendChild(at);
+    tags.appendChild(el("span", "tag spell-lv", s.l ? SPELL_ORD[s.l] : "Cantrip"));
     if (s.k) tags.appendChild(el("span", "tag", "Conc."));
     if (s.ri) tags.appendChild(el("span", "tag", "Ritual"));
     if (s.src === "camp") { var ct = el("span", "tag use", "Cathedra"); ct.setAttribute("data-nolang", ""); tags.appendChild(ct); }
@@ -331,6 +332,21 @@ function spellCard(x, st, opts) {
   }
   d.appendChild(body);
   return d;
+}
+
+/* ---- a Wizard's preparations ----------------------------------------------------
+   Spells a Wizard takes go into the spellbook, and only prepared ones can be
+   cast. A Wizard who took spells and never pressed Prepare saw nothing but
+   cantrips on the sheet, so taking a spell now prepares it while there's
+   room, and the sheet lists the rest of the book with its own Prepare. */
+function setPrepared(n, on, st) {
+  var arr = (C.prepared || []).slice(), ix = arr.indexOf(n);
+  if (on && ix < 0) {
+    if (spellTally(C, st).prepared >= st.prepared) { toast("You can prepare " + st.prepared + " today; unprepare one first"); return false; }
+    arr.push(n);
+  } else if (!on && ix >= 0) arr.splice(ix, 1);
+  C.prepared = arr; delete C.isExample; save(); render();
+  return true;
 }
 
 /* ---- the play sheet's Spells section ------------------------------------------ */
@@ -453,7 +469,39 @@ function spellSection() {
     var here = list.filter(function (x) { return (x.s ? x.s.l : 1) === l; });
     if (!here.length) continue;
     sec.appendChild(el("div", "eyebrow", l === 0 ? "Cantrips, at will" : SPELL_ORD[l] + " level"));
-    here.forEach(function (x) { sec.appendChild(spellCard(x, st, { tail: castButtons(x.s, st) })); });
+    here.forEach(function (x) {
+      var tail = castButtons(x.s, st);
+      if (st.kind === "book" && x.how === "chosen" && x.s && x.s.l > 0) {
+        tail = tail || el("div", "spell-cast");
+        var un = el("button", "chip", "Unprepare");
+        un.onclick = function (e) { e.preventDefault(); setPrepared(x.name, false, st); };
+        tail.appendChild(un);
+      }
+      sec.appendChild(spellCard(x, st, { tail: tail }));
+    });
+  }
+  // the rest of a Wizard's book: there, but not castable until prepared
+  if (st.kind === "book") {
+    var idle = (C.spells || []).filter(function (n) {
+      var s = spellFind(n, C);
+      return !(s && s.l === 0) && (C.prepared || []).indexOf(n) < 0;
+    });
+    if (idle.length) {
+      var tl = spellTally(C, st);
+      sec.appendChild(el("div", "eyebrow", "In your spellbook, not prepared"));
+      sec.appendChild(el("p", "slot-note", "Prepared " + tl.prepared + " of " + st.prepared +
+        ". Only prepared spells can be cast; change them after a long rest."));
+      idle.forEach(function (n) {
+        var s = spellFind(n, C), tail = el("div", "spell-cast");
+        var pb = el("button", "btn", "Prepare");
+        pb.disabled = tl.prepared >= st.prepared;
+        pb.onclick = function (e) { e.preventDefault(); setPrepared(n, true, st); };
+        tail.appendChild(pb);
+        var card = spellCard({ name: n, s: s, how: "book" }, st, { tail: tail });
+        card.classList.add("unprepared");
+        sec.appendChild(card);
+      });
+    }
   }
   if (SPD.meta) {
     // the licence's own words, kept as written in either language
@@ -519,13 +567,7 @@ function spellPicker(s) {
         var on = (C.prepared || []).indexOf(n) >= 0;
         var pb = el("button", "chip" + (on ? " on" : ""), on ? "Prepared" : "Prepare");
         pb.setAttribute("aria-pressed", on ? "true" : "false");
-        pb.onclick = function () {
-          var arr = (C.prepared || []).slice(), ix = arr.indexOf(n);
-          if (ix >= 0) arr.splice(ix, 1);
-          else if (spellTally(C, st).prepared >= st.prepared) { toast("You can prepare " + st.prepared + " today"); return; }
-          else arr.push(n);
-          C.prepared = arr; delete C.isExample; save(); render();
-        };
+        pb.onclick = function () { setPrepared(n, !on, st); };
         wrap.appendChild(pb);
       }
       var x = el("button", "chip warn", "✕");
@@ -589,6 +631,9 @@ function spellPicker(s) {
         }
         if (arr.length >= MAX_SPELLS) { toast("That's a lot of spells"); return; }
         arr.push(sp.n);
+        // a Wizard's new spell is ready to cast while there's room to prepare it
+        if (st.kind === "book" && sp.l > 0 && tt.prepared < st.prepared)
+          C.prepared = (C.prepared || []).concat([sp.n]);
       }
       C.spells = arr; delete C.isExample; save(); render();
     };

@@ -102,12 +102,8 @@ module.exports = async function (browser) {
       offered.indexOf("Cone of Cold") < 0 && offered.indexOf("The Sending") < 0, offered.length + " offered");
     for (const n of ["Fire Bolt", "Light", "Mage Hand", "Marrow Spark", "Magic Missile", "Shield", "Fireball"]) await take(n);
     R.eq("a fifth cantrip is refused", [await take("Ray of Frost"), (await saved(page)).spells.length], [true, 7]);
-    for (let i = 0; i < 3; i++) {
-      await page.evaluate(() => { const b = [...document.querySelectorAll(".spell-chosen .chip")].find(x => x.textContent === "Prepare"); if (b) b.click(); });
-      await page.waitForTimeout(30);
-    }
     const c = await saved(page);
-    R.eq("taken and prepared", [c.spells, c.prepared],
+    R.eq("a Wizard's spells are prepared as they're taken", [c.spells, c.prepared],
       [["Fire Bolt", "Light", "Mage Hand", "Marrow Spark", "Magic Missile", "Shield", "Fireball"], ["Magic Missile", "Shield", "Fireball"]]);
 
     await page.evaluate(() => { const i = document.querySelector("#spell-picker .inv-add input"); i.value = "Hex"; });
@@ -118,13 +114,15 @@ module.exports = async function (browser) {
     await page.waitForTimeout(200);
     const sheet = await page.evaluate(() => {
       const s = document.querySelector(".spells-sec");
-      return s && { text: s.textContent, cards: [...s.querySelectorAll("details h4")].map(h => h.textContent),
+      return s && { text: s.textContent, cards: [...s.querySelectorAll("details:not(.unprepared) h4")].map(h => h.textContent),
+                    idle: [...s.querySelectorAll("details.unprepared h4")].map(h => h.textContent),
                     street: (s.querySelector(".spell-street") || {}).textContent };
     });
     R.check("the sheet has a Spells section with the DC and attack", sheet && /Spell save DC\s*14/.test(sheet.text) && /Spell attack\s*\+6/.test(sheet.text),
       sheet && sheet.text.slice(0, 200));
     R.check("with the cantrips and the prepared spells, not the unprepared one",
       ["Fire Bolt", "Fireball", "Shield"].every(n => sheet.cards.indexOf(n) >= 0) && sheet.cards.indexOf("Hex") < 0, JSON.stringify(sheet.cards));
+    R.eq("the rest of the spellbook is listed, to prepare", sheet.idle, ["Hex"]);
     R.eq("in Cathedra, the street's name for it", sheet.street, "Marrow-flare");
     await page.evaluate(() => {
       const d = [...document.querySelectorAll(".spells-sec details")].find(x => x.querySelector("h4").textContent === "Fireball");
@@ -150,6 +148,25 @@ module.exports = async function (browser) {
     R.eq("a long rest brings every slot back", (await saved(page)).slotsUsed || {}, {});
     R.check("the Markdown has the spells", /## Spells[\s\S]*3rd\*\* Fireball/.test(await page.evaluate(() => window.TT.toMarkdown())));
     R.eq("no page errors picking and casting", errors, []);
+    await ctx.close();
+  }
+
+  /* ======================= a Wizard who never pressed Prepare ======================= */
+  {
+    const { page, ctx, errors } = await withChar(browser, { cls: "Wizard", level: 3,
+      spells: ["Fire Bolt", "Mending", "Magic Missile", "Shield", "Scorching Ray"] });
+    await goStep(page, "Play Sheet");
+    await page.waitForTimeout(200);
+    const idle = () => page.evaluate(() => [...document.querySelectorAll(".spells-sec details.unprepared h4")].map(h => h.textContent));
+    R.eq("the unprepared spells are on the sheet, not only the cantrips", await idle(), ["Magic Missile", "Shield", "Scorching Ray"]);
+    await page.evaluate(() => {
+      const d = [...document.querySelectorAll(".spells-sec details.unprepared")].find(x => x.querySelector("h4").textContent === "Magic Missile");
+      d.querySelector(".spell-cast .btn").click();
+    });
+    const after = await page.evaluate(() => ({ idle: [...document.querySelectorAll(".spells-sec details.unprepared h4")].map(h => h.textContent),
+      cast: !![...document.querySelectorAll(".spells-sec details:not(.unprepared)")].find(x => x.querySelector("h4").textContent === "Magic Missile" && /Cast/.test(x.textContent)) }));
+    R.eq("Prepare on the sheet makes it castable", after, { idle: ["Shield", "Scorching Ray"], cast: true });
+    R.eq("no page errors for the Wizard", errors, []);
     await ctx.close();
   }
 
