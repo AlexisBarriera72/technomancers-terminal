@@ -31,7 +31,8 @@
  *   Charisma checks. reactionBands turn one d20 into what an NPC does about
  *   the party: {max, name, tone, gist}, ascending, null max on the top band.
  *
- * NPC schema lives next to npcTemplates below.
+ * NPCs: the archetypes are in npcs.js (window.TTNPC), and npcBuild() in
+ *   section 4 turns one into a statblock for the table's NPC level.
  */
 
 window.TTBGM = {
@@ -346,95 +347,25 @@ window.TTBGM = {
   ],
 
   /* ---------------------------------------------------------- NPC templates
-     The four fields the tracker needs are always present: name, ac, hp, init.
-     Everything else is detail you can fill in or ignore.                   */
-  npcTemplates: [
-    { name: "Gutter Ganger", kind: "mook", role: "Mook", cr: "1/8", ac: 12, hp: 9, init: 1,
-      acFrom: "Scraps", hpFormula: "2d8", speed: "30 ft.",
-      scores: { Str: 11, Dex: 12, Con: 11, Int: 9, Wis: 9, Cha: 9 },
-      actions: [{ name: "Shiv", atk: 3, dmg: "1d6+1", text: "Melee, reach 5 ft." },
-                { name: "Cheap pistol", atk: 3, dmg: "1d8+1", text: "Ranged 30/90." }] },
-    { name: "Corpo Security", kind: "npc", role: "Soldier", cr: "1", ac: 16, hp: 26, init: 2,
-      acFrom: "Armoured jacket", hpFormula: "4d8+8", speed: "30 ft.",
-      scores: { Str: 14, Dex: 14, Con: 14, Int: 10, Wis: 12, Cha: 10 },
-      skills: { Perception: 3 }, senses: "passive Perception 13",
-      actions: [{ name: "SMG", atk: 4, dmg: "2d6+2", text: "Ranged 40/120, burst-fire." },
-                { name: "Shock baton", atk: 4, dmg: "1d6+2", text: "Melee; Con save DC 12 or stunned to end of turn." }],
-      traits: [{ name: "Calls it in", text: "On first taking damage, reinforcements are dispatched. They arrive in 1d4 rounds." }] },
-    { name: "Corpo Lieutenant", kind: "npc", role: "Elite", cr: "4", ac: 18, hp: 65, init: 3,
-      acFrom: "Hardshell", hpFormula: "10d8+20", speed: "30 ft.",
-      scores: { Str: 15, Dex: 16, Con: 15, Int: 13, Wis: 14, Cha: 13 },
-      saves: { Dex: 5, Wis: 4 }, skills: { Perception: 4, Insight: 4 },
-      senses: "passive Perception 14",
-      actions: [{ name: "Assault rifle", atk: 6, dmg: "2d6+3", text: "Ranged 100/400, burst-fire, automatic." },
-                { name: "Suppressing fire", atk: null, dmg: "", text: "20-ft. cone; Dex save DC 14 or half speed and disadvantage on attacks until their next turn." }],
-      traits: [{ name: "Smartlinked", text: "Ignores half cover." }] },
-    { name: "Combat Drone", kind: "npc", role: "Construct", cr: "2", ac: 15, hp: 22, init: 4,
-      acFrom: "Plating", hpFormula: "4d8+4", speed: "0 ft., fly 50 ft. (hover)",
-      scores: { Str: 12, Dex: 18, Con: 12, Int: 4, Wis: 10, Cha: 1 },
-      immune: "poison, psychic", condImmune: "charmed, exhaustion, frightened, poisoned",
-      senses: "darkvision 60 ft., passive Perception 10",
-      actions: [{ name: "Slug gun", atk: 6, dmg: "1d8+4", text: "Ranged 60/180." }],
-      traits: [{ name: "Hardened", text: "Immune to anything that targets a mind. Technology DC 15 to seize control for one round." }] },
-    { name: "Ripperdoc", kind: "npc", role: "Support", cr: "1", ac: 12, hp: 22, init: 1,
-      acFrom: "Apron", hpFormula: "4d8+4", speed: "30 ft.",
-      scores: { Str: 10, Dex: 12, Con: 12, Int: 15, Wis: 14, Cha: 10 },
-      skills: { Medicine: 6, Technology: 4 }, senses: "passive Perception 12",
-      actions: [{ name: "Bone saw", atk: 2, dmg: "1d8", text: "Melee, reach 5 ft." },
-                { name: "Sedative jet", atk: 3, dmg: "", text: "Ranged 15 ft.; Con save DC 13 or poisoned for 1 minute." }] },
-    { name: "Netrunner", kind: "npc", role: "Controller", cr: "3", ac: 13, hp: 33, init: 2,
-      acFrom: "Nothing useful", hpFormula: "6d8+6", speed: "30 ft.",
-      scores: { Str: 8, Dex: 14, Con: 12, Int: 18, Wis: 12, Cha: 11 },
-      saves: { Int: 6 }, skills: { Technology: 8 }, senses: "passive Perception 11",
-      actions: [{ name: "Icepick", atk: null, dmg: "3d8", text: "One target in the NET or smartlinked; Int save DC 15 for half." },
-                { name: "Lockout", atk: null, dmg: "", text: "One powered implant shuts down for 1 minute. Int save DC 15 negates." }],
-      traits: [{ name: "Jacked in", text: "Body is prone and helpless while running. Killing the body ends the run." }] },
-    { name: "Street Samurai", kind: "npc", role: "Brute", cr: "5", ac: 17, hp: 90, init: 5,
-      acFrom: "Subdermal plate", hpFormula: "12d10+24", speed: "40 ft.",
-      scores: { Str: 18, Dex: 16, Con: 16, Int: 10, Wis: 12, Cha: 10 },
-      saves: { Str: 7, Con: 6 }, senses: "passive Perception 11",
-      actions: [{ name: "Monoblade", atk: 7, dmg: "2d8+4", text: "Melee, reach 5 ft. Two attacks per turn." },
-                { name: "Heavy pistol", atk: 6, dmg: "2d6+3", text: "Ranged 50/150." }],
-      traits: [{ name: "Wired reflexes", text: "Advantage on initiative. Can take one extra action on the first round." },
-               { name: "Pain editor", text: "Resistance to bludgeoning, piercing and slashing while below half HP." }] },
-    { name: "Cyberpsycho", kind: "npc", role: "Boss", cr: "7", ac: 18, hp: 120, init: 4,
-      acFrom: "What's left of the skin", hpFormula: "16d10+32", speed: "40 ft.",
-      scores: { Str: 20, Dex: 16, Con: 18, Int: 6, Wis: 8, Cha: 5 },
-      saves: { Str: 8, Con: 7 }, immune: "psychic", condImmune: "charmed, frightened",
-      senses: "darkvision 60 ft., passive Perception 9", humanity: 0,
-      actions: [{ name: "Chrome limb", atk: 8, dmg: "2d10+5", text: "Melee, reach 10 ft. Three attacks per turn." },
-                { name: "Overload", atk: null, dmg: "4d6", text: "10-ft. burst of lightning damage; Dex save DC 16 for half. Recharge 5-6." }],
-      traits: [{ name: "Nothing left", text: "Doesn't die at 0 HP. Drops to 1 instead, once. Advantage on all attacks." },
-               { name: "Was someone", text: "Anyone who knew them has disadvantage on attacks against them for the first round." }] },
-    { name: "Hunter-Killer", kind: "npc", role: "Elite construct", cr: "8", ac: 19, hp: 105, init: 6,
-      acFrom: "Composite shell", hpFormula: "14d10+28", speed: "40 ft., fly 60 ft.",
-      scores: { Str: 18, Dex: 20, Con: 16, Int: 8, Wis: 14, Cha: 1 },
-      immune: "poison, psychic", condImmune: "charmed, exhaustion, frightened, poisoned",
-      senses: "truesight 30 ft., darkvision 120 ft., passive Perception 16",
-      actions: [{ name: "Autocannon", atk: 9, dmg: "3d8+5", text: "Ranged 120/480. Two attacks per turn." },
-                { name: "Target lock", atk: null, dmg: "", text: "Marks one creature. Advantage against it until it breaks line of sight." }],
-      traits: [{ name: "Assigned", text: "It has one name on its list. It will walk past everyone else to reach them." }] },
-    { name: "Civilian", kind: "mook", role: "Bystander", cr: "0", ac: 10, hp: 4, init: 0,
-      speed: "30 ft.", scores: { Str: 10, Dex: 10, Con: 10, Int: 10, Wis: 10, Cha: 10 },
-      actions: [{ name: "Run", atk: null, dmg: "", text: "Dashes for the nearest exit and screams." }] },
-    { name: "House Enforcer", kind: "npc", role: "Soldier", cr: "3", ac: 17, hp: 45, init: 2,
-      acFrom: "Bone-carved plate", hpFormula: "7d8+14", speed: "30 ft.",
-      scores: { Str: 16, Dex: 13, Con: 15, Int: 10, Wis: 13, Cha: 12 },
-      skills: { Intimidation: 3 }, senses: "passive Perception 11",
-      actions: [{ name: "Reliquary maul", atk: 5, dmg: "2d8+3", text: "Melee, reach 5 ft." },
-                { name: "Collections notice", atk: null, dmg: "", text: "One creature that owes a debt: Wis save DC 13 or frightened for 1 minute." }],
-      traits: [{ name: "Consecrated", text: "Unaffected by the netrunning blackout on holy ground. They train for it." }],
-      tags: ["cathedra"] },
-    { name: "Choir Fragment", kind: "npc", role: "Aberration", cr: "6", ac: 16, hp: 85, init: 3,
-      acFrom: "Not entirely there", hpFormula: "10d10+30", speed: "0 ft., fly 30 ft. (hover)",
-      scores: { Str: 8, Dex: 16, Con: 16, Int: 14, Wis: 18, Cha: 20 },
-      saves: { Wis: 7, Cha: 8 }, immune: "psychic", condImmune: "charmed, frightened, prone",
-      senses: "blindsight 60 ft., passive Perception 14",
-      actions: [{ name: "Chord", atk: null, dmg: "4d8", text: "All creatures within 20 ft.: Con save DC 15 for half thunder damage and deafened." },
-                { name: "Invitation", atk: null, dmg: "", text: "One creature that can hear it: Wis save DC 15 or charmed, moving toward it on its turn." }],
-      traits: [{ name: "Part of the song", text: "While any other Choir Fragment is within 60 ft., it has advantage on all saves." }],
-      tags: ["cathedra"] }
-  ],
+     The NPCs themselves live in npcs.js (window.TTNPC): about forty, in nine
+     categories, each built for the table's NPC level. Anything that asks for
+     one by name ("Corpo Security") looks in this list.                     */
+  npcTemplates: (window.TTNPC && window.TTNPC.archetypes) || [],
+
+  /* The fixed templates this screen had before the level slider, by their
+     numbers as the template left them: AC|HP|HP formula|first action. An NPC
+     still carrying exactly these was never edited by hand, so it moves onto
+     the slider as the archetype named here. Anything else keeps its numbers. */
+  oldTemplates: {
+    "12|9|2d8|Shiv": "gutter-ganger", "16|26|4d8+8|SMG": "corpo-security",
+    "18|65|10d8+20|Assault rifle": "corpo-lieutenant", "15|22|4d8+4|Slug gun": "combat-drone",
+    "12|22|4d8+4|Bone saw": "ripperdoc", "13|33|6d8+6|Icepick": "netrunner",
+    "17|90|12d10+24|Monoblade": "street-samurai", "18|120|16d10+32|Chrome limb": "cyberpsycho",
+    "19|105|14d10+28|Autocannon": "hunter-killer", "10|4||Run": "civilian",
+    "17|45|7d8+14|Reliquary maul": "house-enforcer", "16|85|10d10+30|Chord": "choir-fragment"
+  },
+  oldRoles: ["Mook", "Soldier", "Elite", "Construct", "Support", "Controller", "Brute", "Boss",
+             "Elite construct", "Bystander", "Aberration"],
 
   /* ----------------------------------------------- the improviser's pieces */
   names: {
@@ -578,15 +509,17 @@ window.TTBGM = {
     },
     npcs: {
       steps: [
-        "+ Blank NPC for someone who matters, + Quick mook for someone who's there to fall down, Improvise someone for a name and a secret on the spot.",
-        "From a template gives you a ready statblock, rename it and it's yours.",
-        "Pull from Cathedra brings the campaign's cast in as names and notes; you add the numbers.",
-        "Open an NPC to edit it. Add to encounter drops them into the fight; Duplicate makes a second; Delete removes them.",
-        "Search by name, role or tag when the list gets long."
+        "Set the NPC level at the top. It starts at the party's average level; every NPC from the library uses it, and moving it rebuilds every one of their statblocks.",
+        "Pick a category in the library (Street, Religious, Corporate & Houses…), then tap an NPC to add it at that level. Rename it and give it a role and it's yours.",
+        "+ Blank NPC is for someone whose numbers you want to write yourself; + Quick mook adds a levelling Gutter Ganger; Improvise someone makes up a name and a secret on the spot.",
+        "Open an NPC to see its statblock. Roll rolls an attack or power. Add to encounter drops them into the fight; Duplicate makes a second.",
+        "Edit by hand stops an NPC levelling and lets you change its numbers. A hand-made NPC can start levelling again: pick what it is under Level with the table.",
+        "Search by name, role, tag or kind of NPC when the list gets long."
       ],
       hints: {
+        level: "Each scene on the Story screen has a button that sets this to the level it's written for. The Encounter screen's difficulty bar weighs NPCs at this level too.",
         make: "Mooks are one line in a fight; NPCs get the full statblock. Improvise someone gives a name, a want, a secret and a tell.",
-        templates: "Templates are starting points. Change anything after you add one.",
+        templates: "Each card shows the NPC at the current level: its role, armour, hit points and challenge rating. The role says how it fights: minions fall fast, soldiers hold a line, elites and bosses carry a fight on their own.",
         row: "Open an NPC to see and edit everything. Add to encounter uses the count you set on the Encounter screen."
       },
       tips: {
@@ -595,6 +528,7 @@ window.TTBGM = {
         improvise: "Make someone up on the spot",
         addEnc: "Put this NPC in the current fight",
         dup: "Make a copy of this NPC",
+        byHand: "Stop this NPC levelling and edit its numbers yourself",
         del: "Delete this NPC"
       }
     },
@@ -639,6 +573,7 @@ window.TTBGM = {
         current: "Make this the scene you're running now",
         clocks: "Add this scene's clocks to the Clocks screen",
         npcs: "Add this scene's NPCs to the NPC screen",
+        npcLevel: "Set every NPC to the level this scene is written for",
         apply: "Add this call's Salvage, Feed and Doom",
         cred: "Change the table's Street Cred"
       }
@@ -756,6 +691,7 @@ window.TTGM = (function () {
      missing: every other GM tool still works without them. */
   var SY = window.TTSY || { roles: [], classRoles: {}, crewTiers: [], pairs: [] };
   var CITY = window.TTCITY || null;
+  var NPCD = window.TTNPC || null;
   /* Cathedra's Houses and districts, with the GM's renames applied. */
   function cathedra() {
     var list = (window.TTBC && window.TTBC.campaigns) || [];
@@ -819,6 +755,7 @@ window.TTGM = (function () {
      is a mirror we try to keep in sync, and the export reads memory. */
   var mem = { party: null, npcs: null, encs: null, play: null };
   var unsaved = false;
+  var npcAt = null;                  // the NPC level mem.npcs was last built for
 
   function arrOf(v) { return Array.isArray(v) ? v : []; }
 
@@ -826,8 +763,18 @@ window.TTGM = (function () {
     if (mem.party === null) mem.party = arrOf(lsGet(K_PARTY, []));
     return mem.party;
   }
+  /* NPCs made from an archetype are rebuilt here whenever the NPC level has
+     moved since the last read, so every screen sees numbers for this level. */
   function npcAll() {
-    if (mem.npcs === null) mem.npcs = arrOf(lsGet(K_NPCS, []));
+    if (mem.npcs === null) {
+      mem.npcs = arrOf(lsGet(K_NPCS, [])).filter(function (n) { return n && typeof n === "object"; });
+      npcAt = null;
+    }
+    var L = npcLevel();
+    if (npcAt !== L) {
+      npcAt = L;
+      mem.npcs.forEach(function (n) { npcResolve(n, L); });
+    }
     return mem.npcs;
   }
   function encAll() {
@@ -849,6 +796,10 @@ window.TTGM = (function () {
       if (p.netrun != null) p.netrun = cleanNet(p.netrun);
       if (p.chase != null) p.chase = cleanChase(p.chase);
       p.maps = cleanMaps(p.maps);
+      if (p.npcLevel != null) {
+        var nl = Math.round(+p.npcLevel);
+        if (nl >= 1 && nl <= 20) p.npcLevel = nl; else delete p.npcLevel;
+      }
       mem.play = p;
     }
     return mem.play;
@@ -939,7 +890,7 @@ window.TTGM = (function () {
     return true;
   }
   function partyWrite(l) { return commit("party", K_PARTY, l); }
-  function npcWrite(l)   { return commit("npcs",  K_NPCS,  l); }
+  function npcWrite(l)   { npcAt = null; return commit("npcs",  K_NPCS,  l); }
   function encWrite(l)   { return commit("encs",  K_ENCS,  l); }
   function playWrite(p)  { p.updated = Date.now(); return commit("play", K_PLAY, p); }
   function playPatch(fn) { var p = playState(); fn(p); playWrite(p); return p; }
@@ -1365,9 +1316,11 @@ window.TTGM = (function () {
                added: now - (cast.length - i) * 60000, updated: now, payload: JSON.stringify(c) };
     });
 
+    // the demo's NPCs follow the demo party's level, as a real table's would
+    var demoLv = Math.round(party.reduce(function (a, r) { return a + (+r.level || 1); }, 0) / Math.max(1, party.length));
     function fromTemplate(tname, patch) {
       var t = G.npcTemplates.filter(function (x) { return x.name === tname; })[0] || G.npcTemplates[0];
-      var n = npcFromTemplate(t);
+      var n = npcFromTemplate(t, demoLv);
       Object.keys(patch).forEach(function (k) { n[k] = patch[k]; });
       n.id = patch.id; n.updated = now;
       return n;
@@ -1380,11 +1333,11 @@ window.TTGM = (function () {
         role: "House Thorn muscle", tags: ["Cathedra", "House Thorn"],
         notes: "Paid by the hour. Will fold if Dace drops." }),
       fromTemplate("Combat Drone", { id: "demo-n-drone", name: "Collections Drone",
-        role: "Construct", tags: ["Cathedra", "House Thorn"], notes: "" }),
+        role: "House Thorn", tags: ["Cathedra", "House Thorn"], notes: "" }),
       fromTemplate("Gutter Ganger", { id: "demo-n-ganger", name: "Gullet Runner",
-        role: "Mook", tags: ["Cathedra", "The Gullet"],
+        role: "", tags: ["Cathedra", "The Gullet"],
         notes: "Sells directions. Sells you out for the same price." }),
-      fromTemplate("Corpo Security", { id: "demo-n-slate", name: "Mother Slate", kind: "npc",
+      fromTemplate("Fixer", { id: "demo-n-slate", name: "Mother Slate",
         role: "Fixer, the Marrowworks", tags: ["Cathedra", "contact"],
         notes: "Gave them the job. Owes Lux a favour and knows it.\nWants: the Houses fighting each other, not her." })
     ];
@@ -2567,11 +2520,18 @@ window.TTGM = (function () {
         var n = storyAddNpcs(sc.id);
         toast(n ? "Added " + count(n, "NPC", "NPCs") + " to your NPCs" : "They're already in your NPCs");
       }));
+      if ((sc.npcs || []).length && sc.level >= 1 && sc.level !== npcLevel()) {
+        c.appendChild(btn("NPCs to level " + sc.level, "tiny", function () {
+          setNpcLevel(sc.level); redraw();
+          toast("Every NPC is level " + sc.level + " now");
+        }));
+      }
       body.appendChild(c);
       [].forEach.call(c.querySelectorAll("button"), function (b) {
         var l = b.textContent;
         var k = /^Mark played|^Played/.test(l) ? "played" : /current/i.test(l) ? "current" :
-          /^Start clocks/.test(l) ? "clocks" : /^Add NPCs/.test(l) ? "npcs" : null;
+          /^Start clocks/.test(l) ? "clocks" : /^Add NPCs/.test(l) ? "npcs" :
+          /^NPCs to level/.test(l) ? "npcLevel" : null;
         if (k && HELP.story.tips[k]) b.title = HELP.story.tips[k];
       });
       if (helpOn()) { var sh = hintEl("story", "scene"); if (sh) body.appendChild(sh); }
@@ -2915,15 +2875,13 @@ window.TTGM = (function () {
       if (cat) cat.parentNode.insertBefore(hintEl("rulings", "catalog") || document.createTextNode(""), cat);
       tips(s, "rulings", [["Roll it secretly", "secret"], ["Roll the reaction", "react"]]);
     } else if (key === "npcs") {
+      hintAt(q(".gm-npclevel"), "npcs", "level", true);
       hintAt(btnRow(s, "+ Blank NPC"), "npcs", "make");
-      var tpl = [].filter.call(s.querySelectorAll(".gm-strip"), function (x) {
-        return /From a template/.test(x.textContent);
-      })[0];
-      if (tpl) hintAt(tpl, "npcs", "templates", true);
+      hintAt(q(".gm-npclib"), "npcs", "templates", true);
       var firstNpc = q(".gm-npc");
       if (firstNpc && helpOn()) { var hn = hintEl("npcs", "row"); if (hn) firstNpc.parentNode.insertBefore(hn, firstNpc); }
       tips(s, "npcs", [["+ Blank NPC", "blank"], ["+ Quick mook", "mook"], ["Improvise", "improvise"],
-        ["Add to encounter", "addEnc"], ["Duplicate", "dup"], ["Delete", "del"]]);
+        ["Add to encounter", "addEnc"], ["Duplicate", "dup"], ["Edit by hand", "byHand"], ["Delete", "del"]]);
     } else if (key === "clocks") {
       hintAt(btnRow(s, "+ 4-segment"), "clocks", "add");
       hintAt(q(".gm-clocks"), "clocks", "clock");
@@ -3312,7 +3270,227 @@ window.TTGM = (function () {
   }
 
   /* =================================================== SECTION 4, NPCS  */
-  var npcQ = "", npcOpen = null;
+  var npcQ = "", npcOpen = null, npcCatSel = null;
+
+  /* ---- NPCs that level with the table -----------------------------------
+     One number for every NPC: the NPC level at the top of the NPCs screen,
+     which follows the party's average level until the GM moves it. An NPC
+     made from one of npcs.js's archetypes (it has an arch) keeps only who it
+     is: name, role, notes, tags. npcBuild() works its numbers out again
+     whenever the level moves, and npcAll() hands every screen those. An NPC
+     with no arch is the GM's own, numbers and all, and never changes.
+     npc-engine-start */
+  var NPC_SKILL = { Acrobatics: "Dex", Athletics: "Str", Deception: "Cha", Insight: "Wis",
+    Intimidation: "Cha", Investigation: "Int", Medicine: "Wis", Perception: "Wis",
+    Performance: "Cha", Persuasion: "Cha", Religion: "Int", "Sleight of Hand": "Dex",
+    Stealth: "Dex", Survival: "Wis", Technology: "Int" };
+  var NPC_ASI = [4, 8, 12, 16, 19];
+
+  function npcTier(L) { return L >= 17 ? 3 : L >= 11 ? 2 : L >= 5 ? 1 : 0; }
+  function archAll() { return NPCD ? NPCD.archetypes : []; }
+  function archById(id) { return archAll().filter(function (a) { return a.id === id; })[0] || null; }
+  function archByName(name) { return archAll().filter(function (a) { return a.name === name; })[0] || null; }
+  function avgDice(expr) {
+    var t = 0, s = String(expr || "");
+    s.replace(/(\d+)d(\d+)/g, function (m, n, d) { t += +n * (+d + 1) / 2; return m; });
+    var k = /([+-]\d+)$/.exec(s);
+    if (k && /d/.test(s)) t += +k[1];
+    return t;
+  }
+
+  /* Challenge from the numbers, the way the 5e Dungeon Master's Guide
+     estimates it: a defensive rating from hit points, moved one step for
+     every 2 points of AC off the expected; an offensive one from damage a
+     round, moved the same way by the attack bonus (or the save DC); the two
+     averaged. Rows: CR, AC, most HP, attack bonus, most damage a round, DC. */
+  var CR_ROWS = [
+    [0, 13, 6, 3, 1, 13], [0.125, 13, 35, 3, 3, 13], [0.25, 13, 49, 3, 5, 13], [0.5, 13, 70, 3, 8, 13],
+    [1, 13, 85, 3, 14, 13], [2, 13, 100, 3, 20, 13], [3, 13, 115, 4, 26, 13], [4, 14, 130, 5, 32, 14],
+    [5, 15, 145, 6, 38, 15], [6, 15, 160, 6, 44, 15], [7, 15, 175, 6, 50, 15], [8, 16, 190, 7, 56, 16],
+    [9, 16, 205, 7, 62, 16], [10, 17, 220, 7, 68, 16], [11, 17, 235, 8, 74, 17], [12, 17, 250, 8, 80, 17],
+    [13, 18, 265, 8, 86, 18], [14, 18, 280, 8, 92, 18], [15, 18, 295, 8, 98, 18], [16, 18, 310, 9, 104, 18],
+    [17, 19, 325, 10, 110, 19], [18, 19, 340, 10, 116, 19], [19, 19, 355, 10, 122, 19], [20, 19, 400, 10, 140, 19],
+    [21, 19, 445, 11, 158, 20], [22, 19, 490, 11, 176, 20], [23, 19, 535, 11, 194, 20], [24, 19, 580, 12, 212, 21]];
+  function crFromNumbers(hp, ac, dpr, atk, dc) {
+    var last = CR_ROWS.length - 1;
+    function find(col, v) {
+      for (var i = 0; i < last; i++) if (v <= CR_ROWS[i][col]) return i;
+      return last;
+    }
+    function fit(i) { return Math.max(0, Math.min(last, i)); }
+    var d = find(2, hp);
+    d = fit(d + Math.trunc((ac - CR_ROWS[d][1]) / 2));
+    var o = find(4, dpr);
+    o = fit(o + Math.trunc(atk != null ? (atk - CR_ROWS[o][3]) / 2 : (dc - CR_ROWS[o][5]) / 2));
+    var v = (CR_ROWS[d][0] + CR_ROWS[o][0]) / 2;
+    if (v >= 1) return String(Math.round(v));
+    var best = [0, "0"];
+    [[0.125, "1/8"], [0.25, "1/4"], [0.5, "1/2"], [1, "1"]].forEach(function (s) {
+      if (Math.abs(s[0] - v) < Math.abs(best[0] - v) - 1e-9) best = s;
+    });
+    return best[1];
+  }
+
+  /* One archetype at one level: the whole statblock.
+       proficiency  2 + (level - 1) / 4, as a character's
+       scores       the prime ability +2 at levels 4, 8, 12, 16 and 19, until
+                    it reaches 20; then Con takes the rise
+       hit points   (level + 1/2) x the role's hit dice per level, each die
+                    at its average plus the Con modifier
+       armour       the role's, +1 at levels 7, 13 and 19
+       weapons      the kit's tier (levels 1-4, 5-10, 11-16, 17-20): its name
+                    and damage die; attack = proficiency + ability
+       attacks      the role's Multiattack for the level
+       features     every one whose level has been reached, with its save DC
+                    (8 + proficiency + ability) and dice filled in          */
+  function npcBuild(a, L) {
+    var R = NPCD.roles[a.role] || NPCD.roles.soldier;
+    L = Math.max(1, Math.min(20, Math.round(+L) || 1));
+    var tier = npcTier(L), pb = 2 + Math.floor((L - 1) / 4);
+    var sc = {};
+    T.ABIL.forEach(function (k) { sc[k] = +((a.scores || {})[k]) || 10; });
+    NPC_ASI.forEach(function (lv) {
+      if (L < lv) return;
+      var k = sc[a.prime] < 20 ? a.prime : "Con";
+      if (sc[k] < 20) sc[k] = Math.min(20, sc[k] + 2);
+    });
+    function md(k) { return T.mod(sc[k] || 10); }
+    var dc = 8 + pb + md(a.dcAbil || a.prime);
+    function fill(text, dice) {
+      return String(text || "").replace(/\{dc\}/g, dc).replace(/\{pb\}/g, pb)
+        .replace(/\{dmg\}/g, dice ? dice[tier] : "");
+    }
+    var hd = Math.max(1, Math.round((L + 0.5) * R.hd)), con = md("Con");
+    var hp = Math.max(1, Math.floor(hd * (R.die + 1) / 2) + hd * con);
+    var n = 1;
+    R.atks.forEach(function (x) { if (L >= x[0]) n = x[1]; });
+    var extra = R.dmgPb ? pb : 0;
+
+    var weapons = (a.kits || []).map(function (id) {
+      var k = NPCD.kits[id];
+      if (!k) return null;
+      var ab = k.abil === "best" ? (sc.Str > sc.Dex ? "Str" : "Dex") : k.abil;
+      var plus = md(ab) + extra, ammo = k.ammo ? k.ammo[tier] : 0;
+      return { name: k.names[tier], atk: pb + md(ab), dmg: k.dice[tier] + (plus ? T.sgn(plus) : ""),
+               text: k.range + "; " + k.dtype + " damage" + (ammo ? "; " + ammo + "-round magazine" : "") + "." +
+                     (k.note ? " " + fill(k.note) : "") };
+    }).filter(Boolean);
+    // a power's dice add the modifier of the ability behind its DC, like a spell's
+    var pm = md(a.dcAbil || a.prime), pmS = pm ? T.sgn(pm) : "";
+    var powers = (a.powers || []).filter(function (p) { return (p.min || 1) <= L; }).map(function (p) {
+      var dice = p.dice ? p.dice.map(function (d) { return d + pmS; }) : null;
+      return { name: p.name, atk: null, dmg: dice ? dice[tier] : "", text: fill(p.text, dice),
+               x: p.heal ? 0 : p.aoe ? 2 : 1 };
+    });
+    var actions = n > 1 && weapons.length
+      ? [{ name: "Multiattack", atk: null, dmg: "", text: "Makes " + n + " weapon attacks, in any mix." }] : [];
+    actions = actions.concat(weapons, powers.map(function (p) {
+      return { name: p.name, atk: null, dmg: p.dmg, text: p.text };
+    }));
+    function feats(list) {
+      return (list || []).filter(function (f) { return (f.min || 1) <= L; })
+        .map(function (f) { return { name: f.name, text: fill(f.text, f.dice) }; });
+    }
+    var saves = {}, skills = {};
+    (a.saves || []).forEach(function (k) { saves[k] = md(k) + pb; });
+    (a.skills || []).forEach(function (k) { skills[k] = md(NPC_SKILL[k] || "Wis") + pb; });
+    var perc = skills.Perception != null ? skills.Perception : md("Wis");
+
+    // how dangerous a round is: its weapons, or its best power
+    var bestW = weapons.reduce(function (b, w) { return !b || avgDice(w.dmg) > avgDice(b.dmg) ? w : b; }, null);
+    var wDpr = bestW ? n * avgDice(bestW.dmg) : 0;
+    var pDpr = powers.reduce(function (m, p) { return Math.max(m, p.x * avgDice(p.dmg)); }, 0);
+    var ac = R.ac + (a.acAdj || 0) + Math.floor((L - 1) / 6);
+    var cr = R.xp === false ? "0" : wDpr >= pDpr
+      ? crFromNumbers(hp, ac, wDpr, bestW ? bestW.atk : pb, dc)
+      : crFromNumbers(hp, ac, pDpr, null, dc);
+    var cat = (NPCD.categories || []).filter(function (c) { return c.id === a.cat; })[0];
+    return {
+      level: L, kind: R.kind || "npc", roleName: R.name, archName: a.name, catName: cat ? cat.name : "",
+      desc: a.desc || "", cr: cr, ac: ac, acFrom: Array.isArray(a.acFrom) ? a.acFrom[tier] : a.acFrom || "",
+      hp: hp, hpFormula: hd + "d" + R.die + (hd * con ? T.sgn(hd * con) : ""),
+      init: md("Dex") + (a.init || 0), speed: a.speed || "30 ft.", pb: pb, dc: dc,
+      scores: sc, saves: saves, skills: skills,
+      senses: (a.senses ? a.senses + ", " : "") + "passive Perception " + (10 + perc),
+      immune: a.immune || "", resist: a.resist || "", condImmune: a.condImmune || "",
+      actions: actions, traits: feats((NPCD.roleTraits || {})[a.role]).concat(feats(a.traits)),
+      reactions: feats(a.reactions), next: npcNext(a, L)
+    };
+  }
+  /* What the next step up the slider brings, so the GM can see it coming. */
+  function npcNext(a, L) {
+    var R = NPCD.roles[a.role] || NPCD.roles.soldier, at = {};
+    function add(lv, what) { if (lv > L && lv <= 20) (at[lv] = at[lv] || []).push(what); }
+    ((NPCD.roleTraits || {})[a.role] || []).concat(a.powers || [], a.traits || [], a.reactions || [])
+      .forEach(function (f) { add(f.min || 1, f.name); });
+    R.atks.forEach(function (x) { add(x[0], x[1] + " attacks"); });
+    [5, 11, 17].forEach(function (lv) { add(lv, "Better weapons"); });
+    var lvls = Object.keys(at).map(Number).sort(function (x, y) { return x - y; });
+    return lvls.length ? { level: lvls[0], what: at[lvls[0]] } : null;
+  }
+  /* npc-engine-end */
+
+  function npcPartyLevel() {
+    var lv = partyAll().map(function (r) { return Math.floor(+r.level); })
+      .filter(function (l) { return l >= 1 && l <= 20; });
+    if (!lv.length) return null;
+    return Math.round(lv.reduce(function (a, b) { return a + b; }, 0) / lv.length);
+  }
+  function npcLevel() {
+    var p = playState().npcLevel;
+    return p >= 1 && p <= 20 ? p : npcPartyLevel() || 3;
+  }
+  function setNpcLevel(v) {
+    v = Math.max(1, Math.min(20, Math.round(+v) || 1));
+    playPatch(function (p) { p.npcLevel = v; });
+    return v;
+  }
+
+  /* Which story scene NPC this is, and the archetype its scene asks for. */
+  function storyTemplateOf(id) {
+    var hit = null;
+    if (!ST || !id) return null;
+    ST.acts.forEach(function (act) {
+      act.scenes.forEach(function (sc) {
+        (sc.npcs || []).forEach(function (m) { if (m.id === id) hit = m.template; });
+      });
+    });
+    return hit;
+  }
+  /* A roster from before the slider: an NPC still carrying a fixed
+     template's numbers untouched moves onto the slider. Anything else is
+     left exactly as it was; v: 2 marks one the GM chose to keep by hand. */
+  function npcMigrate(n) {
+    if (n.arch || n.v >= 2 || !NPCD) return n;
+    var sig = [n.ac, n.hp, n.hpFormula || "", ((n.actions || [])[0] || {}).name || ""].join("|");
+    var was = G.oldTemplates && G.oldTemplates[sig];
+    if (!was) return n;
+    var a = archByName(storyTemplateOf(n.id)) || archById(was);
+    if (!a) return n;
+    n.arch = a.id;
+    if ((G.oldRoles || []).indexOf(n.role) >= 0) n.role = "";
+    var R = NPCD.roles[a.role];
+    if (n.kind && n.kind !== ((R && R.kind) || "npc")) n.kindSet = n.kind;
+    return n;
+  }
+  function npcResolve(n, L) {
+    if (!NPCD) return n;
+    npcMigrate(n);
+    var a = n.arch ? archById(n.arch) : null;
+    if (!a) return n;                    // an archetype this copy doesn't know: last numbers stand
+    var b = npcBuild(a, L);
+    Object.keys(b).forEach(function (k) { n[k] = b[k]; });
+    if (n.kindSet === "npc" || n.kindSet === "mook") n.kind = n.kindSet;
+    return n;
+  }
+  /* "Edit by hand": the numbers it has now become its own. */
+  function npcDetach(n) {
+    if (!n.role && n.roleName) n.role = n.roleName;
+    ["arch", "desc", "next", "roleName", "archName", "catName", "level", "pb", "dc", "kindSet"]
+      .forEach(function (k) { delete n[k]; });
+    n.v = 2;
+    return n;
+  }
 
   function blankNPC(kind) {
     return { id: uid("n"), kind: kind || "npc", name: "", role: "", tags: [], cr: "",
@@ -3320,43 +3498,71 @@ window.TTGM = (function () {
              scores: null, saves: {}, skills: {}, senses: "", immune: "", resist: "",
              vuln: "", condImmune: "", langs: "",
              traits: [], actions: [], bonus: [], reactions: [], legendary: [],
-             humanity: null, notes: "", updated: Date.now() };
+             humanity: null, notes: "", v: 2, updated: Date.now() };
   }
   function npcSave(n) {
     n.updated = Date.now();
     var all = npcAll().filter(function (x) { return x.id !== n.id; });
     all.push(n); npcWrite(all);
   }
-  function npcFromTemplate(t) {
-    var n = Object.assign(blankNPC(t.kind), JSON.parse(JSON.stringify(t)));
+  function npcFromArch(a, L) {
+    var n = blankNPC();
+    n.arch = a.id; n.name = a.name;
+    return npcResolve(n, L || npcLevel());
+  }
+  /* Everything that asks for an NPC by template gets a levelling one; an
+     old-style template object (a vault from before) is copied as it is. */
+  function npcFromTemplate(t, L) {
+    if (t && t.kits) return npcFromArch(t, L);
+    var n = Object.assign(blankNPC(t && t.kind), JSON.parse(JSON.stringify(t || {})));
     n.id = uid("n");
     n.updated = Date.now();
     return n;
   }
   function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
 
+  function quickMook() {
+    var a = archByName("Gutter Ganger");
+    var n = a ? npcFromArch(a) : Object.assign(blankNPC("mook"), { ac: 12, hp: 9 });
+    n.name = "Mook";
+    return n;
+  }
   function improviseNPC() {
-    var n = npcFromTemplate(G.npcTemplates.filter(function (t) { return t.kind === "mook"; })[0] ||
-                            G.npcTemplates[0]);
+    var a = archByName("Gutter Ganger") || archAll()[0];
+    var n = a ? npcFromArch(a) : blankNPC("npc");
     n.name = pick(G.names.first) + " " + pick(G.names.last);
     n.role = pick(G.names.role);
     n.kind = "npc";
+    if (n.arch) n.kindSet = "npc";
     n.notes = "Wants: " + pick(G.names.want) +
       "\nHiding: " + pick(G.names.hiding) +
       "\nTell: " + pick(G.names.quirk);
     return n;
   }
+  /* One attack or power, rolled into a toast. */
+  function rollAction(a, detail) {
+    var hit = a.atk == null ? null : d20(a.atk);
+    var dmg = a.dmg ? rollExpr(a.dmg) : null;
+    if (dmg && !dmg.ok) dmg = { total: null, detail: "couldn't read “" + a.dmg + "”" };
+    toast((hit ? "Attack " + hit.nat + T.sgn(a.atk) + " = " + hit.total : "") +
+          (hit && dmg ? "  ·  " : "") +
+          (dmg ? (dmg.total === null ? dmg.detail
+                                     : "Damage " + dmg.total + (detail ? " (" + dmg.detail + ")" : "")) : ""));
+  }
+  // English data inside a Spanish screen: names, feature text, statblock values
+  function nolang(node) { node.setAttribute("data-nolang", ""); return node; }
 
   function renderNPCs(s) {
     sectionHead(s, "The table", "NPCs",
-      "Everyone you might need numbers for. Mooks are one line; anyone who matters gets the full block.");
+      "Everyone you might need numbers for. NPCs from the library level with the table: move the NPC level and every statblock follows.");
+    s.appendChild(npcLevelPanel());
 
     var bar = row("gm-row");
     bar.appendChild(btn("+ Blank NPC", "primary", function () {
       var n = blankNPC("npc"); n.name = "New NPC"; npcSave(n); npcOpen = n.id; redraw();
     }));
     bar.appendChild(btn("+ Quick mook", "", function () {
-      var n = blankNPC("mook"); n.name = "Mook"; n.ac = 12; n.hp = 9; npcSave(n); npcOpen = n.id; redraw();
+      var n = quickMook(); npcSave(n); npcOpen = n.id; redraw();
     }));
     bar.appendChild(btn("Improvise someone", "", function () {
       var n = improviseNPC(); npcSave(n); npcOpen = n.id; redraw();
@@ -3364,20 +3570,7 @@ window.TTGM = (function () {
     }));
     s.appendChild(bar);
 
-    /* templates */
-    var tpl = el("div", "gm-strip");
-    tpl.appendChild(txt("div", "gm-label", "From a template"));
-    var tc = el("div", "gm-chips tight");
-    G.npcTemplates.forEach(function (t) {
-      var b = txt("button", "chip", t.name + " · CR " + t.cr);
-      b.onclick = function () {
-        var n = npcFromTemplate(t); npcSave(n); npcOpen = n.id; redraw();
-        toast("Added " + n.name);
-      };
-      tc.appendChild(b);
-    });
-    tpl.appendChild(tc);
-    s.appendChild(tpl);
+    s.appendChild(npcLibrary());
 
     /* pull the campaign's own cast in as stubs */
     var camp = T.campById(T.campSel()) || T.campAll()[0];
@@ -3399,12 +3592,12 @@ window.TTGM = (function () {
         toast(n ? "Added " + count(n, "NPC", "NPCs") + " to stat up" : "Already have them all");
         redraw();
       }));
-      pullRow.appendChild(txt("span", "gm-note", "Brings their names and notes over. You add the numbers."));
+      pullRow.appendChild(txt("span", "gm-note", "Brings their names and notes over. Open one and pick what they level as."));
       s.appendChild(pullRow);
     }
 
-    var all = npcAll().sort(function (a, b) { return (a.name || "").localeCompare(b.name || ""); });
-    if (!all.length) { empty(s, "No NPCs yet.", "Start from a template, it's faster than a blank form.", "npcs"); return; }
+    var all = npcAll().slice().sort(function (a, b) { return (a.name || "").localeCompare(b.name || ""); });
+    if (!all.length) { empty(s, "No NPCs yet.", "Pick one from the library, it's faster than a blank form.", "npcs"); return; }
 
     var search = field(npcQ, "Search names, roles and tags", function (v) { npcQ = v; paint(); });
     search.className = "search";
@@ -3418,7 +3611,8 @@ window.TTGM = (function () {
       var hits = all.filter(function (n) {
         if (!q) return true;
         return ((n.name || "") + " " + (n.role || "") + " " + (n.tags || []).join(" ") + " " +
-                (n.notes || "")).toLowerCase().indexOf(q) >= 0;
+                (n.notes || "") + " " + (n.arch ? [n.archName, n.roleName, n.catName].join(" ") : ""))
+          .toLowerCase().indexOf(q) >= 0;
       });
       if (!hits.length) { empty(list, "No match."); return; }
       hits.forEach(function (n) { list.appendChild(npcRow(n)); });
@@ -3426,43 +3620,291 @@ window.TTGM = (function () {
     paint();
   }
 
+  /* The one slider every NPC follows. It redraws on release only, so the
+     screen doesn't move under a finger mid-drag. */
+  function npcLevelPanel() {
+    var L = npcLevel(), party = npcPartyLevel(), manual = playState().npcLevel >= 1;
+    var box = el("div", "gm-npclevel");
+    var head = el("div", "gm-npclevel-head");
+    head.appendChild(txt("span", "gm-label", "NPC level"));
+    var big = txt("b", "gm-npclevel-n", String(L));
+    head.appendChild(big);
+    head.appendChild(txt("span", "gm-note", manual
+      ? (party ? "Set by hand; the party is level " + party + "." : "Set by hand.")
+      : (party ? "Following the party's average level." : "No party yet, so level 3.")));
+    box.appendChild(head);
+
+    function go(v) {
+      v = Math.max(1, Math.min(20, v));
+      if (manual && v === L) return;
+      setNpcLevel(v); redraw();
+      toast("Every NPC is level " + v + " now");
+    }
+    var ctl = el("div", "lvl-row");
+    var down = txt("button", "chip lvl-step", "−");
+    down.setAttribute("aria-label", "One level down");
+    down.onclick = function () { go(L - 1); };
+    var range = document.createElement("input");
+    range.type = "range"; range.min = "1"; range.max = "20"; range.step = "1"; range.value = String(L);
+    range.setAttribute("aria-label", "NPC level");
+    range.oninput = function () { big.textContent = range.value; };
+    range.onchange = function () { go(+range.value); };
+    var up = txt("button", "chip lvl-step", "+");
+    up.setAttribute("aria-label", "One level up");
+    up.onclick = function () { go(L + 1); };
+    ctl.appendChild(down); ctl.appendChild(range); ctl.appendChild(up);
+    box.appendChild(ctl);
+    if (manual && party) {
+      var back = row("gm-row tight");
+      back.appendChild(btn("Follow the party (level " + party + ")", "tiny", function () {
+        playPatch(function (p) { delete p.npcLevel; }); redraw();
+        toast("NPCs follow the party again");
+      }));
+      box.appendChild(back);
+    }
+    box.appendChild(txt("p", "gm-note", "Hit points, armour, attack bonus, weapons, how many attacks, save DCs and features all follow this. NPCs already in a fight keep the hit points they came in with."));
+    return box;
+  }
+
+  /* The archetypes by category, each drawn at the current level. */
+  function npcLibrary() {
+    var box = el("div", "gm-strip gm-npclib");
+    box.appendChild(txt("div", "gm-label", "The library"));
+    if (!NPCD) {
+      box.appendChild(txt("p", "gm-note", "The NPC library didn't load. Reload the page; npcs.js sits next to gm.js."));
+      return box;
+    }
+    var cats = NPCD.categories;
+    var cur = cats.some(function (c) { return c.id === npcCatSel; }) ? npcCatSel : cats[0].id;
+    var tabs = el("div", "gm-chips tight gm-npccats");
+    cats.forEach(function (c) {
+      var b = txt("button", "chip" + (c.id === cur ? " on" : ""), c.name);
+      b.setAttribute("aria-pressed", c.id === cur ? "true" : "false");
+      b.onclick = function () { npcCatSel = c.id; redraw(); };
+      tabs.appendChild(b);
+    });
+    box.appendChild(tabs);
+    var cat = cats.filter(function (c) { return c.id === cur; })[0];
+    box.appendChild(txt("p", "gm-note gm-npccat-blurb", cat.blurb));
+    var L = npcLevel(), grid = el("div", "gm-archs");
+    archAll().filter(function (a) { return a.cat === cur; }).forEach(function (a) {
+      var b = npcBuild(a, L);
+      var card = el("button", "gm-arch");
+      card.type = "button";
+      var top = el("span", "gm-arch-top");
+      top.appendChild(nolang(txt("b", null, a.name)));
+      top.appendChild(txt("span", "gm-arch-role", b.roleName));
+      card.appendChild(top);
+      card.appendChild(nolang(txt("span", "gm-arch-desc", a.desc)));
+      var num = el("span", "gm-arch-num");
+      num.appendChild(txt("span", null, "AC " + b.ac));
+      num.appendChild(txt("span", null, b.hp + " HP"));
+      num.appendChild(txt("span", null, "CR " + b.cr));
+      card.appendChild(num);
+      card.title = "Add a level " + L + " " + a.name + " to your NPCs";
+      card.onclick = function () {
+        var n = npcFromArch(a); npcSave(n); npcOpen = n.id; redraw();
+        toast("Added " + n.name);
+      };
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+    return box;
+  }
+
+  /* Every archetype, by category, for "levels as". */
+  function archSelect(cur, onpick, keepLabel) {
+    var sel = document.createElement("select");
+    if (keepLabel) { var o0 = txt("option", null, keepLabel); o0.value = ""; sel.appendChild(o0); }
+    (NPCD ? NPCD.categories : []).forEach(function (c) {
+      var g = document.createElement("optgroup");
+      g.label = T.T(c.name);
+      archAll().filter(function (a) { return a.cat === c.id; }).forEach(function (a) {
+        // the NPC's name is data; its role is put into the screen's language here
+        var o = nolang(txt("option", null, a.name + " · " + T.T((NPCD.roles[a.role] || {}).name)));
+        o.value = a.id;
+        if (a.id === cur) o.selected = true;
+        g.appendChild(o);
+      });
+      sel.appendChild(g);
+    });
+    sel.onchange = function () { if (sel.value) onpick(sel.value); };
+    return sel;
+  }
+
   function npcRow(n) {
-    var open = npcOpen === n.id;
-    var d = el("details", "item gm-npc" + (n.kind === "mook" ? " mook" : ""));
+    var open = npcOpen === n.id, arch = n.arch ? archById(n.arch) : null;
+    var d = el("details", "item gm-npc" + (n.kind === "mook" ? " mook" : "") + (arch ? " levels" : ""));
     d.open = open;
     var sum = document.createElement("summary");
     sum.appendChild(txt("span", "gm-npc-name", n.name || "Unnamed"));
     if (n.role) sum.appendChild(txt("span", "chip", n.role));
+    if (arch && arch.name !== n.name) sum.appendChild(nolang(txt("span", "chip", arch.name)));
+    if (arch) sum.appendChild(txt("span", "chip lvl", "Lv " + n.level));
     sum.appendChild(txt("span", "chip tier", "AC " + n.ac));
     sum.appendChild(txt("span", "chip tier", n.hp + " HP"));
     if (n.cr) sum.appendChild(txt("span", "chip", "CR " + n.cr));
     d.appendChild(sum);
     d.ontoggle = function () { if (d.open) npcOpen = n.id; };
-    d.appendChild(npcEditor(n));
+    d.appendChild(arch ? npcSheet(n) : npcEditor(n));
     return d;
   }
 
+  function npcLine(label, node) {
+    var l = el("div", "gm-field");
+    l.appendChild(txt("label", null, label));
+    l.appendChild(node);
+    return l;
+  }
+
+  /* A levelling NPC: who they are is yours to edit, the numbers are the
+     level's. "Edit by hand" hands the numbers over too. */
+  function npcSheet(n) {
+    var b = el("div", "gm-npc-body");
+    var g1 = el("div", "gm-grid");
+    g1.appendChild(npcLine("Name", field(n.name, "", function (v) { n.name = v; npcSave(n); })));
+    g1.appendChild(npcLine("Role", field(n.role, "Who they are to the story", function (v) { n.role = v; npcSave(n); })));
+    g1.appendChild(npcLine("Levels as", archSelect(n.arch, function (id) {
+      n.arch = id; npcOpen = n.id; npcSave(n); redraw();
+    })));
+    g1.appendChild(npcLine("Humanity", numField(n.humanity, function (v) { n.humanity = v; npcSave(n); })));
+    b.appendChild(g1);
+    b.appendChild(npcBlock(n));
+
+    var notes = field(n.notes, "Prep notes, what they want, what they're hiding", function (v) { n.notes = v; npcSave(n); }, "textarea");
+    notes.rows = 3;
+    b.appendChild(npcLine("Notes", notes));
+
+    var tools = row("gm-row end");
+    tools.appendChild(btn("Edit by hand", "", function () {
+      if (!window.confirm("Stop " + (n.name || "this NPC") + " levelling with the table? The numbers stay as they are now, for you to change.")) return;
+      npcDetach(n); npcOpen = n.id; npcSave(n); redraw();
+    }));
+    npcCommonTools(tools, n);
+    b.appendChild(tools);
+    return b;
+  }
+  function npcCommonTools(tools, n) {
+    tools.appendChild(btn("Duplicate", "", function () {
+      var copy = JSON.parse(JSON.stringify(n));
+      copy.id = uid("n"); copy.name = (n.name || "NPC") + " (copy)";
+      npcSave(copy); npcOpen = copy.id; redraw();
+    }));
+    tools.appendChild(btn("Add to encounter", "primary", function () {
+      addToEncounter(n, 1); toast("Added " + (n.name || "NPC") + " to the encounter");
+    }));
+    tools.appendChild(btn("Delete", "", function () {
+      confirmDrop(n.name || "this NPC", function () {
+        npcWrite(npcAll().filter(function (x) { return x.id !== n.id; })); redraw();
+      });
+    }));
+  }
+
+  /* The statblock, read-only. Labels are the app's; the values are the
+     NPC's own English. */
+  function npcBlock(n) {
+    var box = el("div", "gm-sb");
+    if (n.desc) box.appendChild(nolang(txt("p", "gm-sb-desc", n.desc)));
+    var top = el("div", "gm-sb-top");
+    function stat(label, value, sub) {
+      var c = el("div", "gm-sb-stat");
+      c.appendChild(txt("span", "k", label));
+      c.appendChild(nolang(txt("b", null, value)));
+      if (sub) c.appendChild(nolang(txt("span", "s", sub)));
+      top.appendChild(c);
+    }
+    stat("Armour class", String(n.ac), n.acFrom);
+    stat("Hit points", String(n.hp), n.hpFormula);
+    stat("Speed", n.speed);
+    stat("Initiative", T.sgn(n.init || 0));
+    stat("Proficiency", T.sgn(n.pb || 2));
+    stat("Save DC", String(n.dc));
+    var xp = crXp(n.cr);
+    stat("Challenge", n.cr || "-", xp == null ? "" : fmtNum(xp) + " XP");
+    box.appendChild(top);
+
+    var abr = el("div", "gm-abrow");
+    T.ABIL.forEach(function (k) {
+      var cell = el("div", "gm-ab");
+      cell.appendChild(txt("div", "k", k));
+      cell.appendChild(txt("div", "v", String(n.scores[k])));
+      cell.appendChild(txt("div", "m", T.sgn(T.mod(n.scores[k]))));
+      abr.appendChild(cell);
+    });
+    box.appendChild(abr);
+
+    function pairs(o) { return Object.keys(o || {}).map(function (k) { return k + " " + T.sgn(o[k]); }).join(", "); }
+    [["Saves", pairs(n.saves)], ["Skills", pairs(n.skills)], ["Senses", n.senses],
+     ["Immunities", n.immune], ["Resistances", n.resist], ["Condition imm.", n.condImmune]]
+      .forEach(function (x) {
+        if (!x[1]) return;
+        var l = el("div", "gm-sb-line");
+        l.appendChild(txt("span", "k", x[0]));
+        l.appendChild(nolang(txt("span", null, x[1])));
+        box.appendChild(l);
+      });
+
+    [["actions", "Actions"], ["traits", "Traits"], ["reactions", "Reactions"]].forEach(function (spec) {
+      var list = n[spec[0]] || [];
+      if (!list.length) return;
+      box.appendChild(txt("div", "gm-label", spec[1]));
+      list.forEach(function (a) {
+        var f = el("div", "gm-sb-f");
+        var h = el("div", "gm-sb-fh");
+        h.appendChild(nolang(txt("b", null, a.name)));
+        if (a.atk != null) h.appendChild(txt("span", "chip tier", T.sgn(a.atk) + " to hit"));
+        if (a.dmg) h.appendChild(nolang(txt("span", "chip tier", a.dmg)));
+        if (a.atk != null || a.dmg) h.appendChild(btn("Roll", "tiny", function () { rollAction(a, false); }));
+        f.appendChild(h);
+        f.appendChild(nolang(txt("p", null, a.text)));
+        box.appendChild(f);
+      });
+    });
+
+    if (n.next) {
+      var nx = el("div", "gm-sb-next");
+      nx.appendChild(txt("span", "gm-note", "At level " + n.next.level + ":"));
+      n.next.what.forEach(function (w) {
+        var c = txt("span", "chip", w);
+        // "2 attacks" and "Better weapons" are the app's words; the rest are feature names
+        nx.appendChild(/^\d+ attacks$|^Better weapons$/.test(w) ? c : nolang(c));
+      });
+      box.appendChild(nx);
+    }
+    return box;
+  }
+
+  /* A hand-made NPC: every number is the GM's. */
   function npcEditor(n) {
     var b = el("div", "gm-npc-body");
-
-    function line(label, node) {
-      var l = el("div", "gm-field");
-      l.appendChild(txt("label", null, label));
-      l.appendChild(node);
-      return l;
-    }
     function put(k) { return function (v) { n[k] = v; npcSave(n); }; }
 
+    if (NPCD) {
+      var lv = el("div", "gm-strip gm-npc-arch");
+      lv.appendChild(txt("div", "gm-label", "Level with the table"));
+      var lr = row("gm-row tight");
+      lr.appendChild(archSelect(null, function (id) {
+        var a = archById(id);
+        if (!a || !window.confirm("Give " + (n.name || "this NPC") + " the numbers of a level " + npcLevel() + " " +
+            a.name + "? The name, role and notes stay, and the numbers follow the NPC level from now on.")) { redraw(); return; }
+        n.arch = id; n.v = 2; npcOpen = n.id; npcSave(n); redraw();
+        toast((n.name || "NPC") + " levels with the table now");
+      }, "Keep my numbers"));
+      lr.appendChild(txt("span", "gm-note", "Pick what they are and their numbers follow the NPC level."));
+      lv.appendChild(lr);
+      b.appendChild(lv);
+    }
+
     var g1 = el("div", "gm-grid");
-    g1.appendChild(line("Name", field(n.name, "", put("name"))));
-    g1.appendChild(line("Role", field(n.role, "Brute, Fixer, Bystander…", put("role"))));
-    g1.appendChild(line("CR", field(n.cr, "", put("cr"))));
-    g1.appendChild(line("AC", numField(n.ac, function (v) { n.ac = v == null ? 10 : v; npcSave(n); })));
-    g1.appendChild(line("Hit points", numField(n.hp, function (v) { n.hp = v == null ? 1 : v; npcSave(n); })));
-    g1.appendChild(line("Initiative", numField(n.init, function (v) { n.init = v == null ? 0 : v; npcSave(n); })));
-    g1.appendChild(line("AC from", field(n.acFrom, "Armoured jacket…", put("acFrom"))));
-    g1.appendChild(line("HP formula", field(n.hpFormula, "6d8+18", put("hpFormula"))));
-    g1.appendChild(line("Speed", field(n.speed, "30 ft.", put("speed"))));
+    g1.appendChild(npcLine("Name", field(n.name, "", put("name"))));
+    g1.appendChild(npcLine("Role", field(n.role, "Brute, Fixer, Bystander…", put("role"))));
+    g1.appendChild(npcLine("CR", field(n.cr, "", put("cr"))));
+    g1.appendChild(npcLine("AC", numField(n.ac, function (v) { n.ac = v == null ? 10 : v; npcSave(n); })));
+    g1.appendChild(npcLine("Hit points", numField(n.hp, function (v) { n.hp = v == null ? 1 : v; npcSave(n); })));
+    g1.appendChild(npcLine("Initiative", numField(n.init, function (v) { n.init = v == null ? 0 : v; npcSave(n); })));
+    g1.appendChild(npcLine("AC from", field(n.acFrom, "Armoured jacket…", put("acFrom"))));
+    g1.appendChild(npcLine("HP formula", field(n.hpFormula, "6d8+18", put("hpFormula"))));
+    g1.appendChild(npcLine("Speed", field(n.speed, "30 ft.", put("speed"))));
     b.appendChild(g1);
 
     if (n.kind !== "mook") {
@@ -3488,12 +3930,12 @@ window.TTGM = (function () {
       b.appendChild(ab);
 
       var g2 = el("div", "gm-grid");
-      g2.appendChild(line("Senses", field(n.senses, "passive Perception 13", put("senses"))));
-      g2.appendChild(line("Languages", field(n.langs, "", put("langs"))));
-      g2.appendChild(line("Immunities", field(n.immune, "", put("immune"))));
-      g2.appendChild(line("Resistances", field(n.resist, "", put("resist"))));
-      g2.appendChild(line("Condition imm.", field(n.condImmune, "", put("condImmune"))));
-      g2.appendChild(line("Humanity", numField(n.humanity, function (v) { n.humanity = v; npcSave(n); })));
+      g2.appendChild(npcLine("Senses", field(n.senses, "passive Perception 13", put("senses"))));
+      g2.appendChild(npcLine("Languages", field(n.langs, "", put("langs"))));
+      g2.appendChild(npcLine("Immunities", field(n.immune, "", put("immune"))));
+      g2.appendChild(npcLine("Resistances", field(n.resist, "", put("resist"))));
+      g2.appendChild(npcLine("Condition imm.", field(n.condImmune, "", put("condImmune"))));
+      g2.appendChild(npcLine("Humanity", numField(n.humanity, function (v) { n.humanity = v; npcSave(n); })));
       b.appendChild(g2);
     }
 
@@ -3510,15 +3952,7 @@ window.TTGM = (function () {
         if (key === "actions") {
           r.appendChild(numField(a.atk, function (v) { a.atk = v; npcSave(n); }, "68px"));
           r.appendChild(field(a.dmg, "2d6+3", function (v) { a.dmg = v; npcSave(n); }));
-          var rollBtn = btn("Roll", "tiny", function () {
-            var hit = a.atk == null ? null : d20(a.atk);
-            var dmg = a.dmg ? rollExpr(a.dmg) : null;
-            if (dmg && !dmg.ok) dmg = { total: null, detail: "couldn't read \u201c" + a.dmg + "\u201d" };
-            toast((hit ? "Attack " + hit.nat + T.sgn(a.atk) + " = " + hit.total : "") +
-                  (hit && dmg ? "  ·  " : "") +
-                  (dmg ? (dmg.total === null ? dmg.detail : "Damage " + dmg.total) : ""));
-          });
-          r.appendChild(rollBtn);
+          r.appendChild(btn("Roll", "tiny", function () { rollAction(a, false); }));
         }
         r.appendChild(field(a.text, "What it does", function (v) { a.text = v; npcSave(n); }));
         var x = btn("×", "tiny", function () { n[key].splice(i, 1); npcSave(n); redraw(); });
@@ -3534,25 +3968,13 @@ window.TTGM = (function () {
 
     var notes = field(n.notes, "Prep notes, what they want, what they're hiding", put("notes"), "textarea");
     notes.rows = 3;
-    b.appendChild(line("Notes", notes));
+    b.appendChild(npcLine("Notes", notes));
 
     var tools = row("gm-row end");
     tools.appendChild(btn(n.kind === "mook" ? "Make full NPC" : "Make mook", "", function () {
       n.kind = n.kind === "mook" ? "npc" : "mook"; npcSave(n); redraw();
     }));
-    tools.appendChild(btn("Duplicate", "", function () {
-      var copy = JSON.parse(JSON.stringify(n));
-      copy.id = uid("n"); copy.name = (n.name || "NPC") + " (copy)";
-      npcSave(copy); npcOpen = copy.id; redraw();
-    }));
-    tools.appendChild(btn("Add to encounter", "primary", function () {
-      addToEncounter(n, 1); toast("Added " + (n.name || "NPC") + " to the encounter");
-    }));
-    tools.appendChild(btn("Delete", "", function () {
-      confirmDrop(n.name || "this NPC", function () {
-        npcWrite(npcAll().filter(function (x) { return x.id !== n.id; })); redraw();
-      });
-    }));
+    npcCommonTools(tools, n);
     b.appendChild(tools);
     return b;
   }
@@ -3722,6 +4144,9 @@ window.TTGM = (function () {
       };
       bar.appendChild(sel);
       bar.appendChild(qty);
+      var lvChip = txt("span", "chip tier", "NPC level " + npcLevel());
+      lvChip.title = "Set on the NPCs screen. NPCs already in the fight keep their hit points.";
+      bar.appendChild(lvChip);
     }
     bar.appendChild(btn("+ Ad-hoc", "", function () {
       encPatch(function (e) {
@@ -4187,15 +4612,7 @@ window.TTGM = (function () {
       if (src && (src.actions || []).length) {
         src.actions.forEach(function (a) {
           if (a.atk == null && !a.dmg) return;
-          var b = btn(a.name || "attack", "tiny", function () {
-            var hit = a.atk == null ? null : d20(a.atk);
-            var dmg = a.dmg ? rollExpr(a.dmg) : null;
-            if (dmg && !dmg.ok) dmg = { total: null, detail: "couldn't read \u201c" + a.dmg + "\u201d" };
-            toast((hit ? "Attack " + hit.nat + T.sgn(a.atk) + " = " + hit.total : "") +
-                  (hit && dmg ? "  ·  " : "") +
-                  (dmg ? (dmg.total === null ? dmg.detail
-                                             : "Damage " + dmg.total + " (" + dmg.detail + ")") : ""));
-          });
+          var b = btn(a.name || "attack", "tiny", function () { rollAction(a, true); });
           tools.appendChild(b);
         });
       }
@@ -6438,6 +6855,7 @@ window.TTGM = (function () {
     rollMalfunctionFor: rollMalfunctionFor, generateNet: generateNet, cycleNode: cycleNode,
     heistComplication: heistComplication, chaseComplication: chaseComplication, cleanChase: cleanChase,
     cleanMaps: cleanMaps, mapsState: mapsState, openMap: openMap, toggleArea: toggleArea,
-    mountPlayerView: mountPlayerView
+    mountPlayerView: mountPlayerView,
+    npcBuild: npcBuild, npcLevel: npcLevel, setNpcLevel: setNpcLevel, npcAll: npcAll
   };
 })();

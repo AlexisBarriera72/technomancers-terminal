@@ -518,11 +518,11 @@ TTST.acts.push({
     ],
     clocks: [{ id: "st-reliquary-damages", name: "Reliquary damages (Thorn collects)", seg: 4 }],
     npcs: [
-      { id: "st-slate", name: "Mother Slate", template: "Civilian", role: "Fixer, the Marrowworks",
+      { id: "st-slate", name: "Mother Slate", template: "Fixer", role: "Fixer, the Marrowworks",
         notes: "The cutout. Paid in choir coins. Loses face when the job fails; can be won back." },
-      { id: "st-sarrow", name: "Archdeacon Uln Sarrow", template: "Civilian", role: "House Reliquary · fourth petitioner",
+      { id: "st-sarrow", name: "Archdeacon Uln Sarrow", template: "Reliquary Confessor", role: "House Reliquary · fourth petitioner",
         notes: "Recorded his minute of the vision. Frightened, rich, not a villain." },
-      { id: "st-acolyte", name: "Reliquary acolyte", template: "Corpo Security", role: "Chapel guard",
+      { id: "st-acolyte", name: "Reliquary acolyte", template: "Reliquary Acolyte", role: "Chapel guard",
         notes: "Sings on shift. Would rather not fight in a chapel." }
     ],
     fragment: { n: 1, ways: ["The shard cracks on the first step that isn't consecrated ground. Fixed."] },
@@ -621,7 +621,7 @@ TTST.acts.push({
     npcs: [
       { id: "st-ketch", name: "Ketch", template: "Netrunner", role: "Wirewalker · the second voice",
         notes: "Found them on the steps. The second voice knows their names from other loops." },
-      { id: "st-tallow", name: "Tallow", template: "House Enforcer", role: "Hush quieter",
+      { id: "st-tallow", name: "Tallow", template: "Hush Quieter", role: "Hush quieter",
         notes: "Polite, apologetic, sings people to sleep for good. Worth sparing." },
       { id: "st-dace", name: "Ser Ambrel Dace", template: "Corpo Lieutenant", role: "House Thorn, collections",
         notes: "Collecting the Reliquary's damages. Payment, a counter-favour or a duel." }
@@ -718,13 +718,13 @@ TTST.acts.push({
     ],
     clocks: [{ id: "st-hush-close", name: "The Hush close in", seg: 6 }],
     npcs: [
-      { id: "st-ines", name: "Ines Varro", template: "Civilian", role: "Lift operator · second petitioner",
+      { id: "st-ines", name: "Ines Varro", template: "Lift Operator", role: "Lift operator · second petitioner",
         notes: "Saw the Spine snap. Knows every car and cable. Useful in session 8." },
-      { id: "st-cobb", name: "Brother Cobb", template: "Civilian", role: "Drill foreman · third petitioner",
+      { id: "st-cobb", name: "Brother Cobb", template: "Marrowworks Driller", role: "Drill foreman · third petitioner",
         notes: "His crew hit the warm thing. Paid three times to keep quiet." },
       { id: "st-pell", name: "Pell", template: "Civilian", role: "Gullet child · first petitioner",
         notes: "Draws four figures in the ruins. The drawings are getting more accurate." },
-      { id: "st-quieter", name: "Hush quieter", template: "House Enforcer", role: "The Hush",
+      { id: "st-quieter", name: "Hush quieter", template: "Hush Quieter", role: "The Hush",
         notes: "Sings seers to sleep. Never touches anyone who hasn't seen the vision." }
     ],
     fragment: { n: 2, ways: ["Route A if they kill Hush singers tonight (a singer was a voice in the Cantor). Otherwise this fragment waits for session 7 or 10."] },
@@ -827,11 +827,11 @@ TTST.acts.push({
     ],
     clocks: [{ id: "st-marrow", name: "The Marrowworks lights up", seg: 4 }],
     npcs: [
-      { id: "st-vhoss", name: "Dr. Maret Vhoss", template: "Ripperdoc", role: "Bone-carver, unlicensed",
+      { id: "st-vhoss", name: "Dr. Maret Vhoss", template: "Bone-carver", role: "Bone-carver, unlicensed",
         notes: "First to say 'growing', not 'healing'. The Lidless is in her back room." },
       { id: "st-thorn-eng", name: "Thorn engineer", template: "Corpo Security", role: "House Thorn",
         notes: "Wants to drill deeper and finish it." },
-      { id: "st-rel-deacon", name: "Reliquary deacon", template: "Corpo Security", role: "House Reliquary",
+      { id: "st-rel-deacon", name: "Reliquary deacon", template: "Reliquary Confessor", role: "House Reliquary",
         notes: "Wants to collect the light and sell it." }
     ],
     fragment: { n: 3, ways: ["Route A: they stop the drilling.", "Route B: they (or the Houses) drill deeper.", "If they do neither, the Houses do it a month later, offstage."] },
@@ -926,7 +926,7 @@ TTST.acts.push({
     ],
     clocks: [{ id: "st-hush-close", name: "The Hush close in", seg: 6 }],
     npcs: [
-      { id: "st-tender", name: "Hush tender (the notetaker)", template: "Netrunner", role: "The Hush",
+      { id: "st-tender", name: "Hush tender (the notetaker)", template: "Choir Tender", role: "The Hush",
         notes: "Keeps the audience notes. Has the crew's names with question marks already written." },
       { id: "st-cantor", name: "The Cantor", template: "Choir Fragment", role: "The choir-engine",
         notes: "Nine hundred voices. Remembers every loop. Cannot say so directly." }
@@ -1024,7 +1024,7 @@ TTST.acts.push({
     npcs: [
       { id: "st-dace", name: "Ser Ambrel Dace", template: "Corpo Lieutenant", role: "House Thorn, collections",
         notes: "Born in the Seventh. Foreclosing on her own home because a promise is a promise." },
-      { id: "st-archivist", name: "Thorn archivist", template: "Civilian", role: "House Thorn",
+      { id: "st-archivist", name: "Thorn archivist", template: "Corpo Suit", role: "House Thorn",
         notes: "Has read the clause. Thought it was poetry." }
     ],
     fragment: { n: 4, ways: ["Route A: they pay off their own debts.", "Route B: they burn the Book.", "If neither, Reliquary buys the Seventh's debt and clears it to sell buffers, offstage, next month."] },
@@ -1129,7 +1129,7 @@ TTST.acts.push({
     ],
     clocks: [{ id: "st-purge", name: "The Houses' purge reaches the cistern", seg: 4 }],
     npcs: [
-      { id: "st-aldous", name: "Choirmaster Wren Aldous", template: "Choir Fragment", role: "The Hush",
+      { id: "st-aldous", name: "Choirmaster Wren Aldous", template: "Hush Choirmaster", role: "The Hush",
         notes: "Hired them through Slate. Has to order their deaths and hates it. Keystone k7." },
       { id: "st-purge", name: "House purge squad", template: "Street Samurai", role: "Houses Thorn and Reliquary",
         notes: "Sent because the Cantor said 'stop singing'. Doing their jobs." }
@@ -1225,11 +1225,11 @@ TTST.acts.push({
     ],
     clocks: [{ id: "st-spine", name: "Pilgrims on the Spine", seg: 6 }],
     npcs: [
-      { id: "st-ines", name: "Ines Varro", template: "Civilian", role: "Lift operator · second petitioner",
+      { id: "st-ines", name: "Ines Varro", template: "Lift Operator", role: "Lift operator · second petitioner",
         notes: "Knows exactly where it snaps. Her hands are shaking." },
       { id: "st-abbess", name: "The pilgrims' abbess", template: "Civilian", role: "Leads the pilgrimage",
         notes: "Praying for the god to wake and forgive. Means it kindly." },
-      { id: "st-strike", name: "Hush strike team", template: "House Enforcer", role: "The Hush",
+      { id: "st-strike", name: "Hush strike team", template: "Hush Quieter", role: "The Hush",
         notes: "Going to cut the main cable. Would rather lose the Spine than the city." }
     ],
     fragment: { n: 5, ways: ["Route A: evacuating by the lifts.", "Route B: the crew cut the cable.", "Route C: the Hush cut it."] },
@@ -1325,9 +1325,9 @@ TTST.acts.push({
     ],
     clocks: [{ id: "st-sealing", name: "The sealing ceremony", seg: 4 }],
     npcs: [
-      { id: "st-sarrow", name: "Archdeacon Uln Sarrow", template: "Civilian", role: "House Reliquary · fourth petitioner",
+      { id: "st-sarrow", name: "Archdeacon Uln Sarrow", template: "Reliquary Confessor", role: "House Reliquary · fourth petitioner",
         notes: "Sealing the Eye tonight. Has known the four figures are the crew since the chapel." },
-      { id: "st-auctioneer", name: "Reliquary auctioneer", template: "Civilian", role: "House Reliquary",
+      { id: "st-auctioneer", name: "Reliquary auctioneer", template: "Corpo Suit", role: "House Reliquary",
         notes: "Lot 41: ocular relic, provenance lost. It doesn't blink." }
     ],
     fragment: { n: 6, ways: ["Route A: the crew blind the Eye.", "Route B: the Archdeacon seals it.", "If neither, the god closes its old eye itself at dawn to open a new one."] },
@@ -1430,7 +1430,7 @@ TTST.acts.push({
     ],
     clocks: [{ id: "st-lullaby", name: "The last lullaby holds", seg: 8 }],
     npcs: [
-      { id: "st-aldous", name: "Choirmaster Wren Aldous", template: "Choir Fragment", role: "The Hush",
+      { id: "st-aldous", name: "Choirmaster Wren Aldous", template: "Hush Choirmaster", role: "The Hush",
         notes: "Leads the last lullaby. Her voice-box is failing." },
       { id: "st-purge2", name: "Last purge squad", template: "Hunter-Killer", role: "The Houses",
         notes: "Sent to silence the pipes by force." }

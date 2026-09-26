@@ -86,7 +86,7 @@ module.exports = async function (browser) {
       scenes.filter(s => s.fixedEcho).map(s => s.session), [1, 7, 12]);
     R.eq("the Eye-chrome has five chances to turn up", ST.eyeChrome.chances.length, 5);
 
-    const tmpl = GM.npcTemplates.map(t => t.name);
+    const tmpl = load("npcs.js").TTNPC.archetypes.map(t => t.name);
     const badNpc = [];
     scenes.forEach(s => s.npcs.forEach(n => {
       if (tmpl.indexOf(n.template) < 0) badNpc.push(s.id + ": " + n.name + " uses " + n.template);

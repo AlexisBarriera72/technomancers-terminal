@@ -85,7 +85,9 @@ module.exports = async function (browser) {
     R.eq("the party keeps its own initiative", pack.pc, 17);
     R.check("and a dragged tie rank is cleared", !pack.tie && !!pack.turn, JSON.stringify(pack));
 
-    // difficulty: the demo fight is 1,950 XP against five level-5 characters
+    // difficulty: the demo fight is 2,300 XP against five level-5 characters.
+    // Its NPCs are built for level 5 (the demo party's): a CR 3 lieutenant,
+    // two CR 2 security guards and a CR 3 drone.
     const diff = await page.evaluate(() => {
       const G = window.TTGM, T = window.TT;
       T.setMode("table"); T.gmSec(1); T.render();
@@ -95,9 +97,9 @@ module.exports = async function (browser) {
                crs: [G.crXp("1/8"), G.crXp("4"), G.crXp("CR 2"), G.crXp("?")] };
     });
     R.eq("CR converts to XP by the SRD table", diff.crs, [25, 1100, 450, null]);
-    R.eq("the demo fight's XP adds up its foes", diff.d.xp, 1100 + 200 + 200 + 450);
+    R.eq("the demo fight's XP adds up its foes", diff.d.xp, 700 + 450 + 450 + 700);
     R.eq("against the party's budget", diff.d.budget, [2500, 3750, 5500]);
-    R.eq("which makes it Low", [diff.d.band, diff.shown, diff.xp], ["Low", "Low", "1,950"]);
+    R.eq("which makes it Low", [diff.d.band, diff.shown, diff.xp], ["Low", "Low", "2,300"]);
     const hard = await page.evaluate(() => {
       const G = window.TTGM;
       const enc = { combatants: [{ src: "pc", ref: "demo-jax" }, { src: "npc", ref: "demo-n-dace" },
@@ -181,7 +183,7 @@ module.exports = async function (browser) {
       JSON.stringify(CATH.districts.map(d => d.height)));
     R.eq("every district belongs to a real House and a real street table",
       CATH.districts.filter(d => (d.house && !CATH.houses.some(h => h.id === d.house)) || !CITY.street[d.band]).map(d => d.id), []);
-    const tmpl = GM.npcTemplates.map(t => t.name), badNpc = [];
+    const tmpl = load("npcs.js").TTNPC.archetypes.map(t => t.name), badNpc = [];
     Object.keys(CITY.street).forEach(b => ["day", "night"].forEach(t => CITY.street[b][t].rows.forEach(r => {
       if (r.npc && tmpl.indexOf(r.npc.t) < 0) badNpc.push(r.npc.t);
     })));
