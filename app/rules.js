@@ -294,6 +294,32 @@ function attackBonus(g, d) {
            bonus: mod(d.sc[abil]) + (prof ? d.pb : 0),
            damage: row ? row[2] : "-", props: props };
 }
+/* One weapon off the gear list, ready to use: the attack, the damage with
+   the same modifier the attack used (added once, to the first dice, so a
+   grenade's thunder die doesn't get it twice), the range, and for a gun its
+   magazine. "reload (20 shots)" holds 20 and reloads with a bonus action;
+   "(10 shots, action)" takes an action. The Ammo column says what it eats. */
+function weaponInfo(g, d) {
+  if (!g || typeof g.key !== "string") return null;
+  var gun = g.key.indexOf("Firearm List|") === 0;
+  if (!gun && g.key.indexOf("Melee Weapons|") !== 0) return null;
+  var t = tableByTitle[gun ? "Firearm List" : "Melee Weapons"];
+  var row = t ? t.rows.filter(function (r) { return r[0] === g.name; })[0] : null;
+  if (!row || !row[2]) return null;
+  d = d || statsOf(C);
+  var a = attackBonus(g, d), m = mod(d.sc[a.abil]);
+  var props = a.props || "";
+  var rl = /reload \((\d+) shots?(,\s*action)?\)/i.exec(props);
+  var rng = /\((?:range )?(\d+\/\d+)\)/i.exec(props);
+  return {
+    key: g.key, name: g.name, gun: gun, abil: a.abil, bonus: a.bonus, proficient: a.proficient,
+    dice: row[2], damage: String(row[2]).replace(/\d+d\d+/, function (x) { return x + (m ? sgn(m) : ""); }),
+    props: props, range: rng ? rng[1] : null,
+    cap: rl ? +rl[1] : null, reloadAction: !!(rl && rl[2]),
+    ammo: gun ? (row[4] || null) : null,
+    auto: /\bautomatic\b/i.test(props), burst: /\bburst-fire\b/i.test(props), heavy: /\bheavy\b/i.test(props)
+  };
+}
 
 /* Progression tables are indexed by level, so the level must be a whole
    number in range before it touches one. Three sites used to clamp this

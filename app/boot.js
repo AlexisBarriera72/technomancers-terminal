@@ -589,6 +589,7 @@ window.TT = {
   withChar: withChar, statsOf: statsOf, saveBonus: saveBonus, skillBonus: skillBonus,
   passiveSkill: passiveSkill, initiative: initiative, initiativeNote: initiativeNote,
   saveDC: saveDC, attackBonus: attackBonus, armorClass: armorClass, maxHP: maxHP,
+  weaponInfo: weaponInfo, gunsOf: gunsOf,
   allSkills: allSkills, humanity: humanity, activeFeatures: activeFeatures, scalingSpec: scalingSpec,
   blockText: blockText, actionType: actionType, actionEntries: actionEntries,
   usageOf: usageOf, toMarkdown: toMarkdown,

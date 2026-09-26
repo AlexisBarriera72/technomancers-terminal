@@ -48,7 +48,8 @@ works as before. A database made directly on upstash.com works too: set
 |---|---|
 | `index.html` | Shell markup and all the CSS. |
 | `app/*.js` | The player-facing application, vanilla JS with no framework and no build step, in nine files loaded in order: `core` (helpers, book data, the character, storage), `i18n`, `rules` (migrate and the numbers), `guide` (beginner guide, share links, roster), `forge` (steps 1 to 7), `sheet` (the play sheet, inventory, level-up panel, turn cards, frames, Markdown), `print`, `codex` (step chrome, Codex, Campaign screen) and `boot` (rail, dossier, render, `window.TT`, start-up). They share one script scope, the way the old single IIFE did. |
-| `gm.js` | The GM tools, `window.TTBGM` (rulings, conditions, NPC templates, Street Cred bands) and `window.TTGM` (the code). |
+| `gm.js` | The GM tools, `window.TTBGM` (rulings, conditions, Street Cred bands) and `window.TTGM` (the code). |
+| `npcs.js` | `window.TTNPC`, the NPC library: nine categories, the roles, the weapon kits and about forty-five archetypes that `gm.js` builds for the NPC level. GM only. |
 | `data.js` | `window.TTB`, everything extracted from the Textbook. |
 | `expansion.js` | `window.TTBX`, the Neon Ledger expansion. |
 | `srd.js` | `window.TTSRD`, SRD 5.1 material, currently the Wild Magic Sorcerer. |
@@ -223,6 +224,21 @@ replacing you.
   temporary HP (`hpNow`, `hpTemp`): −5, −1, +1, +5, an amount with **Damage**,
   **Heal** or **Set temp HP**, and **Long rest**. Damage eats temp HP first;
   HP stops at 0 and at the maximum.
+- **Weapons and rounds.** Every weapon on the gear list gets a line on the
+  play sheet with its attack bonus and damage worked out (`weaponInfo()` in
+  `app/rules.js`): the ability it attacks with (Dex for a gun, Str or Dex for
+  a finesse blade), proficiency when the class has it, and the same modifier
+  added once to the damage. A gun also gets a round counter. The magazine is
+  read off the book's reload property, so a Pistol holds 10 and an Assault
+  Rifle 20, and "(10 shots, action)" means reloading takes an action instead
+  of a bonus action. **Fire** takes one round; automatic and burst-fire guns
+  also get −3 and −10. **Reload** fills the gun from the matching ammunition
+  on the gear list (Bullets, Shells…) and counts that down, or simply fills it
+  when no ammunition is listed. Rounds loaded are `ammo` (by gear key) and
+  ammunition used is `ammoUsed` (by type), so spent rounds never hand credits
+  back. The reload is dealt into the turn cards, *How guns work* explains the
+  attack and damage rolls, and the GM sees every player's rounds on their
+  party card and their row in a fight.
 
 ### Street prices
 
@@ -367,8 +383,51 @@ Nine screens: the five below, then Story, Campaign, City and Toolkit:
 | **Party** | Every PC's AC, HP, initiative, passives, saves, Humanity and class DC on one page. Plus *who's best at…* for any skill, the god's attention die, the table's Street Cred, which named pairs this particular set of people makes, and a **Humanity dashboard**: everyone's band, worst first. |
 | **Encounter** | Initiative order, hit points, temp HP, conditions, round counter. Tap a number pad to damage or heal. Drag a combatant by its ⠿ handle (or ▲ ▼) to change the order; **Roll NPC initiative** gives each kind of foe one shared roll; a **Difficulty** bar weighs the foes' XP (by CR) against the party's SRD 5.2 budget for their levels; **Morale** asks for a DC 10 Wisdom save when half the foes are down, and a foe who breaks is marked Fled and skipped. |
 | **Rulings** | What to make them roll and what to set it at, with each character's real modifier and the odds. A searchable catalogue sits under a generic picker that covers anything, and an NPC reaction roll for what someone makes of them. |
-| **NPCs** | Statblocks, from twelve templates or blank. Mooks are one line. Includes an improviser for the NPC you didn't prepare. |
+| **NPCs** | One **NPC level** for every NPC, and a library of about forty-five in nine categories (Street, Religious, Corporate & Houses, Law & the Watch, Tech & machines, Underworld, Medical, Workers & civilians, God-touched). Library NPCs level with the table; hand-made ones keep your numbers. Mooks are one line. Includes an improviser for the NPC you didn't prepare. |
 | **Clocks** | Segmented progress clocks and a session scratchpad. A clock marked *Ticks with each day* fills a segment whenever the City screen advances a day. |
+
+### NPCs that level with the table
+
+The NPCs screen opens on the **NPC level**: a slider from 1 to 20 that
+follows the party's average level until you move it (**Follow the party**
+puts it back). Every NPC made from the library is rebuilt for it, so the
+same Corpo Security guard is a fair fight at level 3 and at level 12. Each
+scene on the Story screen has **NPCs to level N** for the level it is
+written for.
+
+What the level changes, the same way for every NPC (`npcBuild()` in `gm.js`):
+
+| | |
+|---|---|
+| Proficiency | 2 + (level − 1) / 4, as a character's. |
+| Ability scores | The NPC's main ability rises by 2 at levels 4, 8, 12, 16 and 19, until it reaches 20; then Constitution does. |
+| Hit points | (level + ½) × the role's hit dice per level, each die at its average plus Con. |
+| Armour | The role's, +1 at levels 7, 13 and 19. |
+| Weapons | Each NPC carries weapon kits that improve at levels 5, 11 and 17: a Cheap pistol becomes a Heavy pistol, then a Smart pistol, then a Rail pistol, with bigger dice. Attack = proficiency + ability; damage adds the ability. |
+| Attacks | The role's Multiattack: a soldier gets a second attack at 5 and a third at 11. |
+| Save DCs | 8 + proficiency + the ability behind its powers. Power damage adds that ability too. |
+| Features | Each has a level it arrives at. The statblock says what the next level brings. |
+| Challenge | Worked out from the statblock it gets (hit points and AC against damage a round and attack bonus, the Dungeon Master's Guide way), so the Encounter screen's difficulty bar weighs what the NPC actually does. |
+
+The roles: **Bystander** (worth no XP), **Minion** (falls fast; one line in a
+fight), **Skirmisher**, **Soldier**, **Brute**, **Controller**, **Support**,
+**Elite** and **Boss** (bosses hit harder and gain Legendary resistance at 9).
+Against a party at the same level, one soldier or skirmisher per character
+comes out around Low on the difficulty bar and a brute each around Moderate;
+an elite weighs about as much as two or three soldiers, a boss five or six.
+The bar has the exact numbers for the fight in front of you.
+
+An NPC keeps its name, role, notes and Humanity; only the numbers move. **Edit
+by hand** stops one levelling and hands you its current numbers; a hand-made
+NPC can start levelling under **Level with the table**. An NPC already in a
+fight keeps the hit points it came in with. A roster from before the slider
+moves over on its own where an NPC still carries a template's untouched
+numbers; one you had edited stays as you left it.
+
+To add an NPC, add an archetype to `npcs.js`: a category, a role, ability
+scores, weapon kits, and features with the level they arrive at (`{dc}`,
+`{pb}` and `{dmg}` in their text are filled in). `test/npcs.test.js` checks
+every archetype at every level.
 
 ### The City screen
 
@@ -690,6 +749,8 @@ one side only would leave a line in English. CI runs both on every push.
 | `test/sw.test.js` | A failed update must not replace a working offline cache. |
 | `test/city.test.js` | The GM's table tools: encounter order, shared NPC initiative, difficulty and morale; the city's data (tables sized to their dice, districts climbing) and the City and Toolkit screens. |
 | `test/player.test.js` | The level-up panel, inventory and credits (weights, counts, custom items, old saves), the turn cards and the Puppeteer's frames. |
+| `test/npcs.test.js` | The NPC library (complete, every feature fills in), every archetype at every level (a real CR, nothing going down as the level rises), the NPC level slider, Edit by hand, an old roster moving over, and the Story screen's level button. |
+| `test/guns.test.js` | Each gun's attack, damage and magazine from the book's table, the round counter (fire, bursts, reloading from the gear list's ammunition, empty), the validator, the Spanish, and the GM's view of every player's rounds. |
 | `test/untranslated.test.js` | Every screen drawn in Spanish; fails on English text that isn't in `untranslated-baseline.txt`. |
 | `test/sync.test.js` | The room API on its own (codes, sizes, the GM's key, newest HP wins, no database), then a GM, a phone and an iPad as separate browsers through `tools/serve.js`: joining, a level-up and gear reaching the GM, HP both ways, the map and a reveal on the iPad. |
 | `test/maps.test.js` | The maps as data (everything inside its map, keys unique, every scene covered, every feature drawable), the drawing (no NaN, fog, and a players' view that hides everything the GM's does), that `maps/` is up to date, and the Maps screen: tap to reveal, the player window following in a second page, hand-off, the Story link and the vault. |

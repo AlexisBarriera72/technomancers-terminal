@@ -291,6 +291,140 @@ function turnDeck(buckets) {
   return sec;
 }
 
+/* ================================================ weapons and rounds === */
+/* Every weapon on the gear list with its attack and damage worked out, and
+   for a gun the rounds left in it. C.ammo[gear key] is what's loaded (full
+   when unset); C.ammoUsed[ammo type] is how much of the matching ammunition
+   on the gear list has been loaded since it was bought, so firing never
+   hands credits back the way deleting the ammunition would. */
+function roundsIn(w) {
+  var v = C.ammo && C.ammo[w.key];
+  return v == null ? w.cap : Math.max(0, Math.min(w.cap, v));
+}
+function spareOf(w) {
+  if (!w.ammo) return null;
+  var g = C.gear.filter(function (x) { return x.key === "Ammunition|" + w.ammo; })[0];
+  if (!g) return null;
+  return Math.max(0, gearQty(g) - ((C.ammoUsed || {})[w.ammo] || 0));
+}
+function gunsOf() {
+  return C.gear.map(function (g) { return weaponInfo(g); }).filter(function (w) { return w && w.gun && w.cap; })
+    .map(function (w) { w.loaded = roundsIn(w); w.spare = spareOf(w); return w; });
+}
+function setRounds(w, n) {
+  if (!C.ammo) C.ammo = {};
+  C.ammo[w.key] = Math.max(0, Math.min(w.cap, n));
+  delete C.isExample; save(); render();
+}
+function fireRounds(w, n) {
+  var have = roundsIn(w);
+  if (!have) { toast(w.name + " is empty: reload"); return; }
+  if (n > have) toast("Only " + have + " left in the " + w.name);
+  setRounds(w, have - Math.min(n, have));
+}
+function reloadGun(w) {
+  var have = roundsIn(w), need = w.cap - have, spare = spareOf(w);
+  if (!need) { toast(w.name + " is already full"); return; }
+  if (spare === null) { toast("Reloaded " + w.name); setRounds(w, w.cap); return; }
+  if (!spare) { toast("No " + w.ammo + " left on your gear list"); return; }
+  var take = Math.min(need, spare);
+  if (!C.ammoUsed) C.ammoUsed = {};
+  C.ammoUsed[w.ammo] = ((C.ammoUsed[w.ammo]) || 0) + take;
+  toast(take < need ? "Reloaded " + take + " of " + need + ": that was the last of your " + w.ammo
+                    : "Reloaded " + w.name + ", " + (spare - take) + " " + w.ammo + " spare");
+  setRounds(w, have + take);
+}
+var GUN_RULES = [
+  ["Attack roll", "d20 + your Dexterity modifier + your proficiency bonus, if your class is proficient with that gun (the sheet says “not proficient” when you aren't). Meet or beat the target's AC and you hit."],
+  ["Damage roll", "The gun's dice + the same modifier you attacked with. A pistol is 2d4 + Dex. When a gun lists two kinds of damage, the modifier goes on the first only."],
+  ["Critical hits", "A natural 20 always hits and is a critical: roll the damage dice twice and add the modifier once. A natural 1 always misses."],
+  ["Range", "Two numbers, like 70/280. Out to the first you shoot normally; out to the second you shoot at disadvantage; past it you can't hit."],
+  ["Up close", "Shooting while a hostile creature that can see you is within 5 feet gives you disadvantage. Step away first, or use a melee weapon."],
+  ["Cover", "Half cover gives the target +2 AC, three-quarters +5. Full cover can't be shot at."],
+  ["Rounds and reloading", "Each shot uses one round. The reload property is how many the gun holds; when it's empty, reload with a bonus action, or an action where the property says “action”. Reload takes rounds from the matching ammunition on your gear list, so buy spare there."],
+  ["Heavy and two-handed", "Heavy guns give Small creatures disadvantage. Two-handed guns need both hands to fire."],
+  ["Smartguns", "With the Smartgun System and a gun fitted with the smartgun accessory, you can use Strength or Intelligence instead of Dexterity for the attack roll, and the damage uses the same modifier."],
+  ["The book's own properties", "Automatic, burst-fire, scatter, scoped, blast, massive and marine are the Technomancer's Textbook's firearm properties; their rules are with the Firearm List in Chapter 2. When one fires more than a single round, the −3 and −10 buttons count them off in one tap."]
+];
+function weaponsSection() {
+  var ws = C.gear.map(function (g) { return weaponInfo(g); }).filter(Boolean);
+  if (!ws.length) return null;
+  var sec = el("div", "sheet-sec weapons");
+  sec.style.gridColumn = "1 / -1";
+  sec.appendChild(el("h3", null, "Weapons"));
+  ws.forEach(function (w) {
+    var card = el("div", "weapon" + (w.gun ? " gun" : ""));
+    var top = el("div", "weapon-top");
+    top.appendChild(el("b", null, esc(w.name)));
+    top.appendChild(el("span", "tag act", esc(sgn(w.bonus)) + " to hit"));
+    top.appendChild(el("span", "tag", esc(w.damage)));
+    if (!w.proficient) top.appendChild(el("span", "tag warn", "not proficient"));
+    card.appendChild(top);
+    card.appendChild(el("p", "page-ref", esc(w.props)));
+    if (w.gun && w.cap) {
+      var have = roundsIn(w), spare = spareOf(w);
+      var mag = el("div", "mag" + (have ? "" : " empty"));
+      var cnt = el("div", "mag-count");
+      cnt.appendChild(el("span", "k", "Rounds"));
+      cnt.appendChild(el("b", "mag-n", String(have)));
+      cnt.appendChild(el("span", "of", "/ " + w.cap));
+      mag.appendChild(cnt);
+      if (w.cap <= 12) {
+        var pips = el("div", "mag-pips");
+        pips.setAttribute("aria-hidden", "true");
+        for (var i = 0; i < w.cap; i++) pips.appendChild(el("span", "pip" + (i < have ? " on" : "")));
+        mag.appendChild(pips);
+      } else {
+        var bar = el("div", "mag-bar");
+        var fill = el("div", "mag-fill");
+        fill.style.width = Math.round(have / w.cap * 100) + "%";
+        bar.appendChild(fill);
+        mag.appendChild(bar);
+      }
+      var btns = el("div", "mag-btns");
+      var fire = el("button", "btn primary", "Fire");
+      fire.setAttribute("aria-label", "Fire one round from the " + w.name);
+      fire.disabled = !have;
+      fire.onclick = function () { fireRounds(w, 1); };
+      btns.appendChild(fire);
+      if (w.auto || w.burst) {
+        [3, 10].forEach(function (n) {
+          if (n > w.cap) return;
+          var b = el("button", "chip", "−" + n);
+          b.setAttribute("aria-label", "Fire " + n + " rounds from the " + w.name);
+          b.disabled = !have;
+          b.onclick = function () { fireRounds(w, n); };
+          btns.appendChild(b);
+        });
+      }
+      var rl = el("button", "btn", "Reload");
+      rl.title = w.reloadAction ? "Takes an action" : "Takes a bonus action";
+      rl.disabled = have >= w.cap;
+      rl.onclick = function () { reloadGun(w); };
+      btns.appendChild(rl);
+      btns.appendChild(el("span", "tag " + (w.reloadAction ? "act" : "bon"), w.reloadAction ? "Action" : "Bonus action"));
+      mag.appendChild(btns);
+      card.appendChild(mag);
+      card.appendChild(el("p", "page-ref mag-spare", spare === null
+        ? "Spare " + esc(w.ammo) + " aren't being counted: add " + esc(w.ammo) + " to your gear to count them down."
+        : "Spare " + esc(w.ammo) + ": " + spare));
+    }
+    sec.appendChild(card);
+  });
+  if (ws.some(function (w) { return w.gun; })) {
+    var how = el("details", "gun-rules");
+    how.appendChild(el("summary", null, "How guns work"));
+    GUN_RULES.forEach(function (r) {
+      var p = el("p");
+      p.appendChild(el("b", null, esc(r[0])));
+      p.appendChild(el("span", null, esc(r[1])));
+      how.appendChild(p);
+    });
+    sec.appendChild(how);
+  }
+  return sec;
+}
+
 /* ============================================= the Puppeteer's frames === */
 function frameSpec() {
   var cl = classByName[C.cls];
@@ -796,11 +930,17 @@ function stepSheet(s) {
   // the turn cards deal in the spells too, sorted by what they cost
   var deckB = {}, sb = spellBuckets(C);
   Object.keys(buckets).forEach(function (k) { deckB[k] = buckets[k].concat(sb[k] || []); });
+  gunsOf().forEach(function (w) {
+    deckB[w.reloadAction ? "Action" : "Bonus action"].push({ name: "Reload: " + w.name,
+      gist: "Fills it back to " + w.cap + " rounds.", uses: w.loaded + " / " + w.cap });
+  });
   grid.insertBefore(turnDeck(deckB), gdo);
   var spS = spellSection();
   if (spS) grid.insertBefore(spS, gdo);
   var dp = dronePanel();
   if (dp) grid.insertBefore(dp, gdo.nextSibling);
+  var wsec = weaponsSection();
+  if (wsec) grid.insertBefore(wsec, grid.firstChild);
 
   /* ---- abilities ---- */
   var g1 = el("div", "sheet-sec");

@@ -313,6 +313,16 @@ function migrate(c) {
   var ht = intIn(c.hpTemp, 0, 9999);
   if (ht) out.hpTemp = ht;
   if (typeof c.hpAt === "number" && isFinite(c.hpAt) && c.hpAt > 0) out.hpAt = c.hpAt;
+  // rounds loaded in each gun (by gear key), and ammunition loaded from the gear list
+  [["ammo", 999], ["ammoUsed", 99999]].forEach(function (x) {
+    if (!isPlainObj(c[x[0]])) return;
+    var o = {};
+    Object.keys(c[x[0]]).forEach(function (k) {
+      var v = intIn(c[x[0]][k], 0, x[1]);
+      if (k.length <= 80 && v !== null) o[k] = v;
+    });
+    if (Object.keys(o).length) out[x[0]] = o;
+  });
 
   // spells: names as written (a book spell the data lacks is still a spell),
   // what's prepared from them, and the slots spent since the last rest

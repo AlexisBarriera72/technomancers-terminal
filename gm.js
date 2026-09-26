@@ -1293,7 +1293,11 @@ window.TTGM = (function () {
         sub: "rogue-saboteur", bg: "gangster",
         scores: { Str: 8, Dex: 15, Con: 13, Int: 14, Wis: 12, Cha: 10 },
         skills: ["Stealth", "Perception", "Sleight of Hand", "Deception"],
-        cyber: [{ name: "Wired Reflexes", tier: "2" }] })],
+        cyber: [{ name: "Wired Reflexes", tier: "2" }],
+        // two shots into the fight, and forty spare rounds in a pocket
+        gear: [{ key: "Firearm List|Pistol", name: "Pistol", cost: "1,000₵" },
+               { key: "Ammunition|Bullets", name: "Bullets", cost: "3₵", qty: 40 }],
+        ammo: { "Firearm List|Pistol": 8 } })],
       ["Mia", demoChar({ id: "demo-sable", name: "Sable Voss", level: 5, cls: "Wirewalker",
         sub: "wirewalker-icebreaker", bg: "hacker",
         scores: { Str: 8, Dex: 14, Con: 13, Int: 15, Wis: 12, Cha: 10 },
@@ -1833,6 +1837,20 @@ window.TTGM = (function () {
     return wrap;
   }
 
+  /* A player's guns as chips: name, then loaded / magazine. Empty ones warn. */
+  function gunsLine(c) {
+    var guns = T.gunsOf ? T.withChar(c, function () { return T.gunsOf(); }) : [];
+    if (!guns.length) return null;
+    var box = el("div", "gm-chips tight gm-rounds");
+    guns.forEach(function (w) {
+      var chip = el("span", "chip" + (w.loaded ? "" : " warn"));
+      chip.appendChild(txt("span", null, w.name));
+      chip.appendChild(txt("b", null, " " + w.loaded + "/" + w.cap));
+      if (w.spare != null) chip.title = w.spare + " spare " + w.ammo;
+      box.appendChild(chip);
+    });
+    return box;
+  }
   function partyCard(p, party) {
     var c = p.c, d = p.d;
     var card = el("div", "gm-card");
@@ -1914,6 +1932,15 @@ window.TTGM = (function () {
     if (!d.prof.length) skc.appendChild(txt("span", "gm-note", "none recorded"));
     sk.appendChild(skc);
     card.appendChild(sk);
+
+    /* guns, and the rounds left in each as of their last save */
+    var rounds = gunsLine(c);
+    if (rounds) {
+      var gs = el("div", "gm-strip");
+      gs.appendChild(txt("div", "gm-label", "Rounds"));
+      gs.appendChild(rounds);
+      card.appendChild(gs);
+    }
 
     /* What this one brings, as opposed to what the table is. The party-wide
        panel above the cards answers the second question; this answers the
@@ -4487,6 +4514,12 @@ window.TTGM = (function () {
     nameBox.appendChild(txt("div", "n", cb.name));
     var meta = cb.src === "pc" ? "player character" : cb.src === "adhoc" ? "ad-hoc" : "NPC";
     nameBox.appendChild(txt("div", "m", meta + " · AC " + cb.ac));
+    if (cb.src === "pc") {
+      var rec = partyAll().filter(function (x) { return x.id === cb.ref; })[0];
+      var pcChar = rec ? charOf(rec) : null;
+      var rounds = pcChar ? gunsLine(pcChar) : null;
+      if (rounds) nameBox.appendChild(rounds);
+    }
     head.appendChild(nameBox);
     if (pos.count > 1) {
       var mv = el("div", "gm-mv");

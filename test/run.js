@@ -14,6 +14,7 @@ const SUITES = {
   player: require("./player.test"),
   spells: require("./spells.test"),
   npcs: require("./npcs.test"),
+  guns: require("./guns.test"),
   maps: require("./maps.test"),
   sync: require("./sync.test"),
   untranslated: require("./untranslated.test")

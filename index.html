@@ -502,6 +502,36 @@ td.cost{white-space:nowrap}
 .tag.bon{border-color:var(--signal);color:var(--signal)}
 .tag.rea{border-color:var(--gold);color:var(--gold)}
 .tag.use{border-color:var(--alert);color:var(--alert)}
+.tag.warn{border-color:var(--gold);color:var(--gold)}
+/* weapons on the play sheet, and the rounds left in each gun */
+.weapon{padding:9px 0;border-bottom:1px solid var(--line-soft)}
+.weapon:last-of-type{border-bottom:none}
+.weapon-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.weapon-top b{font-family:var(--f-display);font-size:15px;letter-spacing:.02em}
+.weapon .page-ref{margin:3px 0 0;white-space:normal;overflow-wrap:anywhere;display:block}
+.mag{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:8px 0 2px;padding:9px 11px;
+  background:var(--sunk);border-left:3px solid var(--accent);border-radius:var(--r)}
+.mag.empty{border-left-color:var(--alert)}
+.mag-count{display:flex;align-items:baseline;gap:6px}
+.mag-count .k{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
+.mag-n{font-family:var(--f-display);font-size:26px;font-weight:700;color:var(--accent);line-height:1;min-width:1.4em;text-align:right}
+.mag.empty .mag-n{color:var(--alert)}
+.mag-count .of{font-family:var(--f-mono);font-size:13px;color:var(--ink-dim)}
+.mag-pips{display:flex;gap:3px;flex-wrap:wrap}
+.mag-pips .pip{width:9px;height:18px;border-radius:2px;border:1px solid var(--line);background:transparent}
+.mag-pips .pip.on{background:var(--accent);border-color:var(--accent)}
+.mag-bar{flex:1;min-width:90px;max-width:220px;height:10px;background:var(--surface);border-radius:5px;overflow:hidden}
+.mag-fill{height:100%;background:var(--accent)}
+.mag-btns{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.mag-btns .btn,.mag-btns .chip{min-height:38px}
+.mag-btns button:disabled{opacity:.45;cursor:not-allowed}
+.gm-rounds{margin-top:5px}
+.gm-cb .gm-rounds .chip{min-height:0;padding:2px 8px;font-size:11px}
+.gm-rounds .chip b{font-family:var(--f-mono);font-weight:600}
+.gun-rules{margin-top:10px;border-top:1px solid var(--line-soft);padding-top:8px}
+.gun-rules summary{cursor:pointer;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.gun-rules p{margin:7px 0 0;font-size:13.2px;line-height:1.5;color:var(--ink-dim)}
+.gun-rules p b{color:var(--ink);margin-right:6px}
 .ladder{display:flex;flex-direction:column;gap:1px;max-height:none}
 .rung{display:flex;gap:11px;padding:6px 9px;border-left:2px solid var(--line-soft);
   font-size:13.3px;align-items:baseline}
