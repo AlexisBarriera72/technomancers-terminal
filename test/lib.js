@@ -14,7 +14,7 @@ const FILE_URL = "file://" + ROOT + "/index.html";
 const CHROME = process.env.CHROME_PATH || "/opt/pw-browsers/chromium-1194/chrome-linux/chrome";
 
 // Google Fonts is blocked in CI sandboxes; those failures are not ours.
-const IGNORABLE = /ERR_CERT_AUTHORITY_INVALID|fonts\.g|ERR_NAME_NOT_RESOLVED|ERR_CONNECTION|ERR_FAILED|ERR_INTERNET_DISCONNECTED/;
+const IGNORABLE = /ERR_CERT_AUTHORITY_INVALID|fonts\.g|ERR_NAME_NOT_RESOLVED|ERR_CONNECTION|ERR_FAILED|ERR_INTERNET_DISCONNECTED|ERR_TUNNEL_CONNECTION_FAILED/;
 
 function launchOptions() {
   const fs = require("fs");

@@ -579,8 +579,12 @@ revealed.
 
 #### Painted pictures
 
-Some maps also have a painted picture (made with a map generator from the
-prompts for each map). `mapart.js` lists them, with the grid each was drawn
+Eighteen maps also have a painted picture (made with a map generator from
+the prompts for each map): the Alley, the Black Clinic, the Fixer's Den, the
+Gullet Market, the Lift Car (gridded only), the Weepwater Stairs, and the
+story's Reliquary chapel and vault, Noodle Loft, Barracks, Spine station,
+Shaft Nine, Nave, Counting Rib, Seventh Rib, Choir House, Pilgrimage and
+Pipe Gallery. `mapart.js` lists them, with the grid each was drawn
 on, and the files are `maps/art/<map id>.webp` (no grid) and
 `maps/art/<map id>-grid.webp` (grid painted in). A map with a picture opens
 on it: **Picture** switches back to the drawn plan, **Grid** picks the
