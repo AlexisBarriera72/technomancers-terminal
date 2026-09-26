@@ -170,6 +170,10 @@ module.exports = async function (browser) {
         baseChar({ level: 3, bg: "hacker" }));
       await out.page.reload();
       await out.page.waitForFunction(() => !!window.TT, null, { timeout: 10000 });
+      // Every web font loaded now: where the network lets them load (CI), one
+      // arriving mid-test reflows the page above the slider, which isn't what
+      // this measures. Blocked ones just fail.
+      await out.page.evaluate(() => Promise.all([...document.fonts].map(f => f.load().catch(() => null))));
       await out.page.waitForTimeout(200);
       return out;
     })();
